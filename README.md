@@ -1,16 +1,44 @@
-# React + Vite
+# Family Dashboard v2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A lightweight family dashboard designed for 7-inch displays. Built with React, Vite, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Clock with current time and date (French locale)
+- Weather widget: current conditions + 4-day forecast (OpenWeatherMap)
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
 
-## Expanding the ESLint configuration
+- An [OpenWeatherMap](https://openweathermap.org/api) API key (free tier works)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Configuration
+
+Copy the example env file and fill in your API key:
+
+```sh
+cp .env.example .env
+```
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_WEATHER_API_KEY` | — | OpenWeatherMap API key (required) |
+| `VITE_WEATHER_CITY` | `Paris` | City name |
+| `VITE_WEATHER_UNITS` | `metric` | `metric` / `imperial` |
+| `VITE_WEATHER_LANG` | `fr` | Language for weather descriptions |
+
+### Run with Docker (recommended)
+
+```sh
+docker compose up -d --build
+```
+
+The dashboard will be available at `http://localhost:3000`.
+
+### Run locally
+
+```sh
+npm install
+npm run dev
+```
