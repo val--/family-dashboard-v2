@@ -1,0 +1,12 @@
+services:
+  dashboard:
+    build:
+      context: .
+      args:
+        - VITE_WEATHER_API_KEY=${VITE_WEATHER_API_KEY}
+        - VITE_WEATHER_CITY=${VITE_WEATHER_CITY:-Paris}
+        - VITE_WEATHER_UNITS=${VITE_WEATHER_UNITS:-metric}
+        - VITE_WEATHER_LANG=${VITE_WEATHER_LANG:-fr}
+    ports:
+      - "3000:80"
+    restart: unless-stopped
