@@ -18,7 +18,7 @@ function App() {
       </div>
 
       {/* Bottom: Printer status */}
-      <div className="text-center pb-2">
+      <div className="flex justify-center pb-2">
         <Printer />
       </div>
     </div>
