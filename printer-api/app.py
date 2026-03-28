@@ -1,13 +1,25 @@
+import os
 import subprocess
+from datetime import datetime, timedelta, timezone
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
+# -- Printer config --
 PRINTER_NAME = "Deskjet_3630"
 USB_ID = "03f0:e311"
 
+# -- Calendar config --
+CALENDAR_ID = os.environ.get("CALENDAR_ID", "")
+CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/app/credentials/service-account.json")
+
+
+# ========================
+#  Printer
+# ========================
 
 def is_usb_connected():
     try:
@@ -36,7 +48,6 @@ def get_cups_status():
 
 
 def get_ink_levels():
-    """Try to read marker-levels from CUPS via pycups."""
     try:
         import cups
         conn = cups.Connection()
@@ -66,6 +77,62 @@ def printer_status():
         "status": status,
         "ink": ink,
     })
+
+
+# ========================
+#  Calendar
+# ========================
+
+def get_calendar_service():
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+
+    credentials = service_account.Credentials.from_service_account_file(
+        CREDENTIALS_PATH,
+        scopes=["https://www.googleapis.com/auth/calendar.readonly"],
+    )
+    return build("calendar", "v3", credentials=credentials)
+
+
+@app.route("/api/calendar")
+def calendar_events():
+    if not CALENDAR_ID:
+        return jsonify({"error": "CALENDAR_ID not configured"}), 500
+
+    try:
+        service = get_calendar_service()
+        now = datetime.now(timezone.utc)
+        time_max = now + timedelta(days=30)
+
+        result = service.events().list(
+            calendarId=CALENDAR_ID,
+            timeMin=now.isoformat(),
+            timeMax=time_max.isoformat(),
+            singleEvents=True,
+            orderBy="startTime",
+            maxResults=50,
+        ).execute()
+
+        events = []
+        for item in result.get("items", []):
+            start = item["start"].get("dateTime", item["start"].get("date", ""))
+            end = item["end"].get("dateTime", item["end"].get("date", ""))
+            is_all_day = "date" in item["start"]
+
+            events.append({
+                "title": item.get("summary", "Sans titre"),
+                "start": start,
+                "end": end,
+                "allDay": is_all_day,
+                "location": item.get("location"),
+            })
+
+        return jsonify({"events": events})
+
+    except FileNotFoundError:
+        return jsonify({"error": "Service account credentials not found"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

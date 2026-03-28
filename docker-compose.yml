@@ -17,8 +17,11 @@ services:
       context: ./printer-api
     ports:
       - "5100:5100"
+    environment:
+      - CALENDAR_ID=${CALENDAR_ID}
     volumes:
       - /var/run/cups:/var/run/cups
+      - ./credentials:/app/credentials:ro
     devices:
       - /dev/bus/usb:/dev/bus/usb
     restart: unless-stopped
