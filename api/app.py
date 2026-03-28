@@ -102,7 +102,7 @@ def calendar_events():
     try:
         service = get_calendar_service()
         now = datetime.now(timezone.utc)
-        time_max = now + timedelta(days=30)
+        time_max = now + timedelta(days=365)
 
         result = service.events().list(
             calendarId=CALENDAR_ID,
@@ -110,7 +110,7 @@ def calendar_events():
             timeMax=time_max.isoformat(),
             singleEvents=True,
             orderBy="startTime",
-            maxResults=50,
+            maxResults=250,
         ).execute()
 
         events = []

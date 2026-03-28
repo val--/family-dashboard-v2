@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useCalendar } from '../hooks/useCalendar'
 
 function formatDate(dateStr) {
@@ -40,8 +41,47 @@ function EventItem({ event }) {
   )
 }
 
+function DateGroup({ items }) {
+  return (
+    <div>
+      <div className="text-xs text-white/60 mb-0.5 capitalize">
+        {formatDate(items[0].start)}
+      </div>
+      <div className="flex flex-col gap-0.5">
+        {items.map((event, i) => (
+          <EventItem key={i} event={event} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CalendarModal({ groups, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-between p-4">
+        <div className="text-sm uppercase tracking-wider text-white/40">
+          Agenda
+        </div>
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-white text-2xl leading-none"
+        >
+          &times;
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-3">
+        {groups.map(([date, items]) => (
+          <DateGroup key={date} items={items} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Calendar() {
   const { events, loading, error } = useCalendar()
+  const [showModal, setShowModal] = useState(false)
 
   if (error || loading || !events) return null
 
@@ -51,22 +91,31 @@ export default function Calendar() {
     )
   }
 
-  const groups = groupByDate(events).slice(0, 5)
+  const allGroups = groupByDate(events)
+  const previewGroups = allGroups.slice(0, 4)
+  const hasMore = allGroups.length > 4
 
   return (
-    <div className="w-64 flex flex-col gap-2">
-      {groups.map(([date, items]) => (
-        <div key={date}>
-          <div className="text-xs text-white/60 mb-0.5 capitalize">
-            {formatDate(items[0].start)}
-          </div>
-          <div className="flex flex-col gap-0.5">
-            {items.map((event, i) => (
-              <EventItem key={i} event={event} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="w-64 flex flex-col gap-2">
+        {previewGroups.map(([date, items]) => (
+          <DateGroup key={date} date={date} items={items} />
+        ))}
+        {hasMore && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="text-xs text-white/30 hover:text-white/60 text-left mt-1"
+          >
+            Voir plus...
+          </button>
+        )}
+      </div>
+      {showModal && (
+        <CalendarModal
+          groups={allGroups}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   )
 }
