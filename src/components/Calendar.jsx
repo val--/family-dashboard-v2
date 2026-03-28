@@ -55,9 +55,6 @@ export default function Calendar() {
 
   return (
     <div className="w-64 flex flex-col gap-2">
-      <div className="text-xs uppercase tracking-wider text-white/40">
-        Agenda
-      </div>
       {groups.map(([date, items]) => (
         <div key={date}>
           <div className="text-xs text-white/60 mb-0.5 capitalize">
