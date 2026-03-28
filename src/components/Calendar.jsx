@@ -31,7 +31,7 @@ function groupByDate(events) {
 
 function EventItem({ event }) {
   return (
-    <div className="flex items-baseline gap-3">
+    <div className="flex items-baseline gap-2">
       <span className="text-xs text-white/40 w-12 text-right shrink-0">
         {event.allDay ? 'Journée' : formatTime(event.start)}
       </span>
@@ -54,16 +54,16 @@ export default function Calendar() {
   const groups = groupByDate(events).slice(0, 5)
 
   return (
-    <div className="w-72 flex flex-col gap-3">
-      <div className="text-xs uppercase tracking-wider text-white/40 text-center">
+    <div className="w-64 flex flex-col gap-2">
+      <div className="text-xs uppercase tracking-wider text-white/40">
         Agenda
       </div>
       {groups.map(([date, items]) => (
         <div key={date}>
-          <div className="text-xs text-white/60 mb-1 capitalize">
+          <div className="text-xs text-white/60 mb-0.5 capitalize">
             {formatDate(items[0].start)}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {items.map((event, i) => (
               <EventItem key={i} event={event} />
             ))}

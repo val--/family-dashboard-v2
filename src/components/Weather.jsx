@@ -7,11 +7,11 @@ function weatherIconUrl(code) {
 function DayForecast({ label, icon, tempMin, tempMax }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="text-sm text-white/50">{label}</span>
-      <img src={weatherIconUrl(icon)} alt="" className="w-10 h-10" />
-      <div className="text-sm">
+      <span className="text-xs text-white/50">{label}</span>
+      <img src={weatherIconUrl(icon)} alt="" className="w-8 h-8" />
+      <div className="text-xs">
         <span className="text-white/50">{tempMin}°</span>
-        <span className="mx-1">/</span>
+        <span className="mx-0.5">/</span>
         <span>{tempMax}°</span>
       </div>
     </div>
@@ -55,19 +55,19 @@ export default function Weather() {
   const days = forecast ? groupForecastByDay(forecast.list).slice(0, 4) : []
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-4">
       {/* Current weather */}
-      <div className="flex items-center gap-4">
-        <img src={weatherIconUrl(icon)} alt={description} className="w-16 h-16" />
+      <div className="flex items-center gap-3">
+        <img src={weatherIconUrl(icon)} alt={description} className="w-12 h-12" />
         <div>
-          <div className="text-5xl font-light">{temp}°</div>
-          <div className="text-sm text-white/50 capitalize">{description}</div>
+          <div className="text-4xl font-light">{temp}°</div>
+          <div className="text-xs text-white/50 capitalize">{description}</div>
         </div>
       </div>
 
       {/* 4-day forecast */}
       {days.length > 0 && (
-        <div className="flex gap-6">
+        <div className="flex gap-4">
           {days.map((day) => (
             <DayForecast key={day.label} {...day} />
           ))}
