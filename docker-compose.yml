@@ -7,14 +7,14 @@ services:
         - VITE_WEATHER_CITY=${VITE_WEATHER_CITY:-Paris}
         - VITE_WEATHER_UNITS=${VITE_WEATHER_UNITS:-metric}
         - VITE_WEATHER_LANG=${VITE_WEATHER_LANG:-fr}
-        - VITE_PRINTER_API_URL=${VITE_PRINTER_API_URL:-http://localhost:5100}
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:5100}
     ports:
       - "3000:80"
     restart: unless-stopped
 
-  printer-api:
+  api:
     build:
-      context: ./printer-api
+      context: ./api
     ports:
       - "5100:5100"
     environment:

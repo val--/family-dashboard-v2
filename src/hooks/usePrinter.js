@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API_URL = import.meta.env.VITE_PRINTER_API_URL || 'http://localhost:5100'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const REFRESH_INTERVAL = 60 * 1000 // 1 minute
 
 export function usePrinter() {
