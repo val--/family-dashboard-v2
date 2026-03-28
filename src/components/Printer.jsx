@@ -29,13 +29,7 @@ function InkBar({ name, level, color }) {
 export default function Printer() {
   const { data, loading, error } = usePrinter()
 
-  if (error) {
-    return <div className="text-red-400 text-sm">Imprimante : {error}</div>
-  }
-
-  if (loading || !data) {
-    return <div className="text-white/30 text-sm">Chargement imprimante…</div>
-  }
+  if (error || loading || !data) return null
 
   const statusLabel = STATUS_LABELS[data.status] || data.status
   const isOnline = data.connected && data.status !== 'disabled'
