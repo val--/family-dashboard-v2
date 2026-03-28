@@ -93,22 +93,16 @@ export default function Calendar() {
 
   const allGroups = groupByDate(events)
   const previewGroups = allGroups.slice(0, 4)
-  const hasMore = allGroups.length > 4
 
   return (
     <>
-      <div className="w-64 flex flex-col gap-2">
+      <div
+        className="w-64 flex flex-col gap-2 cursor-pointer"
+        onClick={() => setShowModal(true)}
+      >
         {previewGroups.map(([date, items]) => (
-          <DateGroup key={date} date={date} items={items} />
+          <DateGroup key={date} items={items} />
         ))}
-        {hasMore && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-xs text-white/30 hover:text-white/60 text-left mt-1"
-          >
-            Voir plus...
-          </button>
-        )}
       </div>
       {showModal && (
         <CalendarModal
