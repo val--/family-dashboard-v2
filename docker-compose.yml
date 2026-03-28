@@ -7,6 +7,18 @@ services:
         - VITE_WEATHER_CITY=${VITE_WEATHER_CITY:-Paris}
         - VITE_WEATHER_UNITS=${VITE_WEATHER_UNITS:-metric}
         - VITE_WEATHER_LANG=${VITE_WEATHER_LANG:-fr}
+        - VITE_PRINTER_API_URL=${VITE_PRINTER_API_URL:-http://localhost:5100}
     ports:
       - "3000:80"
+    restart: unless-stopped
+
+  printer-api:
+    build:
+      context: ./printer-api
+    ports:
+      - "5100:5100"
+    volumes:
+      - /var/run/cups:/var/run/cups
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
     restart: unless-stopped
