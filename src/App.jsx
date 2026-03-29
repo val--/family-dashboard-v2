@@ -18,7 +18,7 @@ function App() {
       </div>
 
       {/* Middle: Calendar left half, CTAs right half */}
-      <div className="flex-1 flex items-start pt-8">
+      <div className="flex-1 flex items-start pt-8 gap-8">
         <div className="w-1/2">
           <Calendar />
         </div>
