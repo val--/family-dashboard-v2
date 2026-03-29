@@ -7,6 +7,7 @@ A lightweight family dashboard designed for 7-inch displays. Built with React, V
 - Clock with current time and date (French locale)
 - Weather: current conditions + 4-day forecast (OpenWeatherMap)
 - Google Calendar: upcoming events from a shared family agenda
+- Plex: recently added movies with cover art and watched indicator
 - Printer status: online/offline indicator (HP Deskjet via CUPS)
 
 ## Architecture
@@ -31,7 +32,9 @@ cp .env.example .env
 | `VITE_WEATHER_UNITS` | `metric` | `metric` / `imperial` |
 | `VITE_WEATHER_LANG` | `fr` | Language for weather descriptions |
 | `VITE_API_URL` | `http://localhost:5100` | Backend API URL (use LAN IP for remote access) |
+| `VITE_DEMO` | — | Set to `true` to use mock data (no API needed) |
 | `CALENDAR_ID` | — | Google Calendar ID |
+| `PLEX_TOKEN` | — | Plex authentication token |
 
 ### 2. Google Calendar (optional)
 
@@ -59,7 +62,14 @@ npm run dev -- --host
 ```
 
 The dashboard will be available at `http://<your-ip>:5173` with hot reload.
-Printer and calendar features require the `api` service running.
+Printer, calendar and Plex features require the `api` service running.
+
+To develop without the API, enable demo mode with mock data:
+
+```sh
+# Add to .env
+VITE_DEMO=true
+```
 
 Once done, deploy to production:
 
