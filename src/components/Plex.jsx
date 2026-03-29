@@ -55,7 +55,7 @@ function LastWatched({ movie }) {
         ) : (
           <div className="w-28 h-44 bg-white/10 rounded" />
         )}
-        <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/70 rounded text-[10px] text-white/70 whitespace-nowrap">
+        <div className="absolute top-1.5 left-1.5 px-2 py-1 bg-blue-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           Vu {movie.lastViewedAt && timeAgo(movie.lastViewedAt).toLowerCase()}
         </div>
       </div>
