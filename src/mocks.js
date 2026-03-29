@@ -51,11 +51,13 @@ export const mockPlex = {
 
 export const mockRadarr = {
   downloading: [
-    { title: 'Highlander', year: '1986', status: 'downloading', progress: 42 },
+    { title: 'Highlander', year: '1986', progress: 42, eta: new Date(Date.now() + 23 * 60000).toISOString() },
+    { title: 'Dhurandhar', year: '2025', progress: 9, eta: new Date(Date.now() + 85 * 60000).toISOString() },
   ],
   missing: [
     { title: 'The Bone Temple', year: '2025' },
     { title: 'Exit 8', year: '2024' },
+    { title: 'Send Help', year: '2025' },
   ],
 }
 

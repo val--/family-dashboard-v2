@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
 
@@ -66,44 +66,60 @@ function LastWatched({ movie }) {
   )
 }
 
+const TICKER_INTERVAL = 5000
+
 function RadarrTicker({ data }) {
-  if (!data) return null
+  const [index, setIndex] = useState(0)
 
-  const { downloading, missing } = data
-
-  if (downloading?.length > 0) {
-    const items = downloading.map((m) => {
+  const entries = []
+  if (data?.downloading) {
+    for (const m of data.downloading) {
       let text = `${m.title} (${m.year}) — ${m.progress}%`
       if (m.eta) {
         const mins = Math.max(0, Math.round((new Date(m.eta) - Date.now()) / 60000))
         if (mins < 60) text += ` (${mins}min)`
         else text += ` (~${Math.round(mins / 60)}h)`
       }
-      return text
-    })
-    return (
-      <div className="overflow-hidden whitespace-nowrap">
-        <span className="inline-block animate-marquee text-base">
-          <span className="text-blue-400">⬇ En cours de téléchargement :</span>{' '}
-          <span className="text-white/70">{items.join('  •  ')}</span>
-        </span>
-      </div>
-    )
+      entries.push({ type: 'downloading', text })
+    }
+  }
+  if (data?.missing) {
+    for (const m of data.missing) {
+      entries.push({ type: 'missing', text: `${m.title} (${m.year})` })
+    }
   }
 
-  if (missing?.length > 0) {
-    const items = missing.map((m) => `${m.title} (${m.year})`)
-    return (
-      <div className="overflow-hidden whitespace-nowrap">
-        <span className="inline-block animate-marquee text-base">
-          <span className="text-amber-400/70">À venir :</span>{' '}
-          <span className="text-white/50">{items.join('  •  ')}</span>
-        </span>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (entries.length <= 1) return
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % entries.length)
+    }, TICKER_INTERVAL)
+    return () => clearInterval(timer)
+  }, [entries.length])
 
-  return null
+  if (entries.length === 0) return null
+
+  const current = entries[index % entries.length]
+
+  return (
+    <div className="flex items-center justify-center gap-2 text-base h-6">
+      {current.type === 'downloading' ? (
+        <>
+          <span className="relative flex h-3 w-3 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
+          </span>
+          <span className="text-blue-400">En cours de téléchargement :</span>
+          <span className="text-white/70">{current.text}</span>
+        </>
+      ) : (
+        <>
+          <span className="text-amber-400/70">À venir :</span>
+          <span className="text-white/50">{current.text}</span>
+        </>
+      )}
+    </div>
+  )
 }
 
 function Plex() {
