@@ -7,17 +7,28 @@ const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function usePlex() {
   const [movies, setMovies] = useState(DEMO ? mockPlex.movies : null)
+  const [lastWatched, setLastWatched] = useState(DEMO ? mockPlex.lastWatched : null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(!DEMO)
 
-  const fetchMovies = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (DEMO) return
     try {
-      const res = await fetch(`${API_URL}/api/plex/recent`)
-      if (!res.ok) throw new Error('Plex API request failed')
-      const json = await res.json()
-      if (json.error) throw new Error(json.error)
-      setMovies(json.movies)
+      const [recentRes, watchedRes] = await Promise.all([
+        fetch(`${API_URL}/api/plex/recent`),
+        fetch(`${API_URL}/api/plex/last-watched`),
+      ])
+
+      if (recentRes.ok) {
+        const json = await recentRes.json()
+        if (!json.error) setMovies(json.movies)
+      }
+
+      if (watchedRes.ok) {
+        const json = await watchedRes.json()
+        if (json && !json.error) setLastWatched(json)
+      }
+
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -27,10 +38,10 @@ export function usePlex() {
   }, [])
 
   useEffect(() => {
-    fetchMovies()
-    const interval = setInterval(fetchMovies, REFRESH_INTERVAL)
+    fetchData()
+    const interval = setInterval(fetchData, REFRESH_INTERVAL)
     return () => clearInterval(interval)
-  }, [fetchMovies])
+  }, [fetchData])
 
-  return { movies, loading, error }
+  return { movies, lastWatched, loading, error }
 }

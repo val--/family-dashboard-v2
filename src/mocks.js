@@ -16,6 +16,12 @@ export const mockCalendar = {
 }
 
 export const mockPlex = {
+  lastWatched: {
+    title: 'Interstellar',
+    year: '2014',
+    lastViewedAt: String(Math.floor(Date.now() / 1000) - 3600),
+    thumb: null,
+  },
   movies: [
     { title: 'Interstellar', year: '2014', addedAt: String(Math.floor(Date.now() / 1000) - 86400), thumb: null, watched: true },
     { title: 'Amélie Poulain', year: '2001', addedAt: String(Math.floor(Date.now() / 1000) - 172800), thumb: null, watched: false },

@@ -177,6 +177,37 @@ def plex_recent():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/plex/last-watched")
+def plex_last_watched():
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        import urllib.request
+        import xml.etree.ElementTree as ET
+
+        url = (
+            f"{PLEX_URL}/library/recentlyViewed"
+            f"?type=1&X-Plex-Container-Size=1&X-Plex-Token={PLEX_TOKEN}"
+        )
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        for item in tree.getroot():
+            return jsonify({
+                "title": item.get("title"),
+                "year": item.get("year"),
+                "lastViewedAt": item.get("lastViewedAt"),
+                "thumb": item.get("thumb"),
+            })
+
+        return jsonify(None)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/plex/thumb")
 def plex_thumb():
     path = request.args.get("path", "")
