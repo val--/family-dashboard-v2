@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePlex } from '../hooks/usePlex'
+import { mockPlex } from '../mocks'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
@@ -72,7 +73,13 @@ function LastWatched({ movie }) {
 function PlexModal({ onClose }) {
   const [allMovies, setAllMovies] = useState(null)
 
+  const DEMO = import.meta.env.VITE_DEMO === 'true'
+
   const fetchAll = useCallback(async () => {
+    if (DEMO) {
+      setAllMovies(mockPlex.movies)
+      return
+    }
     try {
       const res = await fetch(`${API_URL}/api/plex/all`)
       if (!res.ok) return
