@@ -110,7 +110,7 @@ function PlexModal({ onClose }) {
           <div className="text-white/30 text-sm">Chargement…</div>
         ) : (
           <div className="grid grid-cols-5 gap-4">
-            {allMovies.map((movie, i) => (
+            {allMovies.slice(0, 20).map((movie, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
                 <div className="relative">
                   {movie.thumb ? (
