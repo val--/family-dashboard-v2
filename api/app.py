@@ -219,16 +219,21 @@ def radarr_status():
         with urllib.request.urlopen(req, timeout=10) as resp:
             queue_data = jsonlib.loads(resp.read())
 
-        downloading = []
+        seen_movies = {}
         for record in queue_data.get("records", []):
+            if record.get("status") != "downloading":
+                continue
             movie = record.get("movie", {})
-            downloading.append({
-                "title": movie.get("title"),
-                "year": movie.get("year"),
-                "status": record.get("status"),
-                "progress": round(100 - (record.get("sizeleft", 0) / max(record.get("size", 1), 1) * 100)),
-                "eta": record.get("estimatedCompletionTime"),
-            })
+            movie_id = record.get("movieId")
+            progress = round(100 - (record.get("sizeleft", 0) / max(record.get("size", 1), 1) * 100))
+            if movie_id not in seen_movies or progress > seen_movies[movie_id]["progress"]:
+                seen_movies[movie_id] = {
+                    "title": movie.get("title"),
+                    "year": movie.get("year"),
+                    "progress": progress,
+                    "eta": record.get("estimatedCompletionTime"),
+                }
+        downloading = list(seen_movies.values())
 
         # Fetch missing/monitored movies
         movie_url = f"{RADARR_URL}/api/v3/movie"
