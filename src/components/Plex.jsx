@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { usePlex } from '../hooks/usePlex'
+import { useRadarr } from '../hooks/useRadarr'
 
 const MAX_PREVIEW_MOVIES = 6
 
@@ -65,26 +66,64 @@ function LastWatched({ movie }) {
   )
 }
 
+function RadarrTicker({ data }) {
+  if (!data) return null
+
+  const { downloading, missing } = data
+
+  if (downloading?.length > 0) {
+    const items = downloading.map(
+      (m) => `${m.title} (${m.year}) — ${m.progress}%`
+    )
+    return (
+      <div className="overflow-hidden whitespace-nowrap">
+        <span className="inline-block animate-marquee text-base">
+          <span className="text-blue-400">⬇ En cours :</span>{' '}
+          <span className="text-white/70">{items.join('  •  ')}</span>
+        </span>
+      </div>
+    )
+  }
+
+  if (missing?.length > 0) {
+    const items = missing.map((m) => `${m.title} (${m.year})`)
+    return (
+      <div className="overflow-hidden whitespace-nowrap">
+        <span className="inline-block animate-marquee text-base">
+          <span className="text-amber-400/70">À venir :</span>{' '}
+          <span className="text-white/50">{items.join('  •  ')}</span>
+        </span>
+      </div>
+    )
+  }
+
+  return null
+}
+
 function Plex() {
   const { movies, lastWatched, loading, error } = usePlex()
+  const { data: radarrData } = useRadarr()
 
   if (error || loading) return null
-  if (!movies?.length && !lastWatched) return null
+  if (!movies?.length && !lastWatched && !radarrData) return null
 
   const filteredMovies = lastWatched
     ? movies?.filter((m) => m.title !== lastWatched.title)
     : movies
 
   return (
-    <div className="flex items-start gap-4">
-      {lastWatched && (
-        <LastWatched movie={lastWatched} />
-      )}
-      {filteredMovies?.length > 0 &&
-        filteredMovies.slice(0, MAX_PREVIEW_MOVIES).map((movie, i) => (
-          <MovieCard key={i} movie={movie} />
-        ))
-      }
+    <div className="flex flex-col gap-4">
+      <RadarrTicker data={radarrData} />
+      <div className="flex items-start gap-4">
+        {lastWatched && (
+          <LastWatched movie={lastWatched} />
+        )}
+        {filteredMovies?.length > 0 &&
+          filteredMovies.slice(0, MAX_PREVIEW_MOVIES).map((movie, i) => (
+            <MovieCard key={i} movie={movie} />
+          ))
+        }
+      </div>
     </div>
   )
 }

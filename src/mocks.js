@@ -49,6 +49,16 @@ export const mockPlex = {
   ],
 }
 
+export const mockRadarr = {
+  downloading: [
+    { title: 'Highlander', year: '1986', status: 'downloading', progress: 42 },
+  ],
+  missing: [
+    { title: 'The Bone Temple', year: '2025' },
+    { title: 'Exit 8', year: '2024' },
+  ],
+}
+
 function futureDate(daysFromNow, time) {
   const d = new Date()
   d.setDate(d.getDate() + daysFromNow)

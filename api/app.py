@@ -17,6 +17,10 @@ PLEX_URL = os.environ.get("PLEX_URL", "http://localhost:32400")
 PLEX_PUBLIC_URL = os.environ.get("PLEX_PUBLIC_URL", PLEX_URL)
 PLEX_TOKEN = os.environ.get("PLEX_TOKEN", "")
 
+# -- Radarr config --
+RADARR_URL = os.environ.get("RADARR_URL", "http://localhost:7878")
+RADARR_API_KEY = os.environ.get("RADARR_API_KEY", "")
+
 # -- Calendar config --
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "")
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/app/credentials/service-account.json")
@@ -189,6 +193,60 @@ def plex_last_watched():
             })
 
         return jsonify(None)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ========================
+#  Radarr
+# ========================
+
+@app.route("/api/radarr/status")
+def radarr_status():
+    if not RADARR_API_KEY:
+        return jsonify({"error": "RADARR_API_KEY not configured"}), 500
+
+    try:
+        import urllib.request
+        import json as jsonlib
+
+        headers = {"X-Api-Key": RADARR_API_KEY}
+
+        # Fetch queue (downloading)
+        queue_url = f"{RADARR_URL}/api/v3/queue?pageSize=10"
+        req = urllib.request.Request(queue_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            queue_data = jsonlib.loads(resp.read())
+
+        downloading = []
+        for record in queue_data.get("records", []):
+            movie = record.get("movie", {})
+            downloading.append({
+                "title": movie.get("title"),
+                "year": movie.get("year"),
+                "status": record.get("status"),
+                "progress": round(100 - (record.get("sizeleft", 0) / max(record.get("size", 1), 1) * 100)),
+            })
+
+        # Fetch missing/monitored movies
+        movie_url = f"{RADARR_URL}/api/v3/movie"
+        req = urllib.request.Request(movie_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            all_movies = jsonlib.loads(resp.read())
+
+        missing = []
+        for movie in all_movies:
+            if movie.get("monitored") and not movie.get("hasFile"):
+                missing.append({
+                    "title": movie.get("title"),
+                    "year": movie.get("year"),
+                })
+
+        return jsonify({
+            "downloading": downloading,
+            "missing": missing,
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
