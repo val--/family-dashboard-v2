@@ -29,19 +29,19 @@ export default function WidgetCarousel({ children, titles = [] }) {
       onTouchEnd={onTouchEnd}
     >
       {count > 1 && (
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center justify-center gap-4 mb-4">
           <button
             onClick={() => setActive((active - 1 + count) % count)}
-            className="text-white/40 hover:text-white/70 text-2xl w-10 h-10 flex items-center justify-center"
+            className="text-white/40 hover:text-white/70 text-4xl w-12 h-12 flex items-center justify-center"
           >
             &#8249;
           </button>
-          <span className="text-sm uppercase tracking-wider text-white/40">
+          <span className="text-lg uppercase tracking-wider text-white/40 w-24 text-center">
             {titles[active] || ''}
           </span>
           <button
             onClick={() => setActive((active + 1) % count)}
-            className="text-white/40 hover:text-white/70 text-2xl w-10 h-10 flex items-center justify-center"
+            className="text-white/40 hover:text-white/70 text-4xl w-12 h-12 flex items-center justify-center"
           >
             &#8250;
           </button>
