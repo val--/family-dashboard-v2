@@ -168,7 +168,7 @@ def plex_recent():
                 "thumb": item.get("thumb"),
                 "watched": int(item.get("viewCount", 0)) > 0,
             })
-            if len(movies) >= 10:
+            if len(movies) >= 8:
                 break
 
         return jsonify({"movies": movies})
