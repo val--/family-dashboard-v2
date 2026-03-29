@@ -1,10 +1,7 @@
-import { useState, useEffect, useCallback, memo } from 'react'
+import { memo } from 'react'
 import { usePlex } from '../hooks/usePlex'
-import { mockPlex } from '../mocks'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const MAX_PREVIEW_MOVIES = 6
-const MAX_MODAL_MOVIES = 20
 
 function timeAgo(timestamp) {
   const diff = Date.now() - timestamp * 1000
@@ -68,81 +65,8 @@ function LastWatched({ movie }) {
   )
 }
 
-function PlexModal({ onClose }) {
-  const [allMovies, setAllMovies] = useState(null)
-
-  const DEMO = import.meta.env.VITE_DEMO === 'true'
-
-  const fetchAll = useCallback(async () => {
-    if (DEMO) {
-      setAllMovies(mockPlex.movies)
-      return
-    }
-    try {
-      const res = await fetch(`${API_URL}/api/plex/all`)
-      if (!res.ok) return
-      const json = await res.json()
-      if (!json.error) setAllMovies(json.movies)
-    } catch {}
-  }, [])
-
-  useEffect(() => {
-    fetchAll()
-  }, [fetchAll])
-
-  return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-between p-4">
-        <div className="text-sm uppercase tracking-wider text-white/40">
-          {MAX_MODAL_MOVIES} derniers films ajoutés
-        </div>
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-2xl leading-none"
-        >
-          &times;
-        </button>
-      </div>
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {!allMovies ? (
-          <div className="text-white/30 text-sm">Chargement…</div>
-        ) : (
-          <div className="grid grid-cols-5 gap-4">
-            {allMovies.slice(0, MAX_MODAL_MOVIES).map((movie, i) => (
-              <div key={i} className="flex flex-col items-center gap-2">
-                <div className="relative">
-                  {movie.thumb ? (
-                    <img
-                      src={movie.thumb}
-                      alt={movie.title}
-                      className="w-full aspect-[2/3] object-cover rounded"
-                    />
-                  ) : (
-                    <div className="w-full aspect-[2/3] bg-white/10 rounded" />
-                  )}
-                  {movie.watched && (
-                    <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-green-500/80 rounded-full flex items-center justify-center">
-                      <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M2 6l3 3 5-5" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
-                  {movie.title}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 function Plex() {
   const { movies, lastWatched, loading, error } = usePlex()
-  const [showModal, setShowModal] = useState(false)
 
   if (error || loading) return null
   if (!movies?.length && !lastWatched) return null
@@ -152,24 +76,16 @@ function Plex() {
     : movies
 
   return (
-    <>
-      <div
-        className="flex items-start gap-4 cursor-pointer"
-        onClick={() => setShowModal(true)}
-      >
-          {lastWatched && (
-            <LastWatched movie={lastWatched} />
-          )}
-          {filteredMovies?.length > 0 &&
-            filteredMovies.slice(0, MAX_PREVIEW_MOVIES).map((movie, i) => (
-              <MovieCard key={i} movie={movie} />
-            ))
-          }
-      </div>
-      {showModal && (
-        <PlexModal onClose={() => setShowModal(false)} />
+    <div className="flex items-start gap-4">
+      {lastWatched && (
+        <LastWatched movie={lastWatched} />
       )}
-    </>
+      {filteredMovies?.length > 0 &&
+        filteredMovies.slice(0, MAX_PREVIEW_MOVIES).map((movie, i) => (
+          <MovieCard key={i} movie={movie} />
+        ))
+      }
+    </div>
   )
 }
 
