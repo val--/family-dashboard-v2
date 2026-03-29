@@ -19,6 +19,10 @@ services:
       - "5100:5100"
     environment:
       - CALENDAR_ID=${CALENDAR_ID}
+      - PLEX_URL=${PLEX_URL:-http://host-gateway:32400}
+      - PLEX_TOKEN=${PLEX_TOKEN}
+    extra_hosts:
+      - "host-gateway:host-gateway"
     volumes:
       - /var/run/cups:/var/run/cups
       - ./credentials:/app/credentials:ro

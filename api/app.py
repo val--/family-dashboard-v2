@@ -12,6 +12,10 @@ CORS(app)
 PRINTER_NAME = "Deskjet_3630"
 USB_ID = "03f0:e311"
 
+# -- Plex config --
+PLEX_URL = os.environ.get("PLEX_URL", "http://localhost:32400")
+PLEX_TOKEN = os.environ.get("PLEX_TOKEN", "")
+
 # -- Calendar config --
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "")
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/app/credentials/service-account.json")
@@ -131,6 +135,43 @@ def calendar_events():
 
     except FileNotFoundError:
         return jsonify({"error": "Service account credentials not found"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ========================
+#  Plex
+# ========================
+
+@app.route("/api/plex/recent")
+def plex_recent():
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        import urllib.request
+        import xml.etree.ElementTree as ET
+
+        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}"
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        movies = []
+        for item in tree.getroot():
+            if item.get("type") != "movie":
+                continue
+            movies.append({
+                "title": item.get("title"),
+                "year": item.get("year"),
+                "addedAt": item.get("addedAt"),
+                "thumb": item.get("thumb"),
+            })
+            if len(movies) >= 10:
+                break
+
+        return jsonify({"movies": movies})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -2,6 +2,7 @@ import Clock from './components/Clock'
 import Weather from './components/Weather'
 import Printer from './components/Printer'
 import Calendar from './components/Calendar'
+import Plex from './components/Plex'
 
 function App() {
   return (
@@ -22,7 +23,7 @@ function App() {
           <Calendar />
         </div>
         <div className="w-1/2">
-          {/* Future CTAs: "Qu'est-ce qu'on mange?", "Derniers films Plex", etc. */}
+          <Plex />
         </div>
       </div>
 
