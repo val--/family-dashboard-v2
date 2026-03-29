@@ -2,7 +2,7 @@ import { memo, useState, useEffect } from 'react'
 import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
 
-const MAX_PREVIEW_MOVIES = 6
+const MAX_PREVIEW_MOVIES = 4
 
 function timeAgo(timestamp) {
   const diff = Date.now() - timestamp * 1000
@@ -16,16 +16,16 @@ function timeAgo(timestamp) {
 
 function MovieCard({ movie }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 w-28">
-      <div className="relative">
+    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
+      <div className="relative w-full">
         {movie.thumb ? (
           <img
             src={movie.thumb}
             alt={movie.title}
-            className="w-28 h-44 object-cover rounded"
+            className="w-full aspect-[2/3] object-cover rounded"
           />
         ) : (
-          <div className="w-28 h-44 bg-white/10 rounded" />
+          <div className="w-full aspect-[2/3] bg-white/10 rounded" />
         )}
         {movie.watched && (
           <div className="absolute top-1 right-1 w-5 h-5 bg-green-500/80 rounded-full flex items-center justify-center">
@@ -44,18 +44,18 @@ function MovieCard({ movie }) {
 
 function LastWatched({ movie }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 w-28">
-      <div className="relative">
+    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
+      <div className="relative w-full">
         {movie.thumb ? (
           <img
             src={movie.thumb}
             alt={movie.title}
-            className="w-28 h-44 object-cover rounded"
+            className="w-full aspect-[2/3] object-cover rounded"
           />
         ) : (
-          <div className="w-28 h-44 bg-white/10 rounded" />
+          <div className="w-full aspect-[2/3] bg-white/10 rounded" />
         )}
-        <div className="absolute top-1.5 left-1.5 px-2 py-1 bg-blue-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+        <div className="absolute top-2 left-2 px-2.5 py-1 bg-blue-500/80 rounded text-sm font-medium text-white whitespace-nowrap">
           Vu {movie.lastViewedAt && timeAgo(movie.lastViewedAt).toLowerCase()}
         </div>
       </div>
@@ -137,9 +137,9 @@ function Plex() {
     : movies
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 h-full">
       <RadarrTicker data={radarrData} />
-      <div className="flex items-start gap-4">
+      <div className="flex-1 flex items-start justify-center gap-4">
         {lastWatched && (
           <LastWatched movie={lastWatched} />
         )}
