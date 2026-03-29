@@ -1,6 +1,6 @@
 import { useState, useRef, Children } from 'react'
 
-export default function WidgetCarousel({ children }) {
+export default function WidgetCarousel({ children, titles = [] }) {
   const [active, setActive] = useState(0)
   const touchStart = useRef(null)
   const items = Children.toArray(children)
@@ -28,6 +28,11 @@ export default function WidgetCarousel({ children }) {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      {titles[active] && (
+        <div className="text-sm uppercase tracking-wider text-white/40 mb-3">
+          {titles[active]}
+        </div>
+      )}
       <div className="flex-1 overflow-hidden">
         {items[active]}
       </div>

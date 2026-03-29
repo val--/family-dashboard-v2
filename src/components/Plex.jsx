@@ -157,13 +157,9 @@ export default function Plex() {
   return (
     <>
       <div
-        className="flex flex-col gap-2 cursor-pointer"
+        className="flex items-start gap-4 cursor-pointer"
         onClick={() => setShowModal(true)}
       >
-        <div className="text-sm uppercase tracking-wider text-white/40">
-          Plex
-        </div>
-        <div className="flex items-start gap-4">
           {lastWatched && (
             <LastWatched movie={lastWatched} />
           )}
@@ -172,7 +168,6 @@ export default function Plex() {
               <MovieCard key={i} movie={movie} />
             ))
           }
-        </div>
       </div>
       {showModal && (
         <PlexModal onClose={() => setShowModal(false)} />
