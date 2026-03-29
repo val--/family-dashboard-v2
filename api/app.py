@@ -227,6 +227,7 @@ def radarr_status():
                 "year": movie.get("year"),
                 "status": record.get("status"),
                 "progress": round(100 - (record.get("sizeleft", 0) / max(record.get("size", 1), 1) * 100)),
+                "eta": record.get("estimatedCompletionTime"),
             })
 
         # Fetch missing/monitored movies

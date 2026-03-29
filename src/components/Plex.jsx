@@ -72,9 +72,15 @@ function RadarrTicker({ data }) {
   const { downloading, missing } = data
 
   if (downloading?.length > 0) {
-    const items = downloading.map(
-      (m) => `${m.title} (${m.year}) — ${m.progress}%`
-    )
+    const items = downloading.map((m) => {
+      let text = `${m.title} (${m.year}) — ${m.progress}%`
+      if (m.eta) {
+        const mins = Math.max(0, Math.round((new Date(m.eta) - Date.now()) / 60000))
+        if (mins < 60) text += ` (${mins}min)`
+        else text += ` (~${Math.round(mins / 60)}h)`
+      }
+      return text
+    })
     return (
       <div className="overflow-hidden whitespace-nowrap">
         <span className="inline-block animate-marquee text-base">
