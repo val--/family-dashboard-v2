@@ -48,11 +48,21 @@ docker compose up -d --build
 
 The dashboard will be available at `http://localhost:3000`.
 
-### Local development
+### Development with hot reload
+
+Start the API service in Docker, then run Vite's dev server directly:
 
 ```sh
+docker compose up -d api
 npm install
-npm run dev
+npm run dev -- --host
 ```
 
-Note: printer and calendar features require the `api` service running.
+The dashboard will be available at `http://<your-ip>:5173` with hot reload.
+Printer and calendar features require the `api` service running.
+
+Once done, deploy to production:
+
+```sh
+docker compose up -d --build dashboard
+```
