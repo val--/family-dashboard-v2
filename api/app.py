@@ -214,7 +214,7 @@ def radarr_status():
         headers = {"X-Api-Key": RADARR_API_KEY}
 
         # Fetch queue (downloading)
-        queue_url = f"{RADARR_URL}/api/v3/queue?pageSize=10"
+        queue_url = f"{RADARR_URL}/api/v3/queue?pageSize=10&includeMovie=true"
         req = urllib.request.Request(queue_url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
             queue_data = jsonlib.loads(resp.read())
