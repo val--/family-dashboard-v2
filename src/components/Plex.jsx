@@ -74,6 +74,10 @@ export default function Plex() {
   if (error || loading) return null
   if (!movies?.length && !lastWatched) return null
 
+  const filteredMovies = lastWatched
+    ? movies?.filter((m) => m.title !== lastWatched.title)
+    : movies
+
   return (
     <div className="flex flex-col gap-2">
       <div className="text-sm uppercase tracking-wider text-white/40">
@@ -83,8 +87,8 @@ export default function Plex() {
         {lastWatched && (
           <LastWatched movie={lastWatched} />
         )}
-        {movies?.length > 0 &&
-          movies.map((movie, i) => (
+        {filteredMovies?.length > 0 &&
+          filteredMovies.map((movie, i) => (
             <MovieCard key={i} movie={movie} />
           ))
         }
