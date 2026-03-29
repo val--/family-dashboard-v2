@@ -19,7 +19,7 @@ function App() {
 
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
-        <WidgetCarousel titles={['Agenda', 'Plex']}>
+        <WidgetCarousel titles={['Agenda', 'Films']}>
           <Calendar />
           <Plex />
         </WidgetCarousel>

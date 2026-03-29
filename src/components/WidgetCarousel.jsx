@@ -29,22 +29,18 @@ export default function WidgetCarousel({ children, titles = [] }) {
       onTouchEnd={onTouchEnd}
     >
       {count > 1 && (
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <button
-            onClick={() => setActive((active - 1 + count) % count)}
-            className="text-white/40 hover:text-white/70 text-4xl w-12 h-12 flex items-center justify-center"
-          >
-            &#8249;
-          </button>
-          <span className="text-lg uppercase tracking-wider text-white/40 w-24 text-center">
-            {titles[active] || ''}
-          </span>
-          <button
-            onClick={() => setActive((active + 1) % count)}
-            className="text-white/40 hover:text-white/70 text-4xl w-12 h-12 flex items-center justify-center"
-          >
-            &#8250;
-          </button>
+        <div className="flex items-center justify-center gap-6 mb-4">
+          {titles.map((title, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className={`text-lg uppercase tracking-wider transition-colors ${
+                i === active ? 'text-white' : 'text-white/30'
+              }`}
+            >
+              {title}
+            </button>
+          ))}
         </div>
       )}
       <div className="flex-1 overflow-hidden relative">
@@ -54,19 +50,6 @@ export default function WidgetCarousel({ children, titles = [] }) {
           </div>
         ))}
       </div>
-      {count > 1 && (
-        <div className="flex justify-center gap-1.5 pt-3">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                i === active ? 'bg-white/60' : 'bg-white/20'
-              }`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
