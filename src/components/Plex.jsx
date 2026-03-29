@@ -3,6 +3,7 @@ import { usePlex } from '../hooks/usePlex'
 import { mockPlex } from '../mocks'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
+const MAX_PREVIEW_MOVIES = 8
 const MAX_MODAL_MOVIES = 20
 
 function thumbUrl(path) {
@@ -164,7 +165,7 @@ export default function Plex() {
             <LastWatched movie={lastWatched} />
           )}
           {filteredMovies?.length > 0 &&
-            filteredMovies.map((movie, i) => (
+            filteredMovies.slice(0, MAX_PREVIEW_MOVIES).map((movie, i) => (
               <MovieCard key={i} movie={movie} />
             ))
           }
