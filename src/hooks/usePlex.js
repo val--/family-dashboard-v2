@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { mockPlex } from '../mocks'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
-const REFRESH_INTERVAL = 30 * 60 * 1000 // 30 minutes
+const REFRESH_INTERVAL = 15 * 60 * 1000 // 15 minutes
 const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function usePlex() {
