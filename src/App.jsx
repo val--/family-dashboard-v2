@@ -1,8 +1,9 @@
 import Clock from './components/Clock'
 import Weather from './components/Weather'
-import Printer from './components/Printer'
 import Calendar from './components/Calendar'
 import Plex from './components/Plex'
+import Hue from './components/Hue'
+import WidgetCarousel from './components/WidgetCarousel'
 
 function App() {
   return (
@@ -17,19 +18,13 @@ function App() {
         </div>
       </div>
 
-      {/* Middle: Calendar left half, CTAs right half */}
-      <div className="flex-1 flex items-start pt-8 gap-8">
-        <div className="w-1/2">
+      {/* Swipeable widgets */}
+      <div className="flex-1 overflow-hidden pt-4">
+        <WidgetCarousel>
           <Calendar />
-        </div>
-        <div className="w-1/2 overflow-hidden">
           <Plex />
-        </div>
-      </div>
-
-      {/* Bottom: Printer status */}
-      <div className="flex justify-center pb-2">
-        <Printer />
+          <Hue />
+        </WidgetCarousel>
       </div>
     </div>
   )
