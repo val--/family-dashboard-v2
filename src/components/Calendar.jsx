@@ -33,22 +33,22 @@ function groupByDate(events) {
 function EventItem({ event }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-sm text-white/30 w-14 text-right shrink-0 tabular-nums">
+      <span className="text-base text-white/30 w-16 text-right shrink-0 tabular-nums">
         {event.allDay ? 'Journée' : formatTime(event.start)}
       </span>
-      <span className="w-px h-3 bg-white/10 shrink-0" />
-      <span className="text-sm truncate text-white/80">{event.title}</span>
+      <span className="w-px h-4 bg-white/10 shrink-0" />
+      <span className="text-base truncate text-white/90">{event.title}</span>
     </div>
   )
 }
 
 function DateColumn({ items }) {
   return (
-    <div className="flex flex-col gap-2 min-w-0 bg-white/[0.03] rounded-lg px-3 py-2.5">
-      <div className="text-sm font-medium text-amber-400/70 capitalize">
+    <div className="flex flex-col gap-2.5 min-w-0 bg-white/[0.04] rounded-lg px-4 py-3">
+      <div className="text-base font-medium text-amber-400/80 capitalize">
         {formatDate(items[0].start)}
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
         {items.map((event, i) => (
           <EventItem key={i} event={event} />
         ))}
