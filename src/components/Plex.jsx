@@ -102,7 +102,10 @@ function RadarrTicker({ data }) {
   const current = entries[index % entries.length]
 
   return (
-    <div className="flex items-center justify-center gap-2 text-base h-6">
+    <div
+      className="flex items-center justify-center gap-2 text-base h-6 cursor-pointer"
+      onClick={() => setIndex((i) => (i + 1) % entries.length)}
+    >
       {current.type === 'downloading' ? (
         <>
           <span className="relative flex h-3 w-3 shrink-0">
