@@ -32,22 +32,23 @@ function groupByDate(events) {
 
 function EventItem({ event }) {
   return (
-    <div className="flex items-baseline gap-3">
-      <span className="text-sm text-white/40 w-14 text-right shrink-0">
+    <div className="flex items-baseline gap-2">
+      <span className="text-sm text-white/30 w-14 text-right shrink-0 tabular-nums">
         {event.allDay ? 'Journée' : formatTime(event.start)}
       </span>
-      <span className="text-base truncate">{event.title}</span>
+      <span className="w-px h-3 bg-white/10 shrink-0" />
+      <span className="text-sm truncate text-white/80">{event.title}</span>
     </div>
   )
 }
 
 function DateColumn({ items }) {
   return (
-    <div className="flex flex-col gap-1.5 min-w-0">
-      <div className="text-sm font-medium text-white/60 capitalize">
+    <div className="flex flex-col gap-2 min-w-0 bg-white/[0.03] rounded-lg px-3 py-2.5">
+      <div className="text-sm font-medium text-amber-400/70 capitalize">
         {formatDate(items[0].start)}
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {items.map((event, i) => (
           <EventItem key={i} event={event} />
         ))}
@@ -99,7 +100,7 @@ export default function Calendar() {
   return (
     <>
       <div
-        className="grid grid-cols-3 gap-6 cursor-pointer"
+        className="grid grid-cols-3 gap-3 cursor-pointer"
         onClick={() => setShowModal(true)}
       >
         {previewGroups.map(([date, items]) => (
