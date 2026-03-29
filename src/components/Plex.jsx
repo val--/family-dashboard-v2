@@ -9,15 +9,24 @@ function thumbUrl(path) {
 function MovieCard({ movie }) {
   return (
     <div className="flex flex-col items-center gap-1 w-20">
-      {movie.thumb ? (
-        <img
-          src={thumbUrl(movie.thumb)}
-          alt={movie.title}
-          className="w-20 h-28 object-cover rounded"
-        />
-      ) : (
-        <div className="w-20 h-28 bg-white/10 rounded" />
-      )}
+      <div className="relative">
+        {movie.thumb ? (
+          <img
+            src={thumbUrl(movie.thumb)}
+            alt={movie.title}
+            className="w-20 h-28 object-cover rounded"
+          />
+        ) : (
+          <div className="w-20 h-28 bg-white/10 rounded" />
+        )}
+        {movie.watched && (
+          <div className="absolute top-1 right-1 w-4 h-4 bg-green-500/80 rounded-full flex items-center justify-center">
+            <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 6l3 3 5-5" />
+            </svg>
+          </div>
+        )}
+      </div>
       <span className="text-xs text-center text-white/70 line-clamp-2 leading-tight">
         {movie.title}
       </span>

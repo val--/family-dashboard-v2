@@ -166,6 +166,7 @@ def plex_recent():
                 "year": item.get("year"),
                 "addedAt": item.get("addedAt"),
                 "thumb": item.get("thumb"),
+                "watched": int(item.get("viewCount", 0)) > 0,
             })
             if len(movies) >= 4:
                 break
