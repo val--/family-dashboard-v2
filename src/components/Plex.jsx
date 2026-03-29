@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react'
 import { usePlex } from '../hooks/usePlex'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
@@ -68,8 +69,53 @@ function LastWatched({ movie }) {
   )
 }
 
+function PlexModal({ onClose }) {
+  const [allMovies, setAllMovies] = useState(null)
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/plex/all`)
+      if (!res.ok) return
+      const json = await res.json()
+      if (!json.error) setAllMovies(json.movies)
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    fetchAll()
+  }, [fetchAll])
+
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-between p-4">
+        <div className="text-sm uppercase tracking-wider text-white/40">
+          Tous les films
+        </div>
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-white text-2xl leading-none"
+        >
+          &times;
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        {!allMovies ? (
+          <div className="text-white/30 text-sm">Chargement…</div>
+        ) : (
+          <div className="flex flex-wrap gap-4">
+            {allMovies.map((movie, i) => (
+              <MovieCard key={i} movie={movie} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Plex() {
   const { movies, lastWatched, loading, error } = usePlex()
+  const [showModal, setShowModal] = useState(false)
 
   if (error || loading) return null
   if (!movies?.length && !lastWatched) return null
@@ -79,20 +125,28 @@ export default function Plex() {
     : movies
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="text-sm uppercase tracking-wider text-white/40">
-        Plex
+    <>
+      <div
+        className="flex flex-col gap-2 cursor-pointer"
+        onClick={() => setShowModal(true)}
+      >
+        <div className="text-sm uppercase tracking-wider text-white/40">
+          Plex
+        </div>
+        <div className="flex items-start gap-4">
+          {lastWatched && (
+            <LastWatched movie={lastWatched} />
+          )}
+          {filteredMovies?.length > 0 &&
+            filteredMovies.map((movie, i) => (
+              <MovieCard key={i} movie={movie} />
+            ))
+          }
+        </div>
       </div>
-      <div className="flex items-start gap-4">
-        {lastWatched && (
-          <LastWatched movie={lastWatched} />
-        )}
-        {filteredMovies?.length > 0 &&
-          filteredMovies.map((movie, i) => (
-            <MovieCard key={i} movie={movie} />
-          ))
-        }
-      </div>
-    </div>
+      {showModal && (
+        <PlexModal onClose={() => setShowModal(false)} />
+      )}
+    </>
   )
 }
