@@ -105,7 +105,13 @@ function RadarrTicker({ data }) {
     return () => clearInterval(timer)
   }, [entries.length])
 
-  if (entries.length === 0) return null
+  if (entries.length === 0) {
+    return (
+      <div className="flex items-center justify-center text-base text-white/30">
+        Pas de nouveaux films en attente
+      </div>
+    )
+  }
 
   const current = entries[index % entries.length]
 
