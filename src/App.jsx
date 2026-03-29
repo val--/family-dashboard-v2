@@ -6,7 +6,7 @@ import Plex from './components/Plex'
 
 function App() {
   return (
-    <div className="flex flex-col h-screen bg-black text-white p-6">
+    <div className="flex flex-col h-screen overflow-hidden bg-black text-white p-6">
       {/* Top: Clock left half, Weather right half */}
       <div className="flex items-center">
         <div className="flex-1 flex justify-center">
@@ -22,7 +22,7 @@ function App() {
         <div className="w-1/2">
           <Calendar />
         </div>
-        <div className="w-1/2">
+        <div className="w-1/2 overflow-hidden">
           <Plex />
         </div>
       </div>
