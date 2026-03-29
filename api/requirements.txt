@@ -1,5 +1,4 @@
 flask==3.1.*
 flask-cors==5.*
-pycups==2.0.*
 google-auth==2.*
 google-api-python-client==2.*

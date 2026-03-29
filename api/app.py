@@ -2,7 +2,7 @@ import os
 import subprocess
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -52,35 +52,15 @@ def get_cups_status():
         return "unknown"
 
 
-def get_ink_levels():
-    try:
-        import cups
-        conn = cups.Connection()
-        attrs = conn.getPrinterAttributes(PRINTER_NAME)
-        levels = attrs.get("marker-levels")
-        names = attrs.get("marker-names")
-        colors = attrs.get("marker-colors")
-        if levels and names:
-            return [
-                {"name": n, "level": l, "color": c}
-                for n, l, c in zip(names, levels, colors or [""] * len(names))
-            ]
-    except Exception:
-        pass
-    return None
-
-
 @app.route("/api/printer")
 def printer_status():
     connected = is_usb_connected()
     status = get_cups_status() if connected else "offline"
-    ink = get_ink_levels() if connected else None
 
     return jsonify({
         "name": PRINTER_NAME,
         "connected": connected,
         "status": status,
-        "ink": ink,
     })
 
 
@@ -179,40 +159,6 @@ def plex_recent():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/plex/all")
-def plex_all():
-    if not PLEX_TOKEN:
-        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
-
-    try:
-        import urllib.request
-        import xml.etree.ElementTree as ET
-
-        url = (
-            f"{PLEX_URL}/library/sections/1/all"
-            f"?type=1&sort=addedAt:desc&X-Plex-Token={PLEX_TOKEN}"
-        )
-        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            tree = ET.parse(resp)
-
-        movies = []
-        for item in tree.getroot():
-            thumb = item.get("thumb")
-            movies.append({
-                "title": item.get("title"),
-                "year": item.get("year"),
-                "addedAt": item.get("addedAt"),
-                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
-                "watched": int(item.get("viewCount", 0)) > 0,
-            })
-
-        return jsonify({"movies": movies})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/api/plex/last-watched")
 def plex_last_watched():
     if not PLEX_TOKEN:
@@ -246,25 +192,6 @@ def plex_last_watched():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/plex/thumb")
-def plex_thumb():
-    path = request.args.get("path", "")
-    if not PLEX_TOKEN or not path:
-        return "", 404
-
-    try:
-        import urllib.request
-
-        url = f"{PLEX_URL}{path}?X-Plex-Token={PLEX_TOKEN}"
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = resp.read()
-            content_type = resp.headers.get("Content-Type", "image/jpeg")
-            return data, 200, {"Content-Type": content_type, "Cache-Control": "public, max-age=86400"}
-    except Exception:
-        return "", 404
 
 
 if __name__ == "__main__":

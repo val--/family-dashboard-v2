@@ -14,7 +14,7 @@ A lightweight family dashboard designed for 7-inch displays. Built with React, V
 
 ```
 dashboard   → Static React app served by nginx (port 3000)
-api         → Python Flask backend for printer & calendar (port 5100)
+api         → Python Flask backend for printer, calendar & Plex (port 5100)
 ```
 
 ## Setup
@@ -35,6 +35,7 @@ cp .env.example .env
 | `VITE_DEMO` | — | Set to `true` to use mock data (no API needed) |
 | `CALENDAR_ID` | — | Google Calendar ID |
 | `PLEX_TOKEN` | — | Plex authentication token |
+| `PLEX_PUBLIC_URL` | `http://localhost:32400` | Plex URL accessible from browsers (LAN IP) |
 
 ### 2. Google Calendar (optional)
 

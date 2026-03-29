@@ -20,5 +20,5 @@ export function useClock() {
     year: 'numeric',
   })
 
-  return { now, time, date }
+  return { time, date }
 }
