@@ -2,7 +2,7 @@ import os
 import subprocess
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -167,13 +167,32 @@ def plex_recent():
                 "addedAt": item.get("addedAt"),
                 "thumb": item.get("thumb"),
             })
-            if len(movies) >= 10:
+            if len(movies) >= 4:
                 break
 
         return jsonify({"movies": movies})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/plex/thumb")
+def plex_thumb():
+    path = request.args.get("path", "")
+    if not PLEX_TOKEN or not path:
+        return "", 404
+
+    try:
+        import urllib.request
+
+        url = f"{PLEX_URL}{path}?X-Plex-Token={PLEX_TOKEN}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+            return data, 200, {"Content-Type": content_type, "Cache-Control": "public, max-age=86400"}
+    except Exception:
+        return "", 404
 
 
 if __name__ == "__main__":
