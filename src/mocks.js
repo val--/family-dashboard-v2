@@ -27,6 +27,14 @@ export const mockPlex = {
     { title: 'Amélie Poulain', year: '2001', addedAt: String(Math.floor(Date.now() / 1000) - 172800), thumb: null, watched: false },
     { title: 'Spirited Away', year: '2001', addedAt: String(Math.floor(Date.now() / 1000) - 259200), thumb: null, watched: true },
     { title: 'The Grand Budapest Hotel', year: '2014', addedAt: String(Math.floor(Date.now() / 1000) - 604800), thumb: null, watched: false },
+    { title: 'Parasite', year: '2019', addedAt: String(Math.floor(Date.now() / 1000) - 700000), thumb: null, watched: true },
+    { title: 'Drive', year: '2011', addedAt: String(Math.floor(Date.now() / 1000) - 800000), thumb: null, watched: false },
+    { title: 'Blade Runner 2049', year: '2017', addedAt: String(Math.floor(Date.now() / 1000) - 900000), thumb: null, watched: true },
+    { title: 'Moonlight', year: '2016', addedAt: String(Math.floor(Date.now() / 1000) - 1000000), thumb: null, watched: false },
+    { title: 'La Haine', year: '1995', addedAt: String(Math.floor(Date.now() / 1000) - 1100000), thumb: null, watched: true },
+    { title: 'Portrait de la jeune fille en feu', year: '2019', addedAt: String(Math.floor(Date.now() / 1000) - 1200000), thumb: null, watched: false },
+    { title: 'Whiplash', year: '2014', addedAt: String(Math.floor(Date.now() / 1000) - 1300000), thumb: null, watched: true },
+    { title: 'Her', year: '2013', addedAt: String(Math.floor(Date.now() / 1000) - 1400000), thumb: null, watched: false },
   ],
 }
 
