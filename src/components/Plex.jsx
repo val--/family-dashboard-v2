@@ -6,10 +6,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const MAX_PREVIEW_MOVIES = 6
 const MAX_MODAL_MOVIES = 20
 
-function thumbUrl(path) {
-  return `${API_URL}/api/plex/thumb?path=${encodeURIComponent(path)}`
-}
-
 function timeAgo(timestamp) {
   const diff = Date.now() - timestamp * 1000
   const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -26,7 +22,7 @@ function MovieCard({ movie }) {
       <div className="relative">
         {movie.thumb ? (
           <img
-            src={thumbUrl(movie.thumb)}
+            src={movie.thumb}
             alt={movie.title}
             className="w-28 h-44 object-cover rounded"
           />
@@ -54,7 +50,7 @@ function LastWatched({ movie }) {
       <div className="relative">
         {movie.thumb ? (
           <img
-            src={thumbUrl(movie.thumb)}
+            src={movie.thumb}
             alt={movie.title}
             className="w-28 h-44 object-cover rounded"
           />
@@ -117,7 +113,7 @@ function PlexModal({ onClose }) {
                 <div className="relative">
                   {movie.thumb ? (
                     <img
-                      src={thumbUrl(movie.thumb)}
+                      src={movie.thumb}
                       alt={movie.title}
                       className="w-full aspect-[2/3] object-cover rounded"
                     />

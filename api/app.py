@@ -14,6 +14,7 @@ USB_ID = "03f0:e311"
 
 # -- Plex config --
 PLEX_URL = os.environ.get("PLEX_URL", "http://localhost:32400")
+PLEX_PUBLIC_URL = os.environ.get("PLEX_PUBLIC_URL", PLEX_URL)
 PLEX_TOKEN = os.environ.get("PLEX_TOKEN", "")
 
 # -- Calendar config --
@@ -161,11 +162,12 @@ def plex_recent():
         for item in tree.getroot():
             if item.get("type") != "movie":
                 continue
+            thumb = item.get("thumb")
             movies.append({
                 "title": item.get("title"),
                 "year": item.get("year"),
                 "addedAt": item.get("addedAt"),
-                "thumb": item.get("thumb"),
+                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
                 "watched": int(item.get("viewCount", 0)) > 0,
             })
             if len(movies) >= 8:
@@ -196,11 +198,12 @@ def plex_all():
 
         movies = []
         for item in tree.getroot():
+            thumb = item.get("thumb")
             movies.append({
                 "title": item.get("title"),
                 "year": item.get("year"),
                 "addedAt": item.get("addedAt"),
-                "thumb": item.get("thumb"),
+                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
                 "watched": int(item.get("viewCount", 0)) > 0,
             })
 
@@ -231,11 +234,12 @@ def plex_last_watched():
             last_viewed = item.get("lastViewedAt")
             if not last_viewed:
                 return jsonify(None)
+            thumb = item.get("thumb")
             return jsonify({
                 "title": item.get("title"),
                 "year": item.get("year"),
                 "lastViewedAt": last_viewed,
-                "thumb": item.get("thumb"),
+                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
             })
 
         return jsonify(None)
