@@ -3,7 +3,7 @@ import { usePlex } from '../hooks/usePlex'
 import { mockPlex } from '../mocks'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
-const MAX_PREVIEW_MOVIES = 8
+const MAX_PREVIEW_MOVIES = 6
 const MAX_MODAL_MOVIES = 20
 
 function thumbUrl(path) {
@@ -22,16 +22,16 @@ function timeAgo(timestamp) {
 
 function MovieCard({ movie }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 w-24">
+    <div className="flex flex-col items-center gap-1.5 w-28">
       <div className="relative">
         {movie.thumb ? (
           <img
             src={thumbUrl(movie.thumb)}
             alt={movie.title}
-            className="w-24 h-36 object-cover rounded"
+            className="w-28 h-44 object-cover rounded"
           />
         ) : (
-          <div className="w-24 h-36 bg-white/10 rounded" />
+          <div className="w-28 h-44 bg-white/10 rounded" />
         )}
         {movie.watched && (
           <div className="absolute top-1 right-1 w-5 h-5 bg-green-500/80 rounded-full flex items-center justify-center">
@@ -50,16 +50,16 @@ function MovieCard({ movie }) {
 
 function LastWatched({ movie }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 w-24">
+    <div className="flex flex-col items-center gap-1.5 w-28">
       <div className="relative">
         {movie.thumb ? (
           <img
             src={thumbUrl(movie.thumb)}
             alt={movie.title}
-            className="w-24 h-36 object-cover rounded"
+            className="w-28 h-44 object-cover rounded"
           />
         ) : (
-          <div className="w-24 h-36 bg-white/10 rounded" />
+          <div className="w-28 h-44 bg-white/10 rounded" />
         )}
         <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/70 rounded text-[10px] text-white/70 whitespace-nowrap">
           Vu {movie.lastViewedAt && timeAgo(movie.lastViewedAt).toLowerCase()}
