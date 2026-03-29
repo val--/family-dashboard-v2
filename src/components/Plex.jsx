@@ -146,7 +146,6 @@ function Plex() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <RadarrTicker data={radarrData} />
       <div className="flex-1 flex items-start justify-center gap-4">
         {lastWatched && (
           <LastWatched movie={lastWatched} />
@@ -157,6 +156,7 @@ function Plex() {
           ))
         }
       </div>
+      <RadarrTicker data={radarrData} />
     </div>
   )
 }
