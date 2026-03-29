@@ -16,10 +16,12 @@ function App() {
         </div>
       </div>
 
-      {/* Middle: Calendar left, CTAs right */}
-      <div className="flex-1 flex items-start pt-8 gap-12">
-        <Calendar />
-        <div className="flex-1">
+      {/* Middle: Calendar left half, CTAs right half */}
+      <div className="flex-1 flex items-start pt-8">
+        <div className="w-1/2">
+          <Calendar />
+        </div>
+        <div className="w-1/2">
           {/* Future CTAs: "Qu'est-ce qu'on mange?", "Derniers films Plex", etc. */}
         </div>
       </div>

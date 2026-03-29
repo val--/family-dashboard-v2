@@ -97,7 +97,7 @@ export default function Calendar() {
   return (
     <>
       <div
-        className="w-64 flex flex-col gap-2 cursor-pointer"
+        className="flex flex-col gap-2 cursor-pointer"
         onClick={() => setShowModal(true)}
       >
         {previewGroups.map(([date, items]) => (
