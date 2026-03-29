@@ -27,16 +27,14 @@ function MovieCard({ movie }) {
         ) : (
           <div className="w-full aspect-[2/3] bg-white/10 rounded" />
         )}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-blue-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          Ajouté {movie.addedAt ? timeAgo(movie.addedAt).toLowerCase() : ''}
+        </div>
         {movie.watched && (
-          <div className="absolute top-1 right-1 w-5 h-5 bg-green-500/80 rounded-full flex items-center justify-center">
+          <div className="absolute top-2 right-2 w-5 h-5 bg-green-500/80 rounded-full flex items-center justify-center">
             <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 6l3 3 5-5" />
             </svg>
-          </div>
-        )}
-        {movie.addedAt && (
-          <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-blue-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
-            Ajouté {timeAgo(movie.addedAt).toLowerCase()}
           </div>
         )}
       </div>
@@ -60,8 +58,13 @@ function LastWatched({ movie }) {
         ) : (
           <div className="w-full aspect-[2/3] bg-white/10 rounded" />
         )}
-        <div className="absolute top-2 left-2 px-2.5 py-1 bg-green-500/80 rounded text-sm font-medium text-white whitespace-nowrap">
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-green-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           Vu {movie.lastViewedAt && timeAgo(movie.lastViewedAt).toLowerCase()}
+        </div>
+        <div className="absolute top-2 right-2 w-5 h-5 bg-green-500/80 rounded-full flex items-center justify-center">
+          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 6l3 3 5-5" />
+          </svg>
         </div>
       </div>
       <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
