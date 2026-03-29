@@ -3,6 +3,7 @@ import { usePlex } from '../hooks/usePlex'
 import { mockPlex } from '../mocks'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
+const MAX_MODAL_MOVIES = 20
 
 function thumbUrl(path) {
   return `${API_URL}/api/plex/thumb?path=${encodeURIComponent(path)}`
@@ -96,7 +97,7 @@ function PlexModal({ onClose }) {
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
       <div className="flex items-center justify-between p-4">
         <div className="text-sm uppercase tracking-wider text-white/40">
-          Tous les films
+          {MAX_MODAL_MOVIES} derniers films ajoutés
         </div>
         <button
           onClick={onClose}
@@ -110,7 +111,7 @@ function PlexModal({ onClose }) {
           <div className="text-white/30 text-sm">Chargement…</div>
         ) : (
           <div className="grid grid-cols-5 gap-4">
-            {allMovies.slice(0, 20).map((movie, i) => (
+            {allMovies.slice(0, MAX_MODAL_MOVIES).map((movie, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
                 <div className="relative">
                   {movie.thumb ? (
