@@ -109,9 +109,31 @@ function PlexModal({ onClose }) {
         {!allMovies ? (
           <div className="text-white/30 text-sm">Chargement…</div>
         ) : (
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-5">
             {allMovies.map((movie, i) => (
-              <MovieCard key={i} movie={movie} />
+              <div key={i} className="flex flex-col items-center gap-2 w-32">
+                <div className="relative">
+                  {movie.thumb ? (
+                    <img
+                      src={thumbUrl(movie.thumb)}
+                      alt={movie.title}
+                      className="w-32 h-48 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-32 h-48 bg-white/10 rounded" />
+                  )}
+                  {movie.watched && (
+                    <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-green-500/80 rounded-full flex items-center justify-center">
+                      <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2 6l3 3 5-5" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
+                  {movie.title}
+                </span>
+              </div>
             ))}
           </div>
         )}
