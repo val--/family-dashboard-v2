@@ -187,18 +187,21 @@ def plex_last_watched():
         import xml.etree.ElementTree as ET
 
         url = (
-            f"{PLEX_URL}/library/recentlyViewed"
-            f"?type=1&X-Plex-Container-Size=1&X-Plex-Token={PLEX_TOKEN}"
+            f"{PLEX_URL}/library/sections/1/all"
+            f"?type=1&sort=lastViewedAt:desc&X-Plex-Container-Size=1&X-Plex-Token={PLEX_TOKEN}"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)
 
         for item in tree.getroot():
+            last_viewed = item.get("lastViewedAt")
+            if not last_viewed:
+                return jsonify(None)
             return jsonify({
                 "title": item.get("title"),
                 "year": item.get("year"),
-                "lastViewedAt": item.get("lastViewedAt"),
+                "lastViewedAt": last_viewed,
                 "thumb": item.get("thumb"),
             })
 
