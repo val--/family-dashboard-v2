@@ -47,8 +47,12 @@ export default function WidgetCarousel({ children, titles = [] }) {
           </button>
         </div>
       )}
-      <div className="flex-1 overflow-hidden">
-        {items[active]}
+      <div className="flex-1 overflow-hidden relative">
+        {items.map((item, i) => (
+          <div key={i} className={`h-full ${i === active ? '' : 'hidden'}`}>
+            {item}
+          </div>
+        ))}
       </div>
       {count > 1 && (
         <div className="flex justify-center gap-1.5 pt-3">
