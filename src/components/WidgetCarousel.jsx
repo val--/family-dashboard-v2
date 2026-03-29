@@ -45,7 +45,12 @@ export default function WidgetCarousel({ children, titles = [] }) {
       )}
       <div className="flex-1 overflow-hidden relative">
         {items.map((item, i) => (
-          <div key={i} className={`h-full ${i === active ? '' : 'hidden'}`}>
+          <div
+            key={i}
+            className={`absolute inset-0 ${
+              i === active ? 'visible' : 'invisible pointer-events-none'
+            }`}
+          >
             {item}
           </div>
         ))}
