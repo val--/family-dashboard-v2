@@ -1,34 +1,10 @@
-import { useState, useRef, Children, memo, useMemo } from 'react'
-
-function WidgetPanel({ children, isActive }) {
-  return (
-    <div
-      className={`absolute inset-0 ${
-        isActive ? 'visible' : 'invisible pointer-events-none'
-      }`}
-    >
-      {children}
-    </div>
-  )
-}
-
-const MemoizedPanel = memo(WidgetPanel)
+import { useState, useRef, Children } from 'react'
 
 export default function WidgetCarousel({ children, titles = [] }) {
   const [active, setActive] = useState(0)
   const touchStart = useRef(null)
   const items = Children.toArray(children)
   const count = items.length
-
-  const panels = useMemo(
-    () =>
-      items.map((item, i) => (
-        <MemoizedPanel key={i} isActive={i === active}>
-          {item}
-        </MemoizedPanel>
-      )),
-    [active],
-  )
 
   function onTouchStart(e) {
     touchStart.current = e.touches[0].clientX
@@ -67,8 +43,17 @@ export default function WidgetCarousel({ children, titles = [] }) {
           ))}
         </div>
       )}
-      <div className="flex-1 overflow-hidden relative">
-        {panels}
+      <div className="flex-1 overflow-hidden">
+        <div
+          className="flex h-full transition-transform duration-300 ease-out will-change-transform"
+          style={{ transform: `translateX(-${active * 100}%)` }}
+        >
+          {items.map((item, i) => (
+            <div key={i} className="w-full shrink-0 h-full">
+              {item}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
