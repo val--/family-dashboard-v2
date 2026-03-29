@@ -34,6 +34,11 @@ function MovieCard({ movie }) {
             </svg>
           </div>
         )}
+        {movie.addedAt && (
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-blue-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+            Ajouté {timeAgo(movie.addedAt).toLowerCase()}
+          </div>
+        )}
       </div>
       <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
         {movie.title}
@@ -55,7 +60,7 @@ function LastWatched({ movie }) {
         ) : (
           <div className="w-full aspect-[2/3] bg-white/10 rounded" />
         )}
-        <div className="absolute top-2 left-2 px-2.5 py-1 bg-blue-500/80 rounded text-sm font-medium text-white whitespace-nowrap">
+        <div className="absolute top-2 left-2 px-2.5 py-1 bg-green-500/80 rounded text-sm font-medium text-white whitespace-nowrap">
           Vu {movie.lastViewedAt && timeAgo(movie.lastViewedAt).toLowerCase()}
         </div>
       </div>
