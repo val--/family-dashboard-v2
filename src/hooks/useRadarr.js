@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { mockRadarr } from '../mocks'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
-const REFRESH_INTERVAL = 60 * 1000 // 1 minute
+const REFRESH_INTERVAL = 10 * 1000 // 10 seconds
 const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function useRadarr() {
