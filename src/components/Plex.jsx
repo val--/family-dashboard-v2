@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { usePlex } from '../hooks/usePlex'
 import { mockPlex } from '../mocks'
 
@@ -140,7 +140,7 @@ function PlexModal({ onClose }) {
   )
 }
 
-export default function Plex() {
+function Plex() {
   const { movies, lastWatched, loading, error } = usePlex()
   const [showModal, setShowModal] = useState(false)
 
@@ -172,3 +172,5 @@ export default function Plex() {
     </>
   )
 }
+
+export default memo(Plex)
