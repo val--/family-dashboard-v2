@@ -32,22 +32,22 @@ function groupByDate(events) {
 
 function EventItem({ event }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-xs text-white/40 w-12 text-right shrink-0">
+    <div className="flex items-baseline gap-3">
+      <span className="text-sm text-white/40 w-14 text-right shrink-0">
         {event.allDay ? 'Journée' : formatTime(event.start)}
       </span>
-      <span className="text-sm truncate">{event.title}</span>
+      <span className="text-base truncate">{event.title}</span>
     </div>
   )
 }
 
-function DateGroup({ items }) {
+function DateColumn({ items }) {
   return (
-    <div>
-      <div className="text-xs text-white/60 mb-0.5 capitalize">
+    <div className="flex flex-col gap-1.5 min-w-0">
+      <div className="text-sm font-medium text-white/60 capitalize">
         {formatDate(items[0].start)}
       </div>
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         {items.map((event, i) => (
           <EventItem key={i} event={event} />
         ))}
@@ -70,14 +70,16 @@ function CalendarModal({ groups, onClose }) {
           &times;
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-4">
         {groups.map(([date, items]) => (
-          <DateGroup key={date} items={items} />
+          <DateColumn key={date} items={items} />
         ))}
       </div>
     </div>
   )
 }
+
+const PREVIEW_COLUMNS = 20
 
 export default function Calendar() {
   const { events, loading, error } = useCalendar()
@@ -92,16 +94,16 @@ export default function Calendar() {
   }
 
   const allGroups = groupByDate(events)
-  const previewGroups = allGroups.slice(0, 4)
+  const previewGroups = allGroups.slice(0, PREVIEW_COLUMNS)
 
   return (
     <>
       <div
-        className="flex flex-col gap-2 cursor-pointer"
+        className="grid grid-cols-3 gap-6 cursor-pointer"
         onClick={() => setShowModal(true)}
       >
         {previewGroups.map(([date, items]) => (
-          <DateGroup key={date} items={items} />
+          <DateColumn key={date} items={items} />
         ))}
       </div>
       {showModal && (

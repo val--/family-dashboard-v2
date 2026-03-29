@@ -8,10 +8,21 @@ export const mockPrinter = {
 export const mockCalendar = {
   events: [
     { title: 'Réunion parents', start: futureDate(1, '18:00'), end: futureDate(1, '19:00'), allDay: false },
+    { title: 'Cours de piano', start: futureDate(1, '14:00'), end: futureDate(1, '15:00'), allDay: false },
     { title: 'Dentiste Emma', start: futureDate(3, '10:30'), end: futureDate(3, '11:00'), allDay: false },
+    { title: 'Piscine', start: futureDate(4, '16:00'), end: futureDate(4, '17:30'), allDay: false },
     { title: 'Vacances scolaires', start: futureDate(7), end: futureDate(14), allDay: true },
+    { title: 'Brunch chez Marie', start: futureDate(8, '11:00'), end: futureDate(8, '14:00'), allDay: false },
     { title: 'Anniversaire Léo', start: futureDate(12, '14:00'), end: futureDate(12, '18:00'), allDay: false },
+    { title: 'Pédiatre', start: futureDate(15, '09:00'), end: futureDate(15, '09:30'), allDay: false },
+    { title: 'Dîner chez les voisins', start: futureDate(17, '19:30'), end: futureDate(17, '23:00'), allDay: false },
     { title: 'Concert', start: futureDate(20, '20:00'), end: futureDate(20, '23:00'), allDay: false },
+    { title: 'Cinéma en famille', start: futureDate(22, '14:00'), end: futureDate(22, '16:30'), allDay: false },
+    { title: 'Fête de l\'école', start: futureDate(25), end: futureDate(25), allDay: true },
+    { title: 'Coiffeur Julie', start: futureDate(27, '10:00'), end: futureDate(27, '11:00'), allDay: false },
+    { title: 'Week-end camping', start: futureDate(30), end: futureDate(32), allDay: true },
+    { title: 'Réunion de quartier', start: futureDate(35, '18:30'), end: futureDate(35, '20:00'), allDay: false },
+    { title: 'Spectacle de danse', start: futureDate(40, '19:00'), end: futureDate(40, '21:00'), allDay: false },
   ],
 }
 
