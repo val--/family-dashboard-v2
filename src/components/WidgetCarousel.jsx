@@ -55,6 +55,18 @@ export default function WidgetCarousel({ children, titles = [] }) {
           ))}
         </div>
       </div>
+      {count > 1 && (
+        <div className="flex justify-center gap-1.5 pt-3">
+          {items.map((_, i) => (
+            <div
+              key={i}
+              className={`w-1.5 h-1.5 rounded-full ${
+                i === active ? 'bg-white/60' : 'bg-white/20'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
