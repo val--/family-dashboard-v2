@@ -84,7 +84,7 @@ function RadarrTicker({ data }) {
     return (
       <div className="overflow-hidden whitespace-nowrap">
         <span className="inline-block animate-marquee text-base">
-          <span className="text-blue-400">⬇ En cours :</span>{' '}
+          <span className="text-blue-400">⬇ En cours de téléchargement :</span>{' '}
           <span className="text-white/70">{items.join('  •  ')}</span>
         </span>
       </div>
