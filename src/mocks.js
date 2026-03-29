@@ -19,7 +19,7 @@ export const mockPlex = {
   lastWatched: {
     title: 'Interstellar',
     year: '2014',
-    lastViewedAt: String(Math.floor(Date.now() / 1000) - 3600),
+    lastViewedAt: String(Math.floor(Date.now() / 1000) - 50400),
     thumb: null,
   },
   movies: [
