@@ -148,14 +148,16 @@ function SearchStep({ onSelect }) {
       </div>
       {showKeyboard && (
         <Suspense fallback={null}>
-          <VirtualKeyboard
-            value={query}
-            onChange={setQuery}
-            onSubmit={() => {
-              handleSearch()
-              setShowKeyboard(false)
-            }}
-          />
+          <div onPointerDown={(e) => e.preventDefault()}>
+            <VirtualKeyboard
+              value={query}
+              onChange={setQuery}
+              onSubmit={() => {
+                handleSearch()
+                setShowKeyboard(false)
+              }}
+            />
+          </div>
         </Suspense>
       )}
     </div>
