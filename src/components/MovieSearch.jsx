@@ -46,6 +46,7 @@ function StreamingProviders({ tmdbId }) {
 
 function SearchStep({ onSelect }) {
   const [query, setQuery] = useState('')
+  const [showKeyboard, setShowKeyboard] = useState(false)
   const { results, hasSearched, loading, error, search } = useMovieSearch()
 
   const handleSearch = useCallback(() => {
@@ -71,6 +72,7 @@ function SearchStep({ onSelect }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            onFocus={() => setShowKeyboard(true)}
             placeholder="Quel film cherchez-vous ?"
             readOnly
             className="flex-1 bg-transparent text-xl text-white placeholder-white/30 outline-none cursor-default"
@@ -144,13 +146,18 @@ function SearchStep({ onSelect }) {
           <div className="text-white/30 text-center py-8">Aucun résultat</div>
         )}
       </div>
-      <Suspense fallback={null}>
-        <VirtualKeyboard
-          value={query}
-          onChange={setQuery}
-          onSubmit={handleSearch}
-        />
-      </Suspense>
+      {showKeyboard && (
+        <Suspense fallback={null}>
+          <VirtualKeyboard
+            value={query}
+            onChange={setQuery}
+            onSubmit={() => {
+              handleSearch()
+              setShowKeyboard(false)
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

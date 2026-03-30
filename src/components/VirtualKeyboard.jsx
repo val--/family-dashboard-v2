@@ -1,9 +1,15 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { KeyboardReact as Keyboard } from 'react-simple-keyboard'
 import 'react-simple-keyboard/build/css/index.css'
 
 export default function VirtualKeyboard({ value, onChange, onSubmit }) {
   const keyboardRef = useRef(null)
+
+  useEffect(() => {
+    if (keyboardRef.current) {
+      keyboardRef.current.setInput(value || '')
+    }
+  }, [value])
 
   function onKeyPress(button) {
     if (button === '{enter}') {
@@ -30,7 +36,6 @@ export default function VirtualKeyboard({ value, onChange, onSubmit }) {
         keyboardRef={(r) => (keyboardRef.current = r)}
         onChange={onChange}
         onKeyPress={onKeyPress}
-        input={value}
         layout={{
           default: [
             'a z e r t y u i o p',
