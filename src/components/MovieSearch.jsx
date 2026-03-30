@@ -20,17 +20,17 @@ function StreamingProviders({ tmdbId }) {
   if (loading) return <div className="text-sm text-white/30">Recherche des plateformes...</div>
 
   if (providers.length === 0) {
-    return <div className="text-sm text-white/40">Non disponible en streaming</div>
+    return <div className="text-xs text-white/40">Non disponible en streaming</div>
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="text-sm text-white/40">Disponible en streaming :</div>
-      <div className="flex gap-3 flex-wrap">
+    <div className="flex flex-col gap-1.5">
+      <div className="text-xs text-white/40">Disponible en streaming :</div>
+      <div className="flex gap-2 flex-wrap">
         {providers.map((p) => (
-          <div key={p.name} className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
-            {p.logo && <img src={p.logo} alt="" className="w-6 h-6 rounded" />}
-            <span className="text-sm text-white/70">{p.name}</span>
+          <div key={p.name} className="flex items-center gap-1.5 px-2 py-1 bg-white/10 rounded-md">
+            {p.logo && <img src={p.logo} alt="" className="w-5 h-5 rounded" />}
+            <span className="text-xs text-white/70">{p.name}</span>
           </div>
         ))}
       </div>
@@ -154,52 +154,48 @@ function SearchStep({ onSelect }) {
 function DetailsStep({ movie, onBack, onAdd }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 flex gap-6 items-start">
-        <div className="h-full max-h-[60vh] aspect-[2/3] shrink-0">
+      <div className="flex-1 flex gap-5 items-start overflow-y-auto min-h-0">
+        <div className="w-36 shrink-0">
           {movie.poster ? (
-            <img src={movie.poster} alt={movie.title} className="h-full w-full object-cover rounded-lg" />
+            <img src={movie.poster} alt={movie.title} className="w-full aspect-[2/3] object-cover rounded-lg" />
           ) : (
-            <div className="h-full w-full bg-white/10 rounded-lg" />
+            <div className="w-full aspect-[2/3] bg-white/10 rounded-lg" />
           )}
         </div>
-        <div className="flex flex-col gap-3 min-w-0 flex-1">
-          <h2 className="text-2xl font-light text-white">{movie.title}</h2>
-          <div className="flex items-center gap-3 flex-wrap">
-            {movie.year && <span className="text-base text-white/40">{movie.year}</span>}
-            {movie.runtime > 0 && <span className="text-base text-white/40">{movie.runtime} min</span>}
+        <div className="flex flex-col gap-2 min-w-0 flex-1">
+          <h2 className="text-xl font-light text-white">{movie.title}</h2>
+          <div className="flex items-center gap-2 flex-wrap text-sm text-white/40">
+            {movie.year && <span>{movie.year}</span>}
+            {movie.runtime > 0 && <span>{movie.runtime} min</span>}
+            {movie.genres?.length > 0 && movie.genres.map((g) => (
+              <span key={g} className="px-1.5 py-0.5 bg-white/10 rounded-full text-xs text-white/50">{g}</span>
+            ))}
           </div>
-          {movie.genres?.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {movie.genres.map((g) => (
-                <span key={g} className="px-2 py-0.5 bg-white/10 rounded-full text-xs text-white/60">{g}</span>
-              ))}
-            </div>
-          )}
           {movie.overview && (
-            <p className="text-sm text-white/50 leading-relaxed line-clamp-4">{movie.overview}</p>
+            <p className="text-xs text-white/50 leading-relaxed line-clamp-3">{movie.overview}</p>
           )}
 
           <StreamingProviders tmdbId={movie.tmdbId} />
 
           {movie.inLibrary && (
-            <div className="px-3 py-2 bg-green-500/20 rounded-lg text-sm text-green-400 font-medium mt-1">
+            <div className="px-3 py-1.5 bg-green-500/20 rounded-lg text-xs text-green-400 font-medium">
               Ce film est déjà dans votre bibliothèque
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex gap-3 mt-4">
+      <div className="flex gap-3 pt-3 shrink-0">
         <button
           onClick={onBack}
-          className="px-5 py-3 rounded-xl text-base text-white/50 hover:text-white"
+          className="px-4 py-2.5 rounded-xl text-sm text-white/50 hover:text-white"
         >
           Retour
         </button>
         {!movie.inLibrary && (
           <button
             onClick={onAdd}
-            className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 rounded-xl text-lg font-medium text-white"
+            className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 rounded-xl text-base font-medium text-white"
           >
             Télécharger ce film
           </button>
