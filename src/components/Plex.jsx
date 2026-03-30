@@ -96,9 +96,10 @@ function WaitingSlide({ movie, isActive }) {
 }
 
 function StatusCard({ downloads, missing }) {
+  const downloadTitles = new Set(downloads.map((m) => m.title))
   const slides = [
     ...downloads.map((m) => ({ ...m, type: 'downloading' })),
-    ...missing.map((m) => ({ ...m, type: 'waiting' })),
+    ...missing.filter((m) => !downloadTitles.has(m.title)).map((m) => ({ ...m, type: 'waiting' })),
   ]
   const [index, setIndex] = useState(0)
 
