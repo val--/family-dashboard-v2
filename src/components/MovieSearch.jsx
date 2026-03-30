@@ -160,8 +160,13 @@ function DetailsStep({ movie, onBack, onAdd }) {
       .then((r) => r.json())
       .then((json) => {
         if (json.profiles) {
-          setProfiles(json.profiles)
-          setQualityId(json.qualityProfileId)
+          const mapped = json.profiles.map((p) => ({
+            ...p,
+            name: p.name === 'Any' ? "N'importe quelle qualité" : p.name,
+          }))
+          setProfiles(mapped)
+          const hd1080 = mapped.find((p) => p.name === 'HD-1080p')
+          setQualityId(hd1080 ? hd1080.id : json.qualityProfileId)
         }
       })
       .catch(() => {})
