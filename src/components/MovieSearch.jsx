@@ -107,7 +107,7 @@ function SearchStep({ onSelect }) {
         <button
           onClick={handleSearch}
           disabled={loading}
-          className="h-14 px-7 bg-blue-500 hover:bg-blue-600 rounded-2xl text-lg font-medium text-white shrink-0"
+          className="h-14 w-32 bg-blue-500 hover:bg-blue-600 rounded-2xl text-lg font-medium text-white shrink-0"
         >
           {loading ? '...' : 'Chercher'}
         </button>
