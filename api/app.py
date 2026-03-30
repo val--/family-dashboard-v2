@@ -325,10 +325,10 @@ def radarr_add():
         if not tmdb_id:
             return jsonify({"error": "tmdbId required"}), 400
 
-        # Get config
+        # Get config — pick root folder with most free space
         config = radarr_request("/api/v3/rootfolder")
         profiles = radarr_request("/api/v3/qualityprofile")
-        root_folder = config[0]["path"] if config else "/movies"
+        root_folder = max(config, key=lambda f: f.get("freeSpace", 0))["path"] if config else "/movies"
         quality_id = profiles[0]["id"] if profiles else 1
 
         # Lookup full movie details
