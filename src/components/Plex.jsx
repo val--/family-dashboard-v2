@@ -1,4 +1,5 @@
 import { memo, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
 
@@ -90,9 +91,47 @@ function DownloadingCard({ downloads }) {
   )
 }
 
-function MovieCard({ movie }) {
+function MovieDetailModal({ movie, onClose }) {
+  return createPortal(
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-end p-4">
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-white text-2xl leading-none"
+        >
+          &times;
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
+        <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
+          {movie.thumb ? (
+            <img
+              src={movie.thumb}
+              alt={movie.title}
+              className="h-full w-full object-cover rounded-lg"
+            />
+          ) : (
+            <div className="h-full w-full bg-white/10 rounded-lg" />
+          )}
+        </div>
+        <div className="flex flex-col gap-3">
+          <h2 className="text-3xl font-light text-white">{movie.title}</h2>
+          {movie.year && (
+            <span className="text-lg text-white/40">{movie.year}</span>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function MovieCard({ movie, onClick }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
+    <div
+      className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer"
+      onClick={onClick}
+    >
       <div className="relative w-full">
         {movie.thumb ? (
           <img
@@ -121,9 +160,12 @@ function MovieCard({ movie }) {
   )
 }
 
-function LastWatched({ movie }) {
+function LastWatched({ movie, onClick }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
+    <div
+      className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer"
+      onClick={onClick}
+    >
       <div className="relative w-full">
         {movie.thumb ? (
           <img
@@ -153,6 +195,7 @@ function LastWatched({ movie }) {
 function Plex() {
   const { movies, lastWatched, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
+  const [selectedMovie, setSelectedMovie] = useState(null)
 
   if (error || loading) return null
   if (!movies?.length && !lastWatched && !radarrData) return null
@@ -164,21 +207,26 @@ function Plex() {
   const hasDownloads = radarrData?.downloading?.length > 0
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <div className="flex-1 flex items-start justify-center gap-4">
-        {hasDownloads && (
-          <DownloadingCard downloads={radarrData.downloading} />
-        )}
-        {lastWatched && (
-          <LastWatched movie={lastWatched} />
-        )}
-        {filteredMovies?.length > 0 &&
-          filteredMovies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES - 1 : MAX_PREVIEW_MOVIES).map((movie, i) => (
-            <MovieCard key={i} movie={movie} />
-          ))
-        }
+    <>
+      <div className="flex flex-col gap-4 h-full">
+        <div className="flex-1 flex items-start justify-center gap-4">
+          {hasDownloads && (
+            <DownloadingCard downloads={radarrData.downloading} />
+          )}
+          {lastWatched && (
+            <LastWatched movie={lastWatched} onClick={() => setSelectedMovie(lastWatched)} />
+          )}
+          {filteredMovies?.length > 0 &&
+            filteredMovies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES - 1 : MAX_PREVIEW_MOVIES).map((movie, i) => (
+              <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
+            ))
+          }
+        </div>
       </div>
-    </div>
+      {selectedMovie && (
+        <MovieDetailModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+      )}
+    </>
   )
 }
 
