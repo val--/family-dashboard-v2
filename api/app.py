@@ -128,6 +128,33 @@ def calendar_events():
 #  Plex
 # ========================
 
+def parse_plex_movie(item):
+    """Extract movie info from a Plex XML element."""
+    thumb = item.get("thumb")
+    duration_ms = item.get("duration")
+    duration_min = round(int(duration_ms) / 60000) if duration_ms else None
+
+    genres = [g.get("tag") for g in item.findall("Genre")]
+    directors = [d.get("tag") for d in item.findall("Director")]
+    roles = [r.get("tag") for r in item.findall("Role")]
+
+    return {
+        "title": item.get("title"),
+        "year": item.get("year"),
+        "summary": item.get("summary"),
+        "rating": item.get("audienceRating"),
+        "contentRating": item.get("contentRating"),
+        "duration": duration_min,
+        "genres": genres[:4],
+        "directors": directors[:2],
+        "actors": roles[:5],
+        "addedAt": item.get("addedAt"),
+        "lastViewedAt": item.get("lastViewedAt"),
+        "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
+        "watched": int(item.get("viewCount", 0)) > 0,
+    }
+
+
 @app.route("/api/plex/recent")
 def plex_recent():
     if not PLEX_TOKEN:
@@ -146,14 +173,7 @@ def plex_recent():
         for item in tree.getroot():
             if item.get("type") != "movie":
                 continue
-            thumb = item.get("thumb")
-            movies.append({
-                "title": item.get("title"),
-                "year": item.get("year"),
-                "addedAt": item.get("addedAt"),
-                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
-                "watched": int(item.get("viewCount", 0)) > 0,
-            })
+            movies.append(parse_plex_movie(item))
             if len(movies) >= 8:
                 break
 
@@ -181,16 +201,9 @@ def plex_last_watched():
             tree = ET.parse(resp)
 
         for item in tree.getroot():
-            last_viewed = item.get("lastViewedAt")
-            if not last_viewed:
+            if not item.get("lastViewedAt"):
                 return jsonify(None)
-            thumb = item.get("thumb")
-            return jsonify({
-                "title": item.get("title"),
-                "year": item.get("year"),
-                "lastViewedAt": last_viewed,
-                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
-            })
+            return jsonify(parse_plex_movie(item))
 
         return jsonify(None)
 

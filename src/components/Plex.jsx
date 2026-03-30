@@ -114,10 +114,47 @@ function MovieDetailModal({ movie, onClose }) {
             <div className="h-full w-full bg-white/10 rounded-lg" />
           )}
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 max-w-md">
           <h2 className="text-3xl font-light text-white">{movie.title}</h2>
-          {movie.year && (
-            <span className="text-lg text-white/40">{movie.year}</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            {movie.year && (
+              <span className="text-base text-white/40">{movie.year}</span>
+            )}
+            {movie.duration && (
+              <span className="text-base text-white/40">{movie.duration} min</span>
+            )}
+            {movie.contentRating && (
+              <span className="px-1.5 py-0.5 border border-white/20 rounded text-xs text-white/40">
+                {movie.contentRating}
+              </span>
+            )}
+            {movie.rating && (
+              <span className="text-base text-amber-400">{movie.rating}/10</span>
+            )}
+          </div>
+          {movie.genres?.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {movie.genres.map((g) => (
+                <span key={g} className="px-2 py-0.5 bg-white/10 rounded-full text-xs text-white/60">
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
+          {movie.directors?.length > 0 && (
+            <div className="text-sm text-white/40">
+              Réalisé par <span className="text-white/60">{movie.directors.join(', ')}</span>
+            </div>
+          )}
+          {movie.actors?.length > 0 && (
+            <div className="text-sm text-white/40">
+              Avec <span className="text-white/60">{movie.actors.join(', ')}</span>
+            </div>
+          )}
+          {movie.summary && (
+            <p className="text-sm text-white/50 leading-relaxed line-clamp-5">
+              {movie.summary}
+            </p>
           )}
         </div>
       </div>
