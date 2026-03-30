@@ -74,6 +74,37 @@ def printer_status():
     })
 
 
+@app.route("/api/vpn")
+def vpn_status():
+    try:
+        # Check gluetun container health
+        health = subprocess.run(
+            ["docker", "inspect", "gluetun", "--format", "{{.State.Health.Status}}"],
+            capture_output=True, text=True, timeout=5,
+        )
+        is_healthy = health.stdout.strip() == "healthy"
+
+        # Get public IP through the VPN container
+        ip_result = subprocess.run(
+            ["docker", "exec", "gluetun", "wget", "-qO-", "https://ipinfo.io/json"],
+            capture_output=True, text=True, timeout=10,
+        )
+        ip_info = {}
+        if ip_result.returncode == 0:
+            ip_info = jsonlib.loads(ip_result.stdout)
+
+        return jsonify({
+            "healthy": is_healthy,
+            "ip": ip_info.get("ip"),
+            "country": ip_info.get("country"),
+            "city": ip_info.get("city"),
+            "org": ip_info.get("org"),
+        })
+
+    except Exception as e:
+        return jsonify({"healthy": False, "error": str(e)})
+
+
 # ========================
 #  Calendar
 # ========================

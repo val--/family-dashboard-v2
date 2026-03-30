@@ -29,6 +29,7 @@ services:
       - "host-gateway:host-gateway"
     volumes:
       - /var/run/cups:/var/run/cups
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./credentials:/app/credentials:ro
     devices:
       - /dev/bus/usb:/dev/bus/usb

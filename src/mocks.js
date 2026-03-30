@@ -1,3 +1,11 @@
+export const mockVpn = {
+  healthy: true,
+  ip: '185.230.126.42',
+  country: 'FR',
+  city: 'Paris',
+  org: 'AS9009 M247 Ltd',
+}
+
 export const mockPrinter = {
   name: 'Deskjet_3630',
   connected: true,
