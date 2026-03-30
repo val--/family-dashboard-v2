@@ -8,13 +8,14 @@ A lightweight family dashboard designed for 7-inch displays. Built with React, V
 - Weather: current conditions + 4-day forecast (OpenWeatherMap)
 - Google Calendar: upcoming events from a shared family agenda
 - Plex: recently added movies with cover art and watched indicator
-- Printer status: online/offline indicator (HP Deskjet via CUPS)
+- Radarr: download progress and missing movies
+- Devices: online/offline status (HP Deskjet printer via CUPS)
 
 ## Architecture
 
 ```
 dashboard   → Static React app served by nginx (port 3000)
-api         → Python Flask backend for printer, calendar & Plex (port 5100)
+api         → Python Flask backend for printer, calendar, Plex & Radarr (port 5100)
 ```
 
 ## Setup
@@ -36,6 +37,7 @@ cp .env.example .env
 | `CALENDAR_ID` | — | Google Calendar ID |
 | `PLEX_TOKEN` | — | Plex authentication token |
 | `PLEX_PUBLIC_URL` | `http://localhost:32400` | Plex URL accessible from browsers (LAN IP) |
+| `RADARR_API_KEY` | — | Radarr API key (Settings > General) |
 
 ### 2. Google Calendar (optional)
 
