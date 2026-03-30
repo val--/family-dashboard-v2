@@ -197,49 +197,13 @@ function MovieCard({ movie, onClick }) {
   )
 }
 
-function LastWatched({ movie, onClick }) {
-  return (
-    <div
-      className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="relative w-full">
-        {movie.thumb ? (
-          <img
-            src={movie.thumb}
-            alt={movie.title}
-            className="w-full aspect-[2/3] object-cover rounded"
-          />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10 rounded" />
-        )}
-        <div className="absolute top-2 left-2 px-2 py-0.5 bg-green-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
-          Vu {movie.lastViewedAt && timeAgo(movie.lastViewedAt).toLowerCase()}
-        </div>
-        <div className="absolute top-2 right-2 w-5 h-5 bg-green-500/80 rounded-full flex items-center justify-center">
-          <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2 6l3 3 5-5" />
-          </svg>
-        </div>
-      </div>
-      <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
-        {movie.title}
-      </span>
-    </div>
-  )
-}
-
 function Plex() {
-  const { movies, lastWatched, loading, error } = usePlex()
+  const { movies, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
   const [selectedMovie, setSelectedMovie] = useState(null)
 
   if (error || loading) return null
-  if (!movies?.length && !lastWatched && !radarrData) return null
-
-  const filteredMovies = lastWatched
-    ? movies?.filter((m) => m.title !== lastWatched.title)
-    : movies
+  if (!movies?.length && !radarrData) return null
 
   const hasDownloads = radarrData?.downloading?.length > 0
 
@@ -250,11 +214,8 @@ function Plex() {
           {hasDownloads && (
             <DownloadingCard downloads={radarrData.downloading} />
           )}
-          {lastWatched && (
-            <LastWatched movie={lastWatched} onClick={() => setSelectedMovie(lastWatched)} />
-          )}
-          {filteredMovies?.length > 0 &&
-            filteredMovies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES - 1 : MAX_PREVIEW_MOVIES).map((movie, i) => (
+          {movies?.length > 0 &&
+            movies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
               <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
             ))
           }

@@ -27,19 +27,6 @@ export const mockCalendar = {
 }
 
 export const mockPlex = {
-  lastWatched: {
-    title: 'Interstellar',
-    year: '2014',
-    lastViewedAt: String(Math.floor(Date.now() / 1000) - 50400),
-    thumb: null,
-    summary: 'Les aventures d\'un groupe d\'explorateurs qui utilisent une faille récemment découverte dans l\'espace-temps afin de repousser les limites humaines et conquérir les distances astronomiques dans un voyage interstellaire.',
-    rating: '8.7',
-    duration: 169,
-    contentRating: 'PG-13',
-    genres: ['Science-Fiction', 'Drame', 'Aventure'],
-    directors: ['Christopher Nolan'],
-    actors: ['Matthew McConaughey', 'Anne Hathaway', 'Jessica Chastain'],
-  },
   movies: [
     { title: 'Interstellar', year: '2014', addedAt: String(Math.floor(Date.now() / 1000) - 86400), thumb: null, watched: true, summary: 'Les aventures d\'un groupe d\'explorateurs...', rating: '8.7', duration: 169, genres: ['Science-Fiction', 'Drame'], directors: ['Christopher Nolan'], actors: ['Matthew McConaughey', 'Anne Hathaway'] },
     { title: 'Amélie Poulain', year: '2001', addedAt: String(Math.floor(Date.now() / 1000) - 172800), thumb: null, watched: false, summary: 'Amélie, une jeune serveuse dans un bar de Montmartre, découvre un petit trésor caché et décide de le rendre à son propriétaire.', rating: '8.3', duration: 122, genres: ['Comédie', 'Romance'], directors: ['Jean-Pierre Jeunet'], actors: ['Audrey Tautou', 'Mathieu Kassovitz'] },

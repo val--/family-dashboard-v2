@@ -7,28 +7,17 @@ const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function usePlex() {
   const [movies, setMovies] = useState(DEMO ? mockPlex.movies : null)
-  const [lastWatched, setLastWatched] = useState(DEMO ? mockPlex.lastWatched : null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(!DEMO)
 
   const fetchData = useCallback(async () => {
     if (DEMO) return
     try {
-      const [recentRes, watchedRes] = await Promise.all([
-        fetch(`${API_URL}/api/plex/recent`),
-        fetch(`${API_URL}/api/plex/last-watched`),
-      ])
-
-      if (recentRes.ok) {
-        const json = await recentRes.json()
+      const res = await fetch(`${API_URL}/api/plex/recent`)
+      if (res.ok) {
+        const json = await res.json()
         if (!json.error) setMovies(json.movies)
       }
-
-      if (watchedRes.ok) {
-        const json = await watchedRes.json()
-        if (json && !json.error) setLastWatched(json)
-      }
-
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -43,5 +32,5 @@ export function usePlex() {
     return () => clearInterval(interval)
   }, [fetchData])
 
-  return { movies, lastWatched, loading, error }
+  return { movies, loading, error }
 }
