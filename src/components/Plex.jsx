@@ -209,8 +209,10 @@ function Plex() {
 
   return (
     <>
-      <div className="flex flex-col gap-4 h-full">
-        <div className="flex-1 flex items-start justify-center gap-4">
+      <div className="flex flex-col gap-3 h-full items-center">
+        <div className="flex flex-col gap-3 w-fit">
+          <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
+          <div className="flex items-start gap-4">
           {hasDownloads && (
             <DownloadingCard downloads={radarrData.downloading} />
           )}
@@ -219,6 +221,7 @@ function Plex() {
               <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
             ))
           }
+        </div>
         </div>
       </div>
       {selectedMovie && (
