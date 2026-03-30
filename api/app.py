@@ -76,22 +76,51 @@ def printer_status():
 
 @app.route("/api/vpn")
 def vpn_status():
-    try:
-        # Check gluetun container health
-        health = subprocess.run(
-            ["docker", "inspect", "gluetun", "--format", "{{.State.Health.Status}}"],
-            capture_output=True, text=True, timeout=5,
-        )
-        is_healthy = health.stdout.strip() == "healthy"
+    import http.client
 
-        # Get public IP through the VPN container
-        ip_result = subprocess.run(
-            ["docker", "exec", "gluetun", "wget", "-qO-", "https://ipinfo.io/json"],
-            capture_output=True, text=True, timeout=10,
-        )
+    try:
+        # Query Docker API via socket for container health
+        conn = http.client.HTTPConnection("localhost")
+        conn.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
+        conn.sock.connect("/var/run/docker.sock")
+        conn.request("GET", "/containers/gluetun/json")
+        resp = conn.getresponse()
+        container = jsonlib.loads(resp.read())
+        conn.close()
+
+        health_status = container.get("State", {}).get("Health", {}).get("Status", "")
+        is_healthy = health_status == "healthy"
+
+        # Get public IP by calling exec on gluetun via Docker API
         ip_info = {}
-        if ip_result.returncode == 0:
-            ip_info = jsonlib.loads(ip_result.stdout)
+        if is_healthy:
+            # Create exec
+            conn2 = http.client.HTTPConnection("localhost")
+            conn2.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
+            conn2.sock.connect("/var/run/docker.sock")
+            exec_body = jsonlib.dumps({"AttachStdout": True, "Cmd": ["wget", "-qO-", "https://ipinfo.io/json"]})
+            conn2.request("POST", "/containers/gluetun/exec", body=exec_body,
+                         headers={"Content-Type": "application/json"})
+            exec_resp = conn2.getresponse()
+            exec_id = jsonlib.loads(exec_resp.read()).get("Id")
+            conn2.close()
+
+            # Start exec
+            conn3 = http.client.HTTPConnection("localhost")
+            conn3.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
+            conn3.sock.connect("/var/run/docker.sock")
+            conn3.request("POST", f"/exec/{exec_id}/start",
+                         body=jsonlib.dumps({"Detach": False}),
+                         headers={"Content-Type": "application/json"})
+            start_resp = conn3.getresponse()
+            raw = start_resp.read()
+            conn3.close()
+
+            # Parse output (skip Docker stream header bytes if present)
+            text = raw.decode("utf-8", errors="ignore")
+            json_start = text.find("{")
+            if json_start >= 0:
+                ip_info = jsonlib.loads(text[json_start:])
 
         return jsonify({
             "healthy": is_healthy,
