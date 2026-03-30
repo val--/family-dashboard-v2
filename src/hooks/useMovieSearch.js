@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
-const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function useMovieSearch() {
   const [results, setResults] = useState([])
+  const [hasSearched, setHasSearched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [addStatus, setAddStatus] = useState(null) // null | 'loading' | 'success' | 'error'
@@ -16,6 +16,7 @@ export function useMovieSearch() {
     }
     setLoading(true)
     setError(null)
+    setHasSearched(true)
     try {
       const res = await fetch(`${API_URL}/api/radarr/search?term=${encodeURIComponent(term)}`)
       const json = await res.json()
@@ -47,9 +48,10 @@ export function useMovieSearch() {
 
   const reset = useCallback(() => {
     setResults([])
+    setHasSearched(false)
     setError(null)
     setAddStatus(null)
   }, [])
 
-  return { results, loading, error, addStatus, search, addMovie, reset }
+  return { results, hasSearched, loading, error, addStatus, search, addMovie, reset }
 }
