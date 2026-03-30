@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { useMovieSearch } from '../hooks/useMovieSearch'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
+
+const VirtualKeyboard = lazy(() => import('./VirtualKeyboard'))
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
@@ -66,13 +68,12 @@ function SearchStep({ onSelect }) {
           </svg>
           <input
             type="text"
-            inputMode="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Quel film cherchez-vous ?"
-            autoFocus
-            className="flex-1 bg-transparent text-xl text-white placeholder-white/30 outline-none"
+            readOnly
+            className="flex-1 bg-transparent text-xl text-white placeholder-white/30 outline-none cursor-default"
           />
           <button
             onClick={() => query && setQuery('')}
@@ -143,6 +144,13 @@ function SearchStep({ onSelect }) {
           <div className="text-white/30 text-center py-8">Aucun résultat</div>
         )}
       </div>
+      <Suspense fallback={null}>
+        <VirtualKeyboard
+          value={query}
+          onChange={setQuery}
+          onSubmit={handleSearch}
+        />
+      </Suspense>
     </div>
   )
 }

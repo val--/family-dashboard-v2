@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+/* Virtual keyboard dark theme */
+.hg-theme-dark {
+  background: transparent !important;
+  padding: 0 !important;
+}
+.hg-theme-dark .hg-row {
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.hg-theme-dark .hg-button {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 16px !important;
+  height: 42px !important;
+  box-shadow: none !important;
+}
+.hg-theme-dark .hg-button:active {
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+.hg-theme-dark .hg-button[data-skbtn="{enter}"] {
+  background: rgb(59, 130, 246) !important;
+  color: white !important;
+}
+.hg-theme-dark .hg-button[data-skbtn="{space}"] {
+  min-width: 40% !important;
+}
