@@ -229,9 +229,15 @@ def radarr_status():
         missing = []
         for movie in all_movies:
             if movie.get("monitored") and not movie.get("hasFile"):
+                poster = None
+                for img in movie.get("images", []):
+                    if img.get("coverType") == "poster":
+                        poster = img.get("remoteUrl")
+                        break
                 missing.append({
                     "title": movie.get("title"),
                     "year": movie.get("year"),
+                    "poster": poster,
                 })
 
         return jsonify({

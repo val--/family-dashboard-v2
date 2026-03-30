@@ -68,25 +68,66 @@ function DownloadingSlide({ movie, isActive }) {
   )
 }
 
-function DownloadingCard({ downloads }) {
+function WaitingSlide({ movie, isActive }) {
+  return (
+    <div
+      className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+      style={{ opacity: isActive ? 1 : 0 }}
+    >
+      <div className="relative w-full overflow-hidden rounded">
+        {movie.poster ? (
+          <img
+            src={movie.poster}
+            alt={movie.title}
+            className="w-full aspect-[2/3] object-cover grayscale brightness-50"
+          />
+        ) : (
+          <div className="w-full aspect-[2/3] bg-white/10" />
+        )}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          En attente
+        </div>
+      </div>
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
+        {movie.title}
+      </div>
+    </div>
+  )
+}
+
+function StatusCard({ downloads, missing }) {
+  const slides = [
+    ...downloads.map((m) => ({ ...m, type: 'downloading' })),
+    ...missing.map((m) => ({ ...m, type: 'waiting' })),
+  ]
   const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    if (downloads.length <= 1) return
+    if (slides.length <= 1) return
     const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % downloads.length)
+      setIndex((i) => (i + 1) % slides.length)
     }, DOWNLOAD_ROTATE_INTERVAL)
     return () => clearInterval(timer)
-  }, [downloads.length])
+  }, [slides.length])
+
+  if (slides.length === 0) return null
 
   return (
     <div className="flex-1 max-w-36 relative" style={{ aspectRatio: '2/3.4' }}>
-      {downloads.map((movie, i) => (
-        <DownloadingSlide
-          key={movie.title}
-          movie={movie}
-          isActive={i === index % downloads.length}
-        />
+      {slides.map((movie, i) => (
+        movie.type === 'downloading' ? (
+          <DownloadingSlide
+            key={`dl-${movie.title}`}
+            movie={movie}
+            isActive={i === index % slides.length}
+          />
+        ) : (
+          <WaitingSlide
+            key={`wait-${movie.title}`}
+            movie={movie}
+            isActive={i === index % slides.length}
+          />
+        )
       ))}
     </div>
   )
@@ -207,7 +248,9 @@ function Plex() {
   if (error || loading) return null
   if (!movies?.length && !radarrData) return null
 
-  const hasDownloads = radarrData?.downloading?.length > 0
+  const downloads = radarrData?.downloading || []
+  const missing = radarrData?.missing || []
+  const hasStatus = downloads.length > 0 || missing.length > 0
 
   return (
     <>
@@ -223,11 +266,11 @@ function Plex() {
             </button>
           </div>
           <div className="flex items-start gap-4">
-            {hasDownloads && (
-              <DownloadingCard downloads={radarrData.downloading} />
+            {hasStatus && (
+              <StatusCard downloads={downloads} missing={missing} />
             )}
             {movies?.length > 0 &&
-              movies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
+              movies.slice(0, hasStatus ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
                 <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
               ))
             }
