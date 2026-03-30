@@ -52,7 +52,8 @@ export const mockPlex = {
 export const mockRadarr = {
   downloading: [
     { title: 'Highlander', year: '1986', progress: 42, eta: new Date(Date.now() + 23 * 60000).toISOString(), poster: 'https://image.tmdb.org/t/p/w300/8Z8dptJEypuLoOQro1WugD855YE.jpg' },
-    { title: 'Dhurandhar', year: '2025', progress: 9, eta: new Date(Date.now() + 85 * 60000).toISOString(), poster: null },
+    { title: 'Blade Runner 2049', year: '2017', progress: 73, eta: new Date(Date.now() + 12 * 60000).toISOString(), poster: 'https://image.tmdb.org/t/p/w300/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg' },
+    { title: 'Dhurandhar', year: '2025', progress: 9, eta: new Date(Date.now() + 85 * 60000).toISOString(), poster: 'https://image.tmdb.org/t/p/w300/jFyGtlQFBsyIKMFzIuQ0fEiNjS4.jpg' },
   ],
   missing: [
     { title: 'The Bone Temple', year: '2025' },

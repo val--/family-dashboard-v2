@@ -15,6 +15,57 @@ function timeAgo(timestamp) {
   return `Il y a ${days}j`
 }
 
+function DownloadingSlide({ movie, isActive }) {
+  const progress = movie.progress || 0
+
+  let etaText = ''
+  if (movie.eta) {
+    const mins = Math.max(0, Math.round((new Date(movie.eta) - Date.now()) / 60000))
+    etaText = mins < 60 ? `${mins}min` : `~${Math.round(mins / 60)}h`
+  }
+
+  return (
+    <div
+      className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+      style={{ opacity: isActive ? 1 : 0 }}
+    >
+      <div className="relative w-full overflow-hidden rounded">
+        {movie.poster ? (
+          <img
+            src={movie.poster}
+            alt={movie.title}
+            className="w-full aspect-[2/3] object-cover grayscale brightness-50"
+          />
+        ) : (
+          <div className="w-full aspect-[2/3] bg-white/10" />
+        )}
+        {movie.poster && (
+          <div
+            className="absolute bottom-0 left-0 right-0 overflow-hidden transition-[height] duration-1000 ease-out"
+            style={{ height: `${progress}%` }}
+          >
+            <img
+              src={movie.poster}
+              alt=""
+              className="absolute bottom-0 left-0 w-full aspect-[2/3] object-cover"
+            />
+          </div>
+        )}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          {progress}%{etaText && ` · ${etaText}`}
+        </div>
+        <span className="absolute top-2 right-2 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
+        </span>
+      </div>
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
+        {movie.title}
+      </div>
+    </div>
+  )
+}
+
 function DownloadingCard({ downloads }) {
   const [index, setIndex] = useState(0)
 
@@ -26,54 +77,15 @@ function DownloadingCard({ downloads }) {
     return () => clearInterval(timer)
   }, [downloads.length])
 
-  const movie = downloads[index % downloads.length]
-  const progress = movie.progress || 0
-
-  let etaText = ''
-  if (movie.eta) {
-    const mins = Math.max(0, Math.round((new Date(movie.eta) - Date.now()) / 60000))
-    etaText = mins < 60 ? `${mins}min` : `~${Math.round(mins / 60)}h`
-  }
-
   return (
-    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
-      <div className="relative w-full overflow-hidden rounded">
-        {/* Poster grayed out */}
-        {movie.poster ? (
-          <img
-            src={movie.poster}
-            alt={movie.title}
-            className="w-full aspect-[2/3] object-cover grayscale brightness-50"
-          />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10" />
-        )}
-        {/* Color reveal from bottom based on progress */}
-        {movie.poster && (
-          <div
-            className="absolute bottom-0 left-0 right-0 overflow-hidden"
-            style={{ height: `${progress}%` }}
-          >
-            <img
-              src={movie.poster}
-              alt=""
-              className="absolute bottom-0 left-0 w-full aspect-[2/3] object-cover"
-            />
-          </div>
-        )}
-        {/* Progress badge */}
-        <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
-          {progress}%{etaText && ` · ${etaText}`}
-        </div>
-        {/* Pulsing indicator */}
-        <span className="absolute top-2 right-2 flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
-        </span>
-      </div>
-      <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
-        {movie.title}
-      </span>
+    <div className="flex-1 max-w-36 relative" style={{ aspectRatio: '2/3.4' }}>
+      {downloads.map((movie, i) => (
+        <DownloadingSlide
+          key={movie.title}
+          movie={movie}
+          isActive={i === index % downloads.length}
+        />
+      ))}
     </div>
   )
 }
