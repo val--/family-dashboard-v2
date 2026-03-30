@@ -108,7 +108,7 @@ function SearchStep({ onSelect }) {
           </button>
         )}
         <button
-          onClick={handleSearch}
+          onClick={() => { handleSearch(); setShowKeyboard(false) }}
           disabled={loading}
           className="h-14 w-32 bg-blue-500 hover:bg-blue-600 rounded-2xl text-lg font-medium text-white shrink-0"
         >
