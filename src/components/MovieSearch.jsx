@@ -152,6 +152,21 @@ function SearchStep({ onSelect }) {
 // ========================
 
 function DetailsStep({ movie, onBack, onAdd }) {
+  const [profiles, setProfiles] = useState([])
+  const [qualityId, setQualityId] = useState(null)
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/radarr/config`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.profiles) {
+          setProfiles(json.profiles)
+          setQualityId(json.qualityProfileId)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex gap-5 items-start overflow-y-auto min-h-0">
@@ -185,7 +200,7 @@ function DetailsStep({ movie, onBack, onAdd }) {
         </div>
       </div>
 
-      <div className="flex gap-3 pt-3 shrink-0">
+      <div className="flex items-center gap-3 pt-3 shrink-0">
         <button
           onClick={onBack}
           className="px-4 py-2.5 rounded-xl text-sm text-white/50 hover:text-white"
@@ -193,12 +208,25 @@ function DetailsStep({ movie, onBack, onAdd }) {
           Retour
         </button>
         {!movie.inLibrary && (
-          <button
-            onClick={onAdd}
-            className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 rounded-xl text-base font-medium text-white"
-          >
-            Télécharger ce film
-          </button>
+          <div className="flex-1 flex items-center gap-2">
+            {profiles.length > 0 && (
+              <select
+                value={qualityId || ''}
+                onChange={(e) => setQualityId(Number(e.target.value))}
+                className="h-11 px-3 bg-white/10 border border-white/10 rounded-xl text-sm text-white/70 outline-none"
+              >
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id} className="bg-zinc-900">{p.name}</option>
+                ))}
+              </select>
+            )}
+            <button
+              onClick={() => onAdd(qualityId)}
+              className="flex-1 h-11 bg-orange-500 hover:bg-orange-600 rounded-xl text-base font-medium text-white"
+            >
+              Télécharger
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -267,9 +295,9 @@ export default function MovieSearch({ onClose }) {
 
   const stepTitle = ['Rechercher un film', 'Détails du film', 'Ajout en cours'][step]
 
-  function handleAdd() {
+  function handleAdd(qualityProfileId) {
     setStep(STEPS.ADD)
-    addMovie(selected.tmdbId)
+    addMovie(selected.tmdbId, qualityProfileId)
   }
 
   return createPortal(

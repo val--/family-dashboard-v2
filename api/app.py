@@ -308,6 +308,7 @@ def radarr_config():
         return jsonify({
             "rootFolderPath": root_folders[0]["path"] if root_folders else "/movies",
             "qualityProfileId": profiles[0]["id"] if profiles else 1,
+            "profiles": [{"id": p["id"], "name": p["name"]} for p in profiles],
         })
 
     except Exception as e:
@@ -325,11 +326,14 @@ def radarr_add():
         if not tmdb_id:
             return jsonify({"error": "tmdbId required"}), 400
 
+        quality_id = body.get("qualityProfileId")
+
         # Get config — pick root folder with most free space
         config = radarr_request("/api/v3/rootfolder")
-        profiles = radarr_request("/api/v3/qualityprofile")
         root_folder = max(config, key=lambda f: f.get("freeSpace", 0))["path"] if config else "/movies"
-        quality_id = profiles[0]["id"] if profiles else 1
+        if not quality_id:
+            profiles = radarr_request("/api/v3/qualityprofile")
+            quality_id = profiles[0]["id"] if profiles else 1
 
         # Lookup full movie details
         movie = radarr_request(f"/api/v3/movie/lookup/tmdb?tmdbId={tmdb_id}")

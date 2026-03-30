@@ -30,13 +30,15 @@ export function useMovieSearch() {
     }
   }, [])
 
-  const addMovie = useCallback(async (tmdbId) => {
+  const addMovie = useCallback(async (tmdbId, qualityProfileId) => {
     setAddStatus('loading')
     try {
+      const body = { tmdbId }
+      if (qualityProfileId) body.qualityProfileId = qualityProfileId
       const res = await fetch(`${API_URL}/api/radarr/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tmdbId }),
+        body: JSON.stringify(body),
       })
       const json = await res.json()
       if (json.error) throw new Error(json.error)
