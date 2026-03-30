@@ -51,8 +51,8 @@ export const mockPlex = {
 
 export const mockRadarr = {
   downloading: [
-    { title: 'Highlander', year: '1986', progress: 42, eta: new Date(Date.now() + 23 * 60000).toISOString() },
-    { title: 'Dhurandhar', year: '2025', progress: 9, eta: new Date(Date.now() + 85 * 60000).toISOString() },
+    { title: 'Highlander', year: '1986', progress: 42, eta: new Date(Date.now() + 23 * 60000).toISOString(), poster: 'https://image.tmdb.org/t/p/w300/8Z8dptJEypuLoOQro1WugD855YE.jpg' },
+    { title: 'Dhurandhar', year: '2025', progress: 9, eta: new Date(Date.now() + 85 * 60000).toISOString(), poster: null },
   ],
   missing: [
     { title: 'The Bone Temple', year: '2025' },

@@ -226,12 +226,18 @@ def radarr_status():
             movie = record.get("movie", {})
             movie_id = record.get("movieId")
             progress = round(100 - (record.get("sizeleft", 0) / max(record.get("size", 1), 1) * 100))
+            poster = None
+            for img in movie.get("images", []):
+                if img.get("coverType") == "poster":
+                    poster = img.get("remoteUrl")
+                    break
             if movie_id not in seen_movies or progress > seen_movies[movie_id]["progress"]:
                 seen_movies[movie_id] = {
                     "title": movie.get("title"),
                     "year": movie.get("year"),
                     "progress": progress,
                     "eta": record.get("estimatedCompletionTime"),
+                    "poster": poster,
                 }
         downloading = list(seen_movies.values())
 

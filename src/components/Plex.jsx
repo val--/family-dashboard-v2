@@ -3,6 +3,7 @@ import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
 
 const MAX_PREVIEW_MOVIES = 4
+const DOWNLOAD_ROTATE_INTERVAL = 5000
 
 function timeAgo(timestamp) {
   const diff = Date.now() - timestamp * 1000
@@ -12,6 +13,69 @@ function timeAgo(timestamp) {
   const days = Math.floor(hours / 24)
   if (days === 1) return 'Hier'
   return `Il y a ${days}j`
+}
+
+function DownloadingCard({ downloads }) {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (downloads.length <= 1) return
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % downloads.length)
+    }, DOWNLOAD_ROTATE_INTERVAL)
+    return () => clearInterval(timer)
+  }, [downloads.length])
+
+  const movie = downloads[index % downloads.length]
+  const progress = movie.progress || 0
+
+  let etaText = ''
+  if (movie.eta) {
+    const mins = Math.max(0, Math.round((new Date(movie.eta) - Date.now()) / 60000))
+    etaText = mins < 60 ? `${mins}min` : `~${Math.round(mins / 60)}h`
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
+      <div className="relative w-full overflow-hidden rounded">
+        {/* Poster grayed out */}
+        {movie.poster ? (
+          <img
+            src={movie.poster}
+            alt={movie.title}
+            className="w-full aspect-[2/3] object-cover grayscale brightness-50"
+          />
+        ) : (
+          <div className="w-full aspect-[2/3] bg-white/10" />
+        )}
+        {/* Color reveal from bottom based on progress */}
+        {movie.poster && (
+          <div
+            className="absolute bottom-0 left-0 right-0 overflow-hidden"
+            style={{ height: `${progress}%` }}
+          >
+            <img
+              src={movie.poster}
+              alt=""
+              className="absolute bottom-0 left-0 w-full aspect-[2/3] object-cover"
+            />
+          </div>
+        )}
+        {/* Progress badge */}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          {progress}%{etaText && ` · ${etaText}`}
+        </div>
+        {/* Pulsing indicator */}
+        <span className="absolute top-2 right-2 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
+        </span>
+      </div>
+      <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
+        {movie.title}
+      </span>
+    </div>
+  )
 }
 
 function MovieCard({ movie }) {
@@ -74,71 +138,6 @@ function LastWatched({ movie }) {
   )
 }
 
-const TICKER_INTERVAL = 5000
-
-function RadarrTicker({ data }) {
-  const [index, setIndex] = useState(0)
-
-  const entries = []
-  if (data?.downloading) {
-    for (const m of data.downloading) {
-      let text = `${m.title} (${m.year}) — ${m.progress}%`
-      if (m.eta) {
-        const mins = Math.max(0, Math.round((new Date(m.eta) - Date.now()) / 60000))
-        if (mins < 60) text += ` (${mins}min)`
-        else text += ` (~${Math.round(mins / 60)}h)`
-      }
-      entries.push({ type: 'downloading', text })
-    }
-  }
-  if (data?.missing) {
-    for (const m of data.missing) {
-      entries.push({ type: 'missing', text: `${m.title} (${m.year})` })
-    }
-  }
-
-  useEffect(() => {
-    if (entries.length <= 1) return
-    const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % entries.length)
-    }, TICKER_INTERVAL)
-    return () => clearInterval(timer)
-  }, [entries.length])
-
-  if (entries.length === 0) {
-    return (
-      <div className="flex items-center justify-center text-base text-white/30">
-        Pas de nouveaux films en attente
-      </div>
-    )
-  }
-
-  const current = entries[index % entries.length]
-
-  return (
-    <div
-      className="flex items-center justify-center gap-2 text-base h-6 cursor-pointer"
-      onClick={() => setIndex((i) => (i + 1) % entries.length)}
-    >
-      {current.type === 'downloading' ? (
-        <>
-          <span className="relative flex h-3 w-3 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
-          </span>
-          <span className="text-blue-400">En cours de téléchargement :</span>
-          <span className="text-white/70">{current.text}</span>
-        </>
-      ) : (
-        <>
-          <span className="text-amber-400/70">À venir :</span>
-          <span className="text-white/50">{current.text}</span>
-        </>
-      )}
-    </div>
-  )
-}
-
 function Plex() {
   const { movies, lastWatched, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
@@ -150,19 +149,23 @@ function Plex() {
     ? movies?.filter((m) => m.title !== lastWatched.title)
     : movies
 
+  const hasDownloads = radarrData?.downloading?.length > 0
+
   return (
     <div className="flex flex-col gap-4 h-full">
       <div className="flex-1 flex items-start justify-center gap-4">
+        {hasDownloads && (
+          <DownloadingCard downloads={radarrData.downloading} />
+        )}
         {lastWatched && (
           <LastWatched movie={lastWatched} />
         )}
         {filteredMovies?.length > 0 &&
-          filteredMovies.slice(0, MAX_PREVIEW_MOVIES).map((movie, i) => (
+          filteredMovies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES - 1 : MAX_PREVIEW_MOVIES).map((movie, i) => (
             <MovieCard key={i} movie={movie} />
           ))
         }
       </div>
-      <RadarrTicker data={radarrData} />
     </div>
   )
 }
