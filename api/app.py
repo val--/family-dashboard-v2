@@ -284,11 +284,30 @@ def radarr_search():
                 if img.get("coverType") == "poster":
                     poster = img.get("remoteUrl")
                     break
+
+            title = movie.get("title")
+            overview = movie.get("overview", "")
+
+            # Fetch French title/overview from TMDb
+            tmdb_id = movie.get("tmdbId")
+            if TMDB_API_KEY and tmdb_id:
+                try:
+                    tmdb_url = f"https://api.themoviedb.org/3/movie/{tmdb_id}?api_key={TMDB_API_KEY}&language=fr-FR"
+                    req = urllib.request.Request(tmdb_url)
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        tmdb_data = jsonlib.loads(resp.read())
+                    if tmdb_data.get("title"):
+                        title = tmdb_data["title"]
+                    if tmdb_data.get("overview"):
+                        overview = tmdb_data["overview"]
+                except Exception:
+                    pass
+
             results.append({
-                "tmdbId": movie.get("tmdbId"),
-                "title": movie.get("title"),
+                "tmdbId": tmdb_id,
+                "title": title,
                 "year": movie.get("year"),
-                "overview": movie.get("overview", ""),
+                "overview": overview,
                 "runtime": movie.get("runtime"),
                 "ratings": movie.get("ratings", {}),
                 "genres": [g for g in movie.get("genres", [])][:4],
