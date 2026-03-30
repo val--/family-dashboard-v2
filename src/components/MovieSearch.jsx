@@ -65,7 +65,7 @@ function SearchStep({ onSelect }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
           <input
-            type="search"
+            type="text"
             inputMode="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -74,6 +74,14 @@ function SearchStep({ onSelect }) {
             autoFocus
             className="flex-1 bg-transparent text-xl text-white placeholder-white/30 outline-none"
           />
+          <button
+            onClick={() => query && setQuery('')}
+            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-2xl leading-none ${
+              query ? 'text-white/40 hover:text-white/70' : 'invisible'
+            }`}
+          >
+            &times;
+          </button>
         </div>
         {isSupported && (
           <button

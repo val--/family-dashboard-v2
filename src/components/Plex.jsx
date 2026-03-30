@@ -226,7 +226,7 @@ function Plex() {
           </div>
           <button
             onClick={() => setShowSearch(true)}
-            className="self-start px-4 py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-sm text-white/60 hover:text-white"
+            className="self-center px-4 py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-sm text-white/60 hover:text-white"
           >
             Je cherche un film
           </button>
