@@ -9,6 +9,7 @@ lerna-debug.log*
 
 .env
 credentials/
+__pycache__/
 node_modules
 dist
 dist-ssr
