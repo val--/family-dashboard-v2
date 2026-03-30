@@ -213,7 +213,15 @@ function Plex() {
     <>
       <div className="flex flex-col gap-3 h-full items-center">
         <div className="flex flex-col gap-3 w-fit">
-          <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
+            <button
+              onClick={() => setShowSearch(true)}
+              className="px-4 py-1.5 bg-white/10 hover:bg-white/15 rounded-lg text-sm text-white/60 hover:text-white"
+            >
+              Je cherche un film
+            </button>
+          </div>
           <div className="flex items-start gap-4">
             {hasDownloads && (
               <DownloadingCard downloads={radarrData.downloading} />
@@ -224,12 +232,6 @@ function Plex() {
               ))
             }
           </div>
-          <button
-            onClick={() => setShowSearch(true)}
-            className="self-center px-4 py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-sm text-white/60 hover:text-white"
-          >
-            Je cherche un film
-          </button>
         </div>
       </div>
       {selectedMovie && (
