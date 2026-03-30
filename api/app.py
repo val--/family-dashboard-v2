@@ -1,8 +1,11 @@
 import os
 import subprocess
+import urllib.parse
+import urllib.request
+import json as jsonlib
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -193,16 +196,7 @@ def radarr_status():
         return jsonify({"error": "RADARR_API_KEY not configured"}), 500
 
     try:
-        import urllib.request
-        import json as jsonlib
-
-        headers = {"X-Api-Key": RADARR_API_KEY}
-
-        # Fetch queue (downloading)
-        queue_url = f"{RADARR_URL}/api/v3/queue?pageSize=10&includeMovie=true"
-        req = urllib.request.Request(queue_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            queue_data = jsonlib.loads(resp.read())
+        queue_data = radarr_request("/api/v3/queue?pageSize=10&includeMovie=true")
 
         seen_movies = {}
         for record in queue_data.get("records", []):
@@ -227,10 +221,7 @@ def radarr_status():
         downloading = list(seen_movies.values())
 
         # Fetch missing/monitored movies
-        movie_url = f"{RADARR_URL}/api/v3/movie"
-        req = urllib.request.Request(movie_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            all_movies = jsonlib.loads(resp.read())
+        all_movies = radarr_request("/api/v3/movie")
 
         missing = []
         for movie in all_movies:
@@ -245,6 +236,116 @@ def radarr_status():
             "missing": missing,
         })
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def radarr_request(path, method="GET", data=None):
+    """Helper for Radarr API calls."""
+    headers = {"X-Api-Key": RADARR_API_KEY, "Content-Type": "application/json"}
+    url = f"{RADARR_URL}{path}"
+    req = urllib.request.Request(url, headers=headers, method=method)
+    if data:
+        req.data = jsonlib.dumps(data).encode()
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return jsonlib.loads(resp.read())
+
+
+@app.route("/api/radarr/search")
+def radarr_search():
+    if not RADARR_API_KEY:
+        return jsonify({"error": "RADARR_API_KEY not configured"}), 500
+
+    term = request.args.get("term", "").strip()
+    if not term:
+        return jsonify({"results": []})
+
+    try:
+        encoded = urllib.parse.quote(term)
+        data = radarr_request(f"/api/v3/movie/lookup?term={encoded}")
+
+        # Get existing library tmdbIds for duplicate check
+        library = radarr_request("/api/v3/movie")
+        library_ids = {m.get("tmdbId") for m in library}
+
+        results = []
+        for movie in data[:10]:
+            poster = None
+            for img in movie.get("images", []):
+                if img.get("coverType") == "poster":
+                    poster = img.get("remoteUrl")
+                    break
+            results.append({
+                "tmdbId": movie.get("tmdbId"),
+                "title": movie.get("title"),
+                "year": movie.get("year"),
+                "overview": movie.get("overview", ""),
+                "runtime": movie.get("runtime"),
+                "ratings": movie.get("ratings", {}),
+                "genres": [g for g in movie.get("genres", [])][:4],
+                "poster": poster,
+                "inLibrary": movie.get("tmdbId") in library_ids,
+            })
+
+        return jsonify({"results": results})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/radarr/config")
+def radarr_config():
+    if not RADARR_API_KEY:
+        return jsonify({"error": "RADARR_API_KEY not configured"}), 500
+
+    try:
+        root_folders = radarr_request("/api/v3/rootfolder")
+        profiles = radarr_request("/api/v3/qualityprofile")
+
+        return jsonify({
+            "rootFolderPath": root_folders[0]["path"] if root_folders else "/movies",
+            "qualityProfileId": profiles[0]["id"] if profiles else 1,
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/radarr/add", methods=["POST"])
+def radarr_add():
+    if not RADARR_API_KEY:
+        return jsonify({"error": "RADARR_API_KEY not configured"}), 500
+
+    try:
+        body = request.get_json()
+        tmdb_id = body.get("tmdbId")
+        if not tmdb_id:
+            return jsonify({"error": "tmdbId required"}), 400
+
+        # Get config
+        config = radarr_request("/api/v3/rootfolder")
+        profiles = radarr_request("/api/v3/qualityprofile")
+        root_folder = config[0]["path"] if config else "/movies"
+        quality_id = profiles[0]["id"] if profiles else 1
+
+        # Lookup full movie details
+        movie = radarr_request(f"/api/v3/movie/lookup/tmdb?tmdbId={tmdb_id}")
+
+        result = radarr_request("/api/v3/movie", method="POST", data={
+            "tmdbId": tmdb_id,
+            "title": movie.get("title"),
+            "year": movie.get("year"),
+            "qualityProfileId": quality_id,
+            "rootFolderPath": root_folder,
+            "monitored": True,
+            "addOptions": {"searchForMovie": True},
+        })
+
+        return jsonify({"success": True, "title": result.get("title")})
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else str(e)
+        return jsonify({"error": error_body}), e.code
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

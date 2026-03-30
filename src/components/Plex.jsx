@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
+import MovieSearch from './MovieSearch'
 
 const MAX_PREVIEW_MOVIES = 4
 const DOWNLOAD_ROTATE_INTERVAL = 5000
@@ -201,6 +202,7 @@ function Plex() {
   const { movies, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [showSearch, setShowSearch] = useState(false)
 
   if (error || loading) return null
   if (!movies?.length && !radarrData) return null
@@ -213,19 +215,28 @@ function Plex() {
         <div className="flex flex-col gap-3 w-fit">
           <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
           <div className="flex items-start gap-4">
-          {hasDownloads && (
-            <DownloadingCard downloads={radarrData.downloading} />
-          )}
-          {movies?.length > 0 &&
-            movies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
-              <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
-            ))
-          }
-        </div>
+            {hasDownloads && (
+              <DownloadingCard downloads={radarrData.downloading} />
+            )}
+            {movies?.length > 0 &&
+              movies.slice(0, hasDownloads ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
+                <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
+              ))
+            }
+          </div>
+          <button
+            onClick={() => setShowSearch(true)}
+            className="self-start px-4 py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-sm text-white/60 hover:text-white"
+          >
+            Je cherche un film
+          </button>
         </div>
       </div>
       {selectedMovie && (
         <MovieDetailModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+      )}
+      {showSearch && (
+        <MovieSearch onClose={() => setShowSearch(false)} />
       )}
     </>
   )
