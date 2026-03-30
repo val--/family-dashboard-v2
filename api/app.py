@@ -24,6 +24,9 @@ PLEX_TOKEN = os.environ.get("PLEX_TOKEN", "")
 RADARR_URL = os.environ.get("RADARR_URL", "http://localhost:7878")
 RADARR_API_KEY = os.environ.get("RADARR_API_KEY", "")
 
+# -- TMDb config --
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+
 # -- Calendar config --
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "")
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/app/credentials/service-account.json")
@@ -346,6 +349,35 @@ def radarr_add():
     except urllib.error.HTTPError as e:
         error_body = e.read().decode() if e.fp else str(e)
         return jsonify({"error": error_body}), e.code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/tmdb/streaming/<int:tmdb_id>")
+def tmdb_streaming(tmdb_id):
+    if not TMDB_API_KEY:
+        return jsonify({"error": "TMDB_API_KEY not configured"}), 500
+
+    try:
+        url = f"https://api.themoviedb.org/3/movie/{tmdb_id}/watch/providers?api_key={TMDB_API_KEY}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = jsonlib.loads(resp.read())
+
+        # Get French providers (fallback to US)
+        country = data.get("results", {}).get("FR") or data.get("results", {}).get("US")
+        if not country:
+            return jsonify({"providers": []})
+
+        providers = []
+        for p in country.get("flatrate", []):
+            providers.append({
+                "name": p.get("provider_name"),
+                "logo": f"https://image.tmdb.org/t/p/w92{p['logo_path']}" if p.get("logo_path") else None,
+            })
+
+        return jsonify({"providers": providers})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

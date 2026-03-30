@@ -24,6 +24,7 @@ services:
       - PLEX_TOKEN=${PLEX_TOKEN}
       - RADARR_URL=${RADARR_URL:-http://host-gateway:7878}
       - RADARR_API_KEY=${RADARR_API_KEY}
+      - TMDB_API_KEY=${TMDB_API_KEY}
     extra_hosts:
       - "host-gateway:host-gateway"
     volumes:

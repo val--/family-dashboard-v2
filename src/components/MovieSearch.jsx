@@ -1,15 +1,41 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useMovieSearch } from '../hooks/useMovieSearch'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 
-function slugify(title) {
-  return title
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
+
+function StreamingProviders({ tmdbId }) {
+  const [providers, setProviders] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/tmdb/streaming/${tmdbId}`)
+      .then((r) => r.json())
+      .then((json) => setProviders(json.providers || []))
+      .catch(() => setProviders([]))
+      .finally(() => setLoading(false))
+  }, [tmdbId])
+
+  if (loading) return <div className="text-sm text-white/30">Recherche des plateformes...</div>
+
+  if (providers.length === 0) {
+    return <div className="text-sm text-white/40">Non disponible en streaming</div>
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="text-sm text-white/40">Disponible en streaming :</div>
+      <div className="flex gap-3 flex-wrap">
+        {providers.map((p) => (
+          <div key={p.name} className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
+            {p.logo && <img src={p.logo} alt="" className="w-6 h-6 rounded" />}
+            <span className="text-sm text-white/70">{p.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ========================
@@ -110,8 +136,6 @@ function SearchStep({ onSelect }) {
 // ========================
 
 function DetailsStep({ movie, onBack, onAdd }) {
-  const justWatchUrl = `https://www.justwatch.com/fr/recherche?q=${encodeURIComponent(movie.title)}`
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex gap-6 items-start">
@@ -139,17 +163,7 @@ function DetailsStep({ movie, onBack, onAdd }) {
             <p className="text-sm text-white/50 leading-relaxed line-clamp-4">{movie.overview}</p>
           )}
 
-          <a
-            href={justWatchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 mt-1"
-          >
-            Voir sur JustWatch
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-            </svg>
-          </a>
+          <StreamingProviders tmdbId={movie.tmdbId} />
 
           {movie.inLibrary && (
             <div className="px-3 py-2 bg-green-500/20 rounded-lg text-sm text-green-400 font-medium mt-1">
