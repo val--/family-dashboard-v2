@@ -95,7 +95,82 @@ function WaitingSlide({ movie, isActive }) {
   )
 }
 
-function StatusCard({ downloads, missing }) {
+function DownloadDetailModal({ movie, onClose }) {
+  const isDownloading = movie.type === 'downloading'
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-end p-4">
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
+        >
+          &times;
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
+        <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
+          {movie.poster ? (
+            <img src={movie.poster} alt={movie.title} className="h-full w-full object-cover rounded-lg" />
+          ) : (
+            <div className="h-full w-full bg-white/10 rounded-lg" />
+          )}
+        </div>
+        <div className="flex flex-col gap-3 max-w-md">
+          <h2 className="text-2xl font-light text-white">{movie.title}</h2>
+          {movie.year && <span className="text-base text-white/40">{movie.year}</span>}
+
+          <div className={`inline-flex self-start px-3 py-1 rounded-lg text-sm font-medium ${
+            isDownloading ? 'bg-orange-500/20 text-orange-400' : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {isDownloading ? 'En cours de téléchargement' : 'En attente'}
+          </div>
+
+          {isDownloading && (
+            <div className="flex flex-col gap-2">
+              {/* Progress bar */}
+              <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-500 rounded-full transition-all duration-1000"
+                  style={{ width: `${movie.progress || 0}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-sm text-white/50">
+                <span>{movie.progress}%</span>
+                {movie.size && <span>{(movie.size - (movie.sizeleft || 0)).toFixed(1)} / {movie.size} Go</span>}
+              </div>
+
+              {movie.eta && (
+                <div className="text-sm text-white/40">
+                  Fin estimée : {new Date(movie.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  {movie.timeleft && <span className="ml-2">({movie.timeleft})</span>}
+                </div>
+              )}
+
+              {movie.quality && (
+                <div className="text-sm text-white/40">
+                  Qualité : <span className="text-white/60">{movie.quality}</span>
+                </div>
+              )}
+
+              {movie.release && (
+                <div className="text-xs text-white/30 break-all">{movie.release}</div>
+              )}
+
+              <div className="flex gap-4 text-sm text-white/40">
+                {movie.downloadClient && <span>Client : <span className="text-white/60">{movie.downloadClient}</span></span>}
+                {movie.indexer && <span>Source : <span className="text-white/60">{movie.indexer}</span></span>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function StatusCard({ downloads, missing, onSelect }) {
   const downloadTitles = new Set(downloads.map((m) => m.title))
   const slides = [
     ...downloads.map((m) => ({ ...m, type: 'downloading' })),
@@ -113,8 +188,14 @@ function StatusCard({ downloads, missing }) {
 
   if (slides.length === 0) return null
 
+  const current = slides[index % slides.length]
+
   return (
-    <div className="flex-1 max-w-36 relative" style={{ aspectRatio: '2/3.4' }}>
+    <div
+      className="flex-1 max-w-36 relative cursor-pointer"
+      style={{ aspectRatio: '2/3.4' }}
+      onClick={() => onSelect?.(current)}
+    >
       {slides.map((movie, i) => (
         movie.type === 'downloading' ? (
           <DownloadingSlide
@@ -244,6 +325,7 @@ function Plex() {
   const { movies, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [selectedDownload, setSelectedDownload] = useState(null)
   const [showSearch, setShowSearch] = useState(false)
 
   if (error || loading) return null
@@ -268,7 +350,7 @@ function Plex() {
           </div>
           <div className="flex items-start gap-4">
             {hasStatus && (
-              <StatusCard downloads={downloads} missing={missing} />
+              <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
             )}
             {movies?.length > 0 &&
               movies.slice(0, hasStatus ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
@@ -280,6 +362,9 @@ function Plex() {
       </div>
       {selectedMovie && (
         <MovieDetailModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+      )}
+      {selectedDownload && (
+        <DownloadDetailModal movie={selectedDownload} onClose={() => setSelectedDownload(null)} />
       )}
       {showSearch && (
         <MovieSearch onClose={() => setShowSearch(false)} />

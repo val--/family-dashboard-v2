@@ -273,6 +273,10 @@ def radarr_status():
                 if img.get("coverType") == "poster":
                     poster = img.get("remoteUrl")
                     break
+            size_gb = round(record.get("size", 0) / (1024**3), 1)
+            sizeleft_gb = round(record.get("sizeleft", 0) / (1024**3), 1)
+            quality_name = record.get("quality", {}).get("quality", {}).get("name")
+
             if movie_id not in seen_movies or progress > seen_movies[movie_id]["progress"]:
                 seen_movies[movie_id] = {
                     "title": movie.get("title"),
@@ -280,6 +284,13 @@ def radarr_status():
                     "progress": progress,
                     "eta": record.get("estimatedCompletionTime"),
                     "poster": poster,
+                    "release": record.get("title"),
+                    "quality": quality_name,
+                    "size": size_gb,
+                    "sizeleft": sizeleft_gb,
+                    "downloadClient": record.get("downloadClient"),
+                    "indexer": record.get("indexer"),
+                    "timeleft": record.get("timeleft"),
                 }
         downloading = list(seen_movies.values())
 
