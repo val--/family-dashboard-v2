@@ -8,11 +8,17 @@ const MAX_PREVIEW_MOVIES = 4
 const DOWNLOAD_ROTATE_INTERVAL = 5000
 
 function timeAgo(timestamp) {
-  const diff = Date.now() - timestamp * 1000
-  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const now = new Date()
+  const added = new Date(timestamp * 1000)
+  const diffMs = now - added
+  const hours = Math.floor(diffMs / (1000 * 60 * 60))
   if (hours < 1) return "À l'instant"
-  if (hours < 24) return `Il y a ${hours}h`
-  const days = Math.floor(hours / 24)
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const addedDay = new Date(added.getFullYear(), added.getMonth(), added.getDate())
+  const days = Math.round((today - addedDay) / (1000 * 60 * 60 * 24))
+
+  if (days === 0) return `Il y a ${hours}h`
   if (days === 1) return 'Hier'
   return `Il y a ${days}j`
 }
