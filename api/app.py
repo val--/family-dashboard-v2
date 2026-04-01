@@ -91,40 +91,47 @@ def vpn_status():
         health_status = container.get("State", {}).get("Health", {}).get("Status", "")
         is_healthy = health_status == "healthy"
 
-        # Get public IP by calling exec on gluetun via Docker API
+        # Get public IP from gluetun's /tmp/gluetun/ip file via docker exec
+        public_ip = None
         ip_info = {}
         if is_healthy:
-            # Create exec
-            conn2 = http.client.HTTPConnection("localhost")
-            conn2.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
-            conn2.sock.connect("/var/run/docker.sock")
-            exec_body = jsonlib.dumps({"AttachStdout": True, "Cmd": ["wget", "-qO-", "https://ipinfo.io/json"]})
-            conn2.request("POST", "/containers/gluetun/exec", body=exec_body,
-                         headers={"Content-Type": "application/json"})
-            exec_resp = conn2.getresponse()
-            exec_id = jsonlib.loads(exec_resp.read()).get("Id")
-            conn2.close()
+            import urllib.request
+            # Read IP from gluetun's IP file
+            try:
+                exec_body = jsonlib.dumps({"AttachStdout": True, "Cmd": ["cat", "/tmp/gluetun/ip"]})
+                conn2 = http.client.HTTPConnection("localhost")
+                conn2.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
+                conn2.sock.connect("/var/run/docker.sock")
+                conn2.request("POST", "/containers/gluetun/exec", body=exec_body,
+                             headers={"Content-Type": "application/json"})
+                exec_id = jsonlib.loads(conn2.getresponse().read()).get("Id")
+                conn2.close()
 
-            # Start exec
-            conn3 = http.client.HTTPConnection("localhost")
-            conn3.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
-            conn3.sock.connect("/var/run/docker.sock")
-            conn3.request("POST", f"/exec/{exec_id}/start",
-                         body=jsonlib.dumps({"Detach": False}),
-                         headers={"Content-Type": "application/json"})
-            start_resp = conn3.getresponse()
-            raw = start_resp.read()
-            conn3.close()
+                conn3 = http.client.HTTPConnection("localhost")
+                conn3.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
+                conn3.sock.connect("/var/run/docker.sock")
+                conn3.request("POST", f"/exec/{exec_id}/start",
+                             body=jsonlib.dumps({"Detach": False}),
+                             headers={"Content-Type": "application/json"})
+                raw = conn3.getresponse().read()
+                conn3.close()
+                public_ip = raw.decode("utf-8", errors="ignore").strip().lstrip("\x01\x00\x00\x00\x00\x00\x00")
+                # Remove any remaining non-printable chars
+                public_ip = ''.join(c for c in public_ip if c.isdigit() or c == '.') or None
+            except Exception:
+                pass
 
-            # Parse output (skip Docker stream header bytes if present)
-            text = raw.decode("utf-8", errors="ignore")
-            json_start = text.find("{")
-            if json_start >= 0:
-                ip_info = jsonlib.loads(text[json_start:])
+            # Get geo info from ipinfo.io using the VPN IP
+            if public_ip:
+                try:
+                    with urllib.request.urlopen(f"https://ipinfo.io/{public_ip}/json", timeout=5) as r:
+                        ip_info = jsonlib.loads(r.read())
+                except Exception:
+                    pass
 
         return jsonify({
             "healthy": is_healthy,
-            "ip": ip_info.get("ip"),
+            "ip": public_ip,
             "country": ip_info.get("country"),
             "city": ip_info.get("city"),
             "org": ip_info.get("org"),
