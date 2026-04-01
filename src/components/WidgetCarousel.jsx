@@ -1,6 +1,6 @@
 import { useState, useRef, Children } from 'react'
 
-export default function WidgetCarousel({ children, titles = [] }) {
+export default function WidgetCarousel({ children, titles = [], indicators = [] }) {
   const [active, setActive] = useState(0)
   const touchStart = useRef(null)
   const items = Children.toArray(children)
@@ -34,11 +34,20 @@ export default function WidgetCarousel({ children, titles = [] }) {
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`text-2xl uppercase tracking-wider ${
+              className={`text-2xl uppercase tracking-wider relative ${
                 i === active ? 'text-white' : 'text-white/30'
               }`}
             >
               {title}
+              {indicators[i] && (
+                <span
+                  className={`absolute -top-1 -right-3 w-2.5 h-2.5 rounded-full ${
+                    indicators[i] === 'green' ? 'bg-green-400' :
+                    indicators[i] === 'orange' ? 'bg-orange-400' :
+                    indicators[i] === 'red' ? 'bg-red-400' : ''
+                  }`}
+                />
+              )}
             </button>
           ))}
         </div>
