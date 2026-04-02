@@ -361,8 +361,8 @@ function TriviaModal({ text, movie, onClose }) {
 }
 
 const MarqueeBanner = memo(function MarqueeBanner({ text, movie, onClick }) {
-  // Scale duration with text length (~100px/s scroll speed)
-  const duration = Math.max(15, Math.round(text.length * 0.06))
+  // Scale duration with text length
+  const duration = Math.max(10, Math.round(text.length * 0.035))
 
   return (
     <div className="w-full overflow-hidden mt-3 shrink-0 cursor-pointer" onClick={onClick}>
@@ -399,8 +399,8 @@ function Plex() {
 
   return (
     <>
-      <div className="flex flex-col gap-3 h-full items-center">
-        <div className="flex flex-col gap-3 w-fit min-h-0">
+      <div className="flex flex-col h-full items-center w-full">
+        <div className="flex flex-col gap-2 w-fit" style={{ flex: trivia?.text ? '0 0 85%' : '1 1 auto' }}>
           <div className="flex items-center justify-between">
             <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
             <button
@@ -410,7 +410,7 @@ function Plex() {
               Je cherche un film
             </button>
           </div>
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 flex-1 min-h-0">
             {hasStatus && (
               <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
             )}
@@ -422,7 +422,9 @@ function Plex() {
           </div>
         </div>
         {trivia?.text && (
-          <MarqueeBanner text={trivia.text} movie={trivia.movie} onClick={() => setShowTrivia(true)} />
+          <div className="w-full overflow-hidden" style={{ flex: '0 0 15%' }}>
+            <MarqueeBanner text={trivia.text} movie={trivia.movie} onClick={() => setShowTrivia(true)} />
+          </div>
         )}
       </div>
       {selectedMovie && (
