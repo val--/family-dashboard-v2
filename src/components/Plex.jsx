@@ -328,12 +328,44 @@ function MovieCard({ movie, onClick }) {
   )
 }
 
-const MarqueeBanner = memo(function MarqueeBanner({ text, movie }) {
+function TriviaModal({ text, movie, onClose }) {
+  const anecdotes = text.split('★').map(s => s.trim()).filter(Boolean)
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-end p-4">
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
+        >
+          &times;
+        </button>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-8 pb-8 max-w-2xl mx-auto gap-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-light text-white">{movie}</h2>
+          <div className="text-sm text-white/30 mt-1">Le saviez-vous ?</div>
+        </div>
+        <div className="flex flex-col gap-4 overflow-y-auto">
+          {anecdotes.map((anecdote, i) => (
+            <div key={i} className="flex gap-3">
+              <span className="text-amber-400 shrink-0 mt-0.5">★</span>
+              <p className="text-base text-white/70 leading-relaxed">{anecdote}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+const MarqueeBanner = memo(function MarqueeBanner({ text, movie, onClick }) {
   // Scale duration with text length (~100px/s scroll speed)
   const duration = Math.max(15, Math.round(text.length * 0.06))
 
   return (
-    <div className="w-full overflow-hidden mt-3 shrink-0">
+    <div className="w-full overflow-hidden mt-3 shrink-0 cursor-pointer" onClick={onClick}>
       <div className="text-xs text-white/30 mb-1">
         Dernièrement vu : {movie}
       </div>
@@ -356,6 +388,7 @@ function Plex() {
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [selectedDownload, setSelectedDownload] = useState(null)
   const [showSearch, setShowSearch] = useState(false)
+  const [showTrivia, setShowTrivia] = useState(false)
 
   if (error || loading) return null
   if (!movies?.length && !radarrData) return null
@@ -389,7 +422,7 @@ function Plex() {
           </div>
         </div>
         {trivia?.text && (
-          <MarqueeBanner text={trivia.text} movie={trivia.movie} />
+          <MarqueeBanner text={trivia.text} movie={trivia.movie} onClick={() => setShowTrivia(true)} />
         )}
       </div>
       {selectedMovie && (
@@ -397,6 +430,9 @@ function Plex() {
       )}
       {selectedDownload && (
         <DownloadDetailModal movie={selectedDownload} onClose={() => setSelectedDownload(null)} />
+      )}
+      {showTrivia && trivia?.text && (
+        <TriviaModal text={trivia.text} movie={trivia.movie} onClose={() => setShowTrivia(false)} />
       )}
       {showSearch && (
         <MovieSearch onClose={() => setShowSearch(false)} />
