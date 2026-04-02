@@ -329,8 +329,8 @@ function MovieCard({ movie, onClick }) {
 }
 
 function MarqueeBanner({ text, movie }) {
-  // Scale duration with text length (~50px/s scroll speed)
-  const duration = Math.max(20, Math.round(text.length * 0.15))
+  // Scale duration with text length (~100px/s scroll speed)
+  const duration = Math.max(15, Math.round(text.length * 0.06))
 
   return (
     <div className="w-full overflow-hidden mt-3 shrink-0">
