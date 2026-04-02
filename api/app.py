@@ -496,9 +496,10 @@ def tmdb_streaming(tmdb_id):
 #  Trivia (Gemini)
 # ========================
 
-_trivia_cache = {"movie": None, "text": None, "error_until": 0}
+_trivia_cache = {"movie": None, "text": None, "error_until": 0, "generated_at": 0}
 
 GEMINI_COOLDOWN = 120  # seconds to wait after a failed Gemini call
+TRIVIA_TTL = 30 * 60  # regenerate trivia every 30 minutes even for the same movie
 
 
 @app.route("/api/plex/trivia")
@@ -536,8 +537,9 @@ def plex_trivia():
         directors = [d.get("tag") for d in last_watched.findall("Director")]
         movie_key = f"{movie_title} ({movie_year})"
 
-        # Return cache if same movie
-        if _trivia_cache["movie"] == movie_key and _trivia_cache["text"]:
+        # Return cache if same movie and not expired
+        cache_age = time.time() - _trivia_cache["generated_at"]
+        if _trivia_cache["movie"] == movie_key and _trivia_cache["text"] and cache_age < TRIVIA_TTL:
             return jsonify({
                 "text": _trivia_cache["text"],
                 "movie": _trivia_cache["movie"],
@@ -580,6 +582,7 @@ def plex_trivia():
         _trivia_cache["movie"] = movie_key
         _trivia_cache["text"] = text
         _trivia_cache["error_until"] = 0
+        _trivia_cache["generated_at"] = time.time()
 
         return jsonify({"text": text, "movie": movie_key})
 
