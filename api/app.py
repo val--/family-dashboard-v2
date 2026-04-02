@@ -557,9 +557,10 @@ def plex_trivia():
             f"le genre de choses qu'on découvre après l'avoir vu : secrets de tournage, choix de casting, "
             f"détails cachés, contexte de production, réception ou box-office. "
             f"Ne cite que des faits réels et vérifiés. N'invente rien. Moins si tu ne trouves pas assez de faits vérifiés, plus si le film est riche en anecdotes. "
-            f"Format : une seule ligne continue, chaque anecdote séparée par \" ★ \". "
+            f"FORMAT OBLIGATOIRE : une seule ligne, chaque anecdote DOIT être séparée par le caractère ★. "
+            f"Exemple de format attendu : \"Première anecdote ici ★ Deuxième anecdote ici ★ Troisième anecdote ici\" "
             f"Ton : conversationnel et concis, pas de superlatifs ni d'exclamations. En français. "
-            f"Pas de titre ni de préambule, commence directement."
+            f"Pas de titre, pas de préambule, pas de numérotation, commence directement par la première anecdote."
         )
 
         gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
