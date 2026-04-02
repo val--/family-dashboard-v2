@@ -496,11 +496,15 @@ def tmdb_streaming(tmdb_id):
 #  Trivia (Gemini)
 # ========================
 
-_trivia_cache = {"movie": None, "text": None}
+_trivia_cache = {"movie": None, "text": None, "error_until": 0}
+
+GEMINI_COOLDOWN = 120  # seconds to wait after a failed Gemini call
 
 
 @app.route("/api/plex/trivia")
 def plex_trivia():
+    import time
+
     if not GEMINI_API_KEY:
         return jsonify({"error": "GEMINI_API_KEY not configured"}), 500
     if not PLEX_TOKEN:
@@ -529,13 +533,18 @@ def plex_trivia():
 
         movie_title = last_watched.get("title")
         movie_year = last_watched.get("year", "")
+        movie_key = f"{movie_title} ({movie_year})"
 
         # Return cache if same movie
-        if _trivia_cache["movie"] == f"{movie_title} ({movie_year})":
+        if _trivia_cache["movie"] == movie_key and _trivia_cache["text"]:
             return jsonify({
                 "text": _trivia_cache["text"],
                 "movie": _trivia_cache["movie"],
             })
+
+        # Rate-limit: don't retry Gemini too soon after an error
+        if time.time() < _trivia_cache["error_until"]:
+            return jsonify({"text": None, "movie": movie_key})
 
         # Call Gemini API
         prompt = (
@@ -562,12 +571,14 @@ def plex_trivia():
         text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
 
         # Update cache
-        _trivia_cache["movie"] = f"{movie_title} ({movie_year})"
+        _trivia_cache["movie"] = movie_key
         _trivia_cache["text"] = text
+        _trivia_cache["error_until"] = 0
 
-        return jsonify({"text": text, "movie": _trivia_cache["movie"]})
+        return jsonify({"text": text, "movie": movie_key})
 
     except Exception as e:
+        _trivia_cache["error_until"] = time.time() + GEMINI_COOLDOWN
         return jsonify({"error": str(e)}), 500
 
 
