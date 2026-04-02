@@ -5,8 +5,8 @@ export default function Clock() {
 
   return (
     <div className="text-center">
-      <div className="text-4xl font-light tracking-wide">{time}</div>
-      <div className="text-sm font-light capitalize text-white/70">
+      <div className="text-3xl font-light tracking-wide">{time}</div>
+      <div className="text-xs font-light capitalize text-white/70">
         {date}
       </div>
     </div>
