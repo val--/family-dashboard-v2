@@ -329,13 +329,19 @@ function MovieCard({ movie, onClick }) {
 }
 
 function MarqueeBanner({ text, movie }) {
+  // Scale duration with text length (~50px/s scroll speed)
+  const duration = Math.max(20, Math.round(text.length * 0.15))
+
   return (
-    <div className="w-full overflow-hidden mt-3">
+    <div className="w-full overflow-hidden mt-3 shrink-0">
       <div className="text-xs text-white/30 mb-1">
         Dernièrement vu : {movie}
       </div>
       <div className="relative overflow-hidden">
-        <div className="animate-marquee whitespace-nowrap text-sm text-white/50">
+        <div
+          className="animate-marquee whitespace-nowrap text-sm text-white/50"
+          style={{ animationDuration: `${duration}s` }}
+        >
           {text}
         </div>
       </div>
@@ -360,8 +366,8 @@ function Plex() {
 
   return (
     <>
-      <div className="flex flex-col gap-3 h-full items-center">
-        <div className="flex flex-col gap-3 w-fit">
+      <div className="flex flex-col gap-3 h-full items-center overflow-hidden">
+        <div className="flex flex-col gap-3 w-fit shrink-0">
           <div className="flex items-center justify-between">
             <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
             <button
@@ -381,10 +387,10 @@ function Plex() {
               ))
             }
           </div>
-          {trivia?.text && (
-            <MarqueeBanner text={trivia.text} movie={trivia.movie} />
-          )}
         </div>
+        {trivia?.text && (
+          <MarqueeBanner text={trivia.text} movie={trivia.movie} />
+        )}
       </div>
       {selectedMovie && (
         <MovieDetailModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />

@@ -533,6 +533,7 @@ def plex_trivia():
 
         movie_title = last_watched.get("title")
         movie_year = last_watched.get("year", "")
+        directors = [d.get("tag") for d in last_watched.findall("Director")]
         movie_key = f"{movie_title} ({movie_year})"
 
         # Return cache if same movie
@@ -547,9 +548,11 @@ def plex_trivia():
             return jsonify({"text": None, "movie": movie_key})
 
         # Call Gemini API
+        director_hint = f", réalisé par {', '.join(directors)}" if directors else ""
         prompt = (
             f"Tu es un cinéphile passionné. Génère un texte défilant continu (une seule longue ligne, sans retour à la ligne) "
-            f"avec 4-5 anecdotes fascinantes et peu connues sur le film \"{movie_title}\" ({movie_year}). "
+            f"avec 4-5 anecdotes fascinantes et peu connues sur le film \"{movie_title}\" ({movie_year}{director_hint}). "
+            f"Assure-toi de parler du bon film : le titre exact est \"{movie_title}\", sorti en {movie_year}{director_hint}. "
             f"Sépare chaque anecdote par \" ★ \". "
             f"Utilise un ton décontracté et enthousiaste. Écris en français. "
             f"Ne mets pas de titre ni de préambule, commence directement par la première anecdote."
