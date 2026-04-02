@@ -341,12 +341,12 @@ function TriviaModal({ text, movie, onClose }) {
           &times;
         </button>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-8 pb-8 max-w-2xl mx-auto gap-6">
-        <div className="text-center">
+      <div className="flex-1 flex flex-col items-center px-8 pb-8 max-w-2xl mx-auto gap-6 overflow-y-auto">
+        <div className="text-center shrink-0 pt-4">
           <h2 className="text-2xl font-light text-white">{movie}</h2>
           <div className="text-sm text-white/30 mt-1">Le saviez-vous ?</div>
         </div>
-        <div className="flex flex-col gap-4 overflow-y-auto">
+        <div className="flex flex-col gap-4">
           {anecdotes.map((anecdote, i) => (
             <div key={i} className="flex gap-3">
               <span className="text-amber-400 shrink-0 mt-0.5">★</span>
