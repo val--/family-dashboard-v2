@@ -399,8 +399,8 @@ function Plex() {
 
   return (
     <>
-      <div className="flex flex-col gap-3 h-full items-center overflow-hidden">
-        <div className="flex flex-col gap-3 w-fit shrink-0">
+      <div className="flex flex-col gap-3 h-full items-center">
+        <div className="flex flex-col gap-3 w-fit min-h-0">
           <div className="flex items-center justify-between">
             <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
             <button
