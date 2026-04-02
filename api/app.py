@@ -550,9 +550,11 @@ def plex_trivia():
         # Call Gemini API
         director_hint = f", réalisé par {', '.join(directors)}" if directors else ""
         prompt = (
-            f"Tu es un cinéphile passionné. Génère un texte défilant continu (une seule longue ligne, sans retour à la ligne) "
-            f"avec 4-5 anecdotes fascinantes et peu connues sur le film \"{movie_title}\" ({movie_year}{director_hint}). "
-            f"Assure-toi de parler du bon film : le titre exact est \"{movie_title}\", sorti en {movie_year}{director_hint}. "
+            f"Recherche des informations vérifiées sur le film \"{movie_title}\" ({movie_year}{director_hint}). "
+            f"Génère un texte défilant continu (une seule longue ligne, sans retour à la ligne) "
+            f"avec 4-5 anecdotes réelles, vérifiées et sourcées sur ce film. "
+            f"Ne cite que des faits avérés trouvés en ligne (tournage, casting, box-office, coulisses, réception critique). "
+            f"N'invente rien. Si tu ne trouves pas assez d'anecdotes vérifiées, mets-en moins. "
             f"Sépare chaque anecdote par \" ★ \". "
             f"Utilise un ton décontracté et enthousiaste. Écris en français. "
             f"Ne mets pas de titre ni de préambule, commence directement par la première anecdote."
@@ -561,6 +563,7 @@ def plex_trivia():
         gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         body = jsonlib.dumps({
             "contents": [{"parts": [{"text": prompt}]}],
+            "tools": [{"google_search": {}}],
         })
         req = urllib.request.Request(
             gemini_url,
