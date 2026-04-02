@@ -366,12 +366,12 @@ const MarqueeBanner = memo(function MarqueeBanner({ text, movie, onClick }) {
 
   return (
     <div className="w-full flex items-center gap-3 mt-2 shrink-0 cursor-pointer" onClick={onClick}>
-      <div className="text-xs text-white/30 whitespace-nowrap shrink-0">
-        Vu récemment : {movie} —
+      <div className="text-sm text-white/40 whitespace-nowrap shrink-0">
+        🍿 Vu récemment : "{movie}" —
       </div>
       <div className="flex-1 overflow-hidden min-w-0">
         <div
-          className="animate-marquee whitespace-nowrap text-sm text-white/50"
+          className="animate-marquee whitespace-nowrap text-sm text-white/40"
           style={{ animationDuration: `${duration}s` }}
         >
           {text}
