@@ -29,12 +29,12 @@ export default function WidgetCarousel({ children, titles = [], indicators = [] 
       onTouchEnd={onTouchEnd}
     >
       {count > 1 && (
-        <div className="flex items-center justify-center gap-8 mb-4">
+        <div className="flex items-center justify-center gap-6 mb-2">
           {titles.map((title, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`text-2xl uppercase tracking-wider relative ${
+              className={`text-xl uppercase tracking-wider relative ${
                 i === active ? 'text-white' : 'text-white/30'
               }`}
             >
@@ -65,7 +65,7 @@ export default function WidgetCarousel({ children, titles = [], indicators = [] 
         </div>
       </div>
       {count > 1 && (
-        <div className="flex justify-center gap-1.5 pt-3">
+        <div className="flex justify-center gap-1.5 pt-1">
           {items.map((_, i) => (
             <div
               key={i}
