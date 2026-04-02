@@ -240,7 +240,7 @@ def plex_recent():
         import urllib.request
         import xml.etree.ElementTree as ET
 
-        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}"
+        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)
@@ -250,7 +250,7 @@ def plex_recent():
             if item.get("type") != "movie":
                 continue
             movies.append(parse_plex_movie(item))
-            if len(movies) >= 8:
+            if len(movies) >= 20:
                 break
 
         return jsonify({"movies": movies})

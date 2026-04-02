@@ -389,6 +389,7 @@ function Plex() {
   const [selectedDownload, setSelectedDownload] = useState(null)
   const [showSearch, setShowSearch] = useState(false)
   const [showTrivia, setShowTrivia] = useState(false)
+  const [page, setPage] = useState(0)
 
   if (error || loading) return null
   if (!movies?.length && !radarrData) return null
@@ -396,6 +397,9 @@ function Plex() {
   const downloads = radarrData?.downloading || []
   const missing = radarrData?.missing || []
   const hasStatus = downloads.length > 0 || missing.length > 0
+  const perPage = MAX_PREVIEW_MOVIES + 1
+  const totalPages = movies ? Math.ceil(movies.length / perPage) : 1
+  const visibleMovies = movies?.slice(page * perPage, (page + 1) * perPage) || []
 
   return (
     <>
@@ -410,15 +414,31 @@ function Plex() {
               Je cherche un film
             </button>
           </div>
-          <div className="flex items-start gap-4 flex-1 min-h-0">
-            {hasStatus && (
-              <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
-            )}
-            {movies?.length > 0 &&
-              movies.slice(0, hasStatus ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1).map((movie, i) => (
-                <MovieCard key={i} movie={movie} onClick={() => setSelectedMovie(movie)} />
-              ))
-            }
+          <div className="flex items-center gap-1 flex-1 min-h-0">
+            <button
+              onClick={() => setPage(page - 1)}
+              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+              }`}
+            >
+              ‹
+            </button>
+            <div className="flex items-start gap-4 flex-1 min-h-0">
+              {hasStatus && page === 0 && (
+                <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
+              )}
+              {visibleMovies.map((movie, i) => (
+                <MovieCard key={`${page}-${i}`} movie={movie} onClick={() => setSelectedMovie(movie)} />
+              ))}
+            </div>
+            <button
+              onClick={() => setPage(page + 1)}
+              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+              }`}
+            >
+              ›
+            </button>
           </div>
         </div>
         {trivia?.text && (
