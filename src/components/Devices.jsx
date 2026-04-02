@@ -29,7 +29,7 @@ export default function Devices() {
           isOnline={vpn.healthy}
           detail={
             vpn.healthy
-              ? `${vpn.ip} — ${vpn.city}, ${vpn.country}`
+              ? (vpn.ip && vpn.city ? `${vpn.ip} — ${vpn.city}, ${vpn.country}` : 'Connecté')
               : 'Déconnecté'
           }
         />
