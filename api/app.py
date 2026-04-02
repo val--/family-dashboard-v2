@@ -552,15 +552,16 @@ def plex_trivia():
         # Call Gemini API
         director_hint = f", réalisé par {', '.join(directors)}" if directors else ""
         prompt = (
-            f"Le film \"{movie_title}\" ({movie_year}{director_hint}) vient d'être vu. "
-            f"Donne le plus d'anecdotes possible de coulisses ou faits intéressants sur ce film, "
-            f"le genre de choses qu'on découvre après l'avoir vu : secrets de tournage, choix de casting, "
-            f"détails cachés, contexte de production, réception ou box-office. "
-            f"Ne cite que des faits réels et vérifiés. N'invente rien. Moins si tu ne trouves pas assez de faits vérifiés, plus si le film est riche en anecdotes. "
+            f"Recherche les \"secrets de tournage\" et \"trivia\" du film \"{movie_title}\" ({movie_year}{director_hint}). "
+            f"Cherche en priorité sur allocine.fr (section secrets de tournage), puis imdb.com (trivia), puis wikipedia. "
+            f"Extrais uniquement des faits sourcés et vérifiables trouvés sur ces sites. "
+            f"Ne génère AUCUNE information de toi-même. Si tu ne trouves rien, réponds juste \"Aucune anecdote trouvée\". "
+            f"Sujets possibles : coulisses du tournage, choix de casting, clins d'œil cachés, budget, box-office, réception critique. "
             f"FORMAT OBLIGATOIRE : une seule ligne, chaque anecdote DOIT être séparée par le caractère ★. "
             f"Exemple de format attendu : \"Première anecdote ici ★ Deuxième anecdote ici ★ Troisième anecdote ici\" "
             f"Ton : conversationnel et concis, pas de superlatifs ni d'exclamations. En français. "
-            f"Pas de titre, pas de préambule, pas de numérotation, commence directement par la première anecdote."
+            f"Pas de titre, pas de préambule, pas de numérotation, pas de liens, pas d'URLs, juste du texte. "
+            f"Commence directement par la première anecdote."
         )
 
         gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
