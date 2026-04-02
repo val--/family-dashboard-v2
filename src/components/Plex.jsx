@@ -362,7 +362,7 @@ function TriviaModal({ text, movie, onClose }) {
 
 const MarqueeBanner = memo(function MarqueeBanner({ text, movie, onClick }) {
   // Scale duration with text length
-  const duration = Math.max(10, Math.round(text.length * 0.035))
+  const duration = Math.max(12, Math.round(text.length * 0.045))
 
   return (
     <div className="w-full overflow-hidden mt-3 shrink-0 cursor-pointer" onClick={onClick}>

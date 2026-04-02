@@ -553,10 +553,10 @@ def plex_trivia():
         director_hint = f", réalisé par {', '.join(directors)}" if directors else ""
         prompt = (
             f"Le film \"{movie_title}\" ({movie_year}{director_hint}) vient d'être vu. "
-            f"Donne 4-5 anecdotes de coulisses ou faits intéressants sur ce film, "
+            f"Donne le plus d'anecdotes possible de coulisses ou faits intéressants sur ce film, "
             f"le genre de choses qu'on découvre après l'avoir vu : secrets de tournage, choix de casting, "
             f"détails cachés, contexte de production, réception ou box-office. "
-            f"Ne cite que des faits réels et vérifiés. N'invente rien. Moins d'anecdotes si besoin. "
+            f"Ne cite que des faits réels et vérifiés. N'invente rien. Moins si tu ne trouves pas assez de faits vérifiés, plus si le film est riche en anecdotes. "
             f"Format : une seule ligne continue, chaque anecdote séparée par \" ★ \". "
             f"Ton : conversationnel et concis, pas de superlatifs ni d'exclamations. En français. "
             f"Pas de titre ni de préambule, commence directement."
