@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
+import { useTrivia } from '../hooks/useTrivia'
 import MovieSearch from './MovieSearch'
 
 const MAX_PREVIEW_MOVIES = 4
@@ -327,9 +328,25 @@ function MovieCard({ movie, onClick }) {
   )
 }
 
+function MarqueeBanner({ text, movie }) {
+  return (
+    <div className="w-full overflow-hidden mt-3">
+      <div className="text-xs text-white/30 mb-1">
+        Dernièrement vu : {movie}
+      </div>
+      <div className="relative overflow-hidden">
+        <div className="animate-marquee whitespace-nowrap text-sm text-white/50">
+          {text}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Plex() {
   const { movies, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
+  const { trivia } = useTrivia()
   const [selectedMovie, setSelectedMovie] = useState(null)
   const [selectedDownload, setSelectedDownload] = useState(null)
   const [showSearch, setShowSearch] = useState(false)
@@ -364,6 +381,9 @@ function Plex() {
               ))
             }
           </div>
+          {trivia?.text && (
+            <MarqueeBanner text={trivia.text} movie={trivia.movie} />
+          )}
         </div>
       </div>
       {selectedMovie && (

@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Marquee scrolling animation */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
 /* Virtual keyboard dark theme */
 .hg-theme-dark {
   background: transparent !important;

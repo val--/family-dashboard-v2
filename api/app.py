@@ -27,6 +27,9 @@ RADARR_API_KEY = os.environ.get("RADARR_API_KEY", "")
 # -- TMDb config --
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 
+# -- Gemini config --
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
 # -- Calendar config --
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "")
 CREDENTIALS_PATH = os.environ.get("CREDENTIALS_PATH", "/app/credentials/service-account.json")
@@ -484,6 +487,85 @@ def tmdb_streaming(tmdb_id):
             })
 
         return jsonify({"providers": providers})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ========================
+#  Trivia (Gemini)
+# ========================
+
+_trivia_cache = {"movie": None, "text": None}
+
+
+@app.route("/api/plex/trivia")
+def plex_trivia():
+    if not GEMINI_API_KEY:
+        return jsonify({"error": "GEMINI_API_KEY not configured"}), 500
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        import xml.etree.ElementTree as ET
+
+        # Find last watched movie from Plex
+        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}"
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        last_watched = None
+        for item in tree.getroot():
+            if item.get("type") != "movie":
+                continue
+            if int(item.get("viewCount", 0)) > 0:
+                viewed_at = int(item.get("lastViewedAt", 0))
+                if last_watched is None or viewed_at > int(last_watched.get("lastViewedAt", 0)):
+                    last_watched = item
+
+        if not last_watched:
+            return jsonify({"text": None, "movie": None})
+
+        movie_title = last_watched.get("title")
+        movie_year = last_watched.get("year", "")
+
+        # Return cache if same movie
+        if _trivia_cache["movie"] == f"{movie_title} ({movie_year})":
+            return jsonify({
+                "text": _trivia_cache["text"],
+                "movie": _trivia_cache["movie"],
+            })
+
+        # Call Gemini API
+        prompt = (
+            f"Tu es un cinéphile passionné. Génère un texte défilant continu (une seule longue ligne, sans retour à la ligne) "
+            f"avec 4-5 anecdotes fascinantes et peu connues sur le film \"{movie_title}\" ({movie_year}). "
+            f"Sépare chaque anecdote par \" ★ \". "
+            f"Utilise un ton décontracté et enthousiaste. Écris en français. "
+            f"Ne mets pas de titre ni de préambule, commence directement par la première anecdote."
+        )
+
+        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+        body = jsonlib.dumps({
+            "contents": [{"parts": [{"text": prompt}]}],
+        })
+        req = urllib.request.Request(
+            gemini_url,
+            data=body.encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = jsonlib.loads(resp.read())
+
+        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+        # Update cache
+        _trivia_cache["movie"] = f"{movie_title} ({movie_year})"
+        _trivia_cache["text"] = text
+
+        return jsonify({"text": text, "movie": _trivia_cache["movie"]})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
