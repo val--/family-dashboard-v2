@@ -550,14 +550,14 @@ def plex_trivia():
         # Call Gemini API
         director_hint = f", réalisé par {', '.join(directors)}" if directors else ""
         prompt = (
-            f"Recherche des informations vérifiées sur le film \"{movie_title}\" ({movie_year}{director_hint}). "
-            f"Génère un texte défilant continu (une seule longue ligne, sans retour à la ligne) "
-            f"avec 4-5 anecdotes réelles, vérifiées et sourcées sur ce film. "
-            f"Ne cite que des faits avérés trouvés en ligne (tournage, casting, box-office, coulisses, réception critique). "
-            f"N'invente rien. Si tu ne trouves pas assez d'anecdotes vérifiées, mets-en moins. "
-            f"Sépare chaque anecdote par \" ★ \". "
-            f"Utilise un ton décontracté et enthousiaste. Écris en français. "
-            f"Ne mets pas de titre ni de préambule, commence directement par la première anecdote."
+            f"Le film \"{movie_title}\" ({movie_year}{director_hint}) vient d'être vu. "
+            f"Donne 4-5 anecdotes de coulisses ou faits intéressants sur ce film, "
+            f"le genre de choses qu'on découvre après l'avoir vu : secrets de tournage, choix de casting, "
+            f"détails cachés, contexte de production, réception ou box-office. "
+            f"Ne cite que des faits réels et vérifiés. N'invente rien. Moins d'anecdotes si besoin. "
+            f"Format : une seule ligne continue, chaque anecdote séparée par \" ★ \". "
+            f"Ton : conversationnel et concis, pas de superlatifs ni d'exclamations. En français. "
+            f"Pas de titre ni de préambule, commence directement."
         )
 
         gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
