@@ -25,7 +25,7 @@ function App() {
   const devicesIndicator = useDevicesIndicator()
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-black text-white p-6">
+    <div className="flex flex-col h-screen overflow-hidden bg-black text-white p-4">
       {/* Top: Clock left half, Weather right half */}
       <div className="flex items-center">
         <div className="flex-1 flex justify-center">
@@ -37,7 +37,7 @@ function App() {
       </div>
 
       {/* Swipeable widgets */}
-      <div className="flex-1 overflow-hidden pt-4">
+      <div className="flex-1 overflow-hidden pt-2">
         <WidgetCarousel
           titles={['Agenda', 'Films', 'Appareils']}
           indicators={[null, null, devicesIndicator]}

@@ -8,7 +8,7 @@ function DayForecast({ label, icon, tempMin, tempMax }) {
   return (
     <div className="flex flex-col items-center gap-0">
       <span className="text-xs text-white/50">{label}</span>
-      <img src={weatherIconUrl(icon)} alt="" className="w-8 h-8" />
+      <img src={weatherIconUrl(icon)} alt="" className="w-7 h-7 -my-1" />
       <div className="text-xs">
         <span className="text-white/50">{tempMin}°</span>
         <span className="mx-0.5">/</span>
@@ -58,7 +58,7 @@ export default function Weather() {
     <div className="flex items-center gap-4">
       {/* Current */}
       <div className="flex items-center gap-2">
-        <img src={weatherIconUrl(icon)} alt={description} className="w-10 h-10" />
+        <img src={weatherIconUrl(icon)} alt={description} className="w-9 h-9 -my-1" />
         <div>
           <div className="text-2xl font-light">{temp}°</div>
           <div className="text-xs text-white/50 capitalize">{description}</div>
