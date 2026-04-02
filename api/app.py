@@ -555,7 +555,7 @@ def plex_trivia():
             f"Ne mets pas de titre ni de préambule, commence directement par la première anecdote."
         )
 
-        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
         body = jsonlib.dumps({
             "contents": [{"parts": [{"text": prompt}]}],
         })
