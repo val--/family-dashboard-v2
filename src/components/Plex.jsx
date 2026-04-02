@@ -328,7 +328,7 @@ function MovieCard({ movie, onClick }) {
   )
 }
 
-function MarqueeBanner({ text, movie }) {
+const MarqueeBanner = memo(function MarqueeBanner({ text, movie }) {
   // Scale duration with text length (~100px/s scroll speed)
   const duration = Math.max(15, Math.round(text.length * 0.06))
 
@@ -347,7 +347,7 @@ function MarqueeBanner({ text, movie }) {
       </div>
     </div>
   )
-}
+})
 
 function Plex() {
   const { movies, loading, error } = usePlex()
