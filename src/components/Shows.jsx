@@ -199,9 +199,14 @@ function Shows() {
   if (error || loading) return null
   if (!hasOnDeck && !hasRecent) return null
 
-  const perPage = hasOnDeck ? MAX_RECENT : MAX_RECENT + 1
-  const totalPages = hasRecent ? Math.ceil(recent.length / perPage) : 1
-  const visibleRecent = hasRecent ? recent.slice(page * perPage, (page + 1) * perPage) : []
+  const firstPageSize = hasOnDeck ? MAX_RECENT : MAX_RECENT + 1
+  const fullPage = MAX_RECENT + 1
+  const totalItems = recent?.length || 0
+  const remaining = totalItems - firstPageSize
+  const totalPages = totalItems <= firstPageSize ? 1 : 1 + Math.ceil(Math.max(0, remaining) / fullPage)
+  const start = page === 0 ? 0 : firstPageSize + (page - 1) * fullPage
+  const count = page === 0 ? firstPageSize : fullPage
+  const visibleRecent = hasRecent ? recent.slice(start, start + count) : []
 
   return (
     <>
