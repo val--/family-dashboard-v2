@@ -299,11 +299,7 @@ def plex_ondeck():
     try:
         import xml.etree.ElementTree as ET
 
-        section_key = find_plex_section(ET, "show")
-        if not section_key:
-            return jsonify({"shows": []})
-
-        url = f"{PLEX_URL}/library/sections/{section_key}/onDeck?X-Plex-Token={PLEX_TOKEN}"
+        url = f"{PLEX_URL}/library/onDeck?X-Plex-Token={PLEX_TOKEN}"
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)

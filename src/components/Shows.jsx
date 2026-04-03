@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { usePlexShows } from '../hooks/usePlexShows'
 import { usePlexOnDeck } from '../hooks/usePlexOnDeck'
 
-const MAX_RECENT = 5
-const MAX_ONDECK = 5
+const MAX_RECENT = 4
+const ONDECK_ROTATE_INTERVAL = 5000
 
 function ShowDetailModal({ show, onClose }) {
   return createPortal(
@@ -73,24 +73,29 @@ function ShowDetailModal({ show, onClose }) {
   )
 }
 
-function OnDeckCard({ show }) {
+function OnDeckSlide({ show, isActive }) {
   const pct = show.total ? Math.round((show.watched / show.total) * 100) : 0
 
   return (
-    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36">
-      <div className="relative w-full">
+    <div
+      className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+      style={{ opacity: isActive ? 1 : 0 }}
+    >
+      <div className="relative w-full overflow-hidden rounded">
         {show.thumb ? (
           <img
             src={show.thumb}
             alt={show.show}
-            className="w-full aspect-[2/3] object-cover rounded"
+            className="w-full aspect-[2/3] object-cover"
           />
         ) : (
-          <div className="w-full aspect-[2/3] bg-white/10 rounded" />
+          <div className="w-full aspect-[2/3] bg-white/10" />
         )}
-        {/* Progress bar overlay at bottom of poster */}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-purple-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          S{String(show.season).padStart(2, '0')} · {show.watched}/{show.total}
+        </div>
         {show.total && (
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50 rounded-b overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50 overflow-hidden">
             <div
               className="h-full bg-purple-500 transition-all duration-500"
               style={{ width: `${pct}%` }}
@@ -98,12 +103,36 @@ function OnDeckCard({ show }) {
           </div>
         )}
       </div>
-      <span className="text-sm text-center text-white/70 line-clamp-1 leading-tight w-full">
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
         {show.show}
-      </span>
-      <span className="text-xs text-white/40 leading-tight">
-        Saison {show.season} · {show.watched}/{show.total} ép.
-      </span>
+      </div>
+    </div>
+  )
+}
+
+function OnDeckCard({ shows }) {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (shows.length <= 1) return
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % shows.length)
+    }, ONDECK_ROTATE_INTERVAL)
+    return () => clearInterval(timer)
+  }, [shows.length])
+
+  return (
+    <div
+      className="flex-1 max-w-36 relative"
+      style={{ aspectRatio: '2/3.4' }}
+    >
+      {shows.map((show, i) => (
+        <OnDeckSlide
+          key={show.show}
+          show={show}
+          isActive={i === index % shows.length}
+        />
+      ))}
     </div>
   )
 }
@@ -140,7 +169,7 @@ function RecentCard({ show, onClick }) {
           </div>
         )}
       </div>
-      <span className="text-sm text-center text-white/70 line-clamp-1 leading-tight w-full">
+      <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
         {show.show}
       </span>
     </div>
@@ -151,7 +180,7 @@ function Shows() {
   const { shows: onDeck } = usePlexOnDeck()
   const { shows: recent, loading, error } = usePlexShows()
   const [selectedShow, setSelectedShow] = useState(null)
-  const [recentPage, setRecentPage] = useState(0)
+  const [page, setPage] = useState(0)
 
   // Preload thumbs
   useEffect(() => {
@@ -170,53 +199,42 @@ function Shows() {
   if (error || loading) return null
   if (!hasOnDeck && !hasRecent) return null
 
-  const totalRecentPages = hasRecent ? Math.ceil(recent.length / MAX_RECENT) : 0
-  const visibleRecent = hasRecent ? recent.slice(recentPage * MAX_RECENT, (recentPage + 1) * MAX_RECENT) : []
+  const perPage = hasOnDeck ? MAX_RECENT : MAX_RECENT + 1
+  const totalPages = hasRecent ? Math.ceil(recent.length / perPage) : 1
+  const visibleRecent = hasRecent ? recent.slice(page * perPage, (page + 1) * perPage) : []
 
   return (
     <>
-      <div className="flex flex-col h-full items-center w-full gap-3">
-        {/* En cours */}
-        {hasOnDeck && (
-          <div className="flex flex-col gap-2 w-fit" style={{ flex: hasRecent ? '0 0 55%' : '1 1 auto' }}>
-            <div className="text-sm text-white/40">En cours</div>
+      <div className="flex flex-col h-full items-center w-full">
+        <div className="flex flex-col gap-2 w-fit flex-1">
+          <div className="text-sm text-white/40">Dernières séries ajoutées sur Plex</div>
+          <div className="flex items-center gap-1 flex-1 min-h-0">
+            <button
+              onClick={() => setPage(page - 1)}
+              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+              }`}
+            >
+              &#8249;
+            </button>
             <div className="flex items-start gap-4 flex-1 min-h-0">
-              {onDeck.slice(0, MAX_ONDECK).map((show) => (
-                <OnDeckCard key={show.show} show={show} />
+              {hasOnDeck && page === 0 && (
+                <OnDeckCard shows={onDeck} />
+              )}
+              {visibleRecent.map((show, i) => (
+                <RecentCard key={`${page}-${i}`} show={show} onClick={() => setSelectedShow(show)} />
               ))}
             </div>
+            <button
+              onClick={() => setPage(page + 1)}
+              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+              }`}
+            >
+              &#8250;
+            </button>
           </div>
-        )}
-
-        {/* Récemment ajoutées */}
-        {hasRecent && (
-          <div className="flex flex-col gap-2 w-fit" style={{ flex: hasOnDeck ? '0 0 45%' : '1 1 auto' }}>
-            <div className="text-sm text-white/40">Récemment ajoutées</div>
-            <div className="flex items-center gap-1 flex-1 min-h-0">
-              <button
-                onClick={() => setRecentPage(recentPage - 1)}
-                className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                  recentPage > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
-                }`}
-              >
-                &#8249;
-              </button>
-              <div className="flex items-start gap-4 flex-1 min-h-0">
-                {visibleRecent.map((show, i) => (
-                  <RecentCard key={`${recentPage}-${i}`} show={show} onClick={() => setSelectedShow(show)} />
-                ))}
-              </div>
-              <button
-                onClick={() => setRecentPage(recentPage + 1)}
-                className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                  recentPage < totalRecentPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
-                }`}
-              >
-                &#8250;
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
       {selectedShow && (
         <ShowDetailModal show={selectedShow} onClose={() => setSelectedShow(null)} />
