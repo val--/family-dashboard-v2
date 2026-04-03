@@ -279,6 +279,18 @@ def plex_recent():
         return jsonify({"error": str(e)}), 500
 
 
+def find_plex_section(et_module, section_type):
+    """Find the Plex library section key for a given type (e.g. 'show', 'movie')."""
+    url = f"{PLEX_URL}/library/sections?X-Plex-Token={PLEX_TOKEN}"
+    req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        tree = et_module.parse(resp)
+    for directory in tree.getroot():
+        if directory.get("type") == section_type:
+            return directory.get("key")
+    return None
+
+
 @app.route("/api/plex/shows")
 def plex_shows():
     if not PLEX_TOKEN:
@@ -287,7 +299,11 @@ def plex_shows():
     try:
         import xml.etree.ElementTree as ET
 
-        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
+        section_key = find_plex_section(ET, "show")
+        if not section_key:
+            return jsonify({"shows": []})
+
+        url = f"{PLEX_URL}/library/sections/{section_key}/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)
