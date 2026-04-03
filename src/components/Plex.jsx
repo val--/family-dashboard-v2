@@ -391,6 +391,17 @@ function Plex() {
   const [showTrivia, setShowTrivia] = useState(false)
   const [page, setPage] = useState(0)
 
+  // Preload all movie thumbnails on mount
+  useEffect(() => {
+    if (!movies?.length) return
+    movies.forEach((movie) => {
+      if (movie.thumb) {
+        const img = new Image()
+        img.src = movie.thumb
+      }
+    })
+  }, [movies])
+
   if (error || loading) return null
   if (!movies?.length && !radarrData) return null
 
