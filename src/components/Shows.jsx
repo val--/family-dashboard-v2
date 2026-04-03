@@ -240,7 +240,13 @@ function Shows() {
             </button>
           </div>
         </div>
-        <div className="w-full" style={{ flex: '0 0 15%' }} />
+        <div className="w-full flex items-center justify-center" style={{ flex: '0 0 15%' }}>
+          {hasOnDeck && onDeck[0]?.total && (
+            <div className="text-sm text-white/50">
+              Série en cours : <span className="text-white/70">{onDeck[0].show}</span>, encore {onDeck[0].total - onDeck[0].watched} épisode{onDeck[0].total - onDeck[0].watched > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
       </div>
       {selectedShow && (
         <ShowDetailModal show={selectedShow} onClose={() => setSelectedShow(null)} />
