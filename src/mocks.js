@@ -51,6 +51,16 @@ export const mockPlex = {
   ],
 }
 
+export const mockPlexOnDeck = {
+  shows: [
+    { show: 'Severance', season: 2, watched: 7, total: 10, thumb: null, nextEpisode: 'Cold Harbor', nextIndex: 8 },
+    { show: 'The Bear', season: 3, watched: 4, total: 10, thumb: null, nextEpisode: 'Napkins', nextIndex: 5 },
+    { show: 'Shogun', season: 1, watched: 2, total: 10, thumb: null, nextEpisode: 'Servants of Two Masters', nextIndex: 3 },
+    { show: 'Fallout', season: 1, watched: 5, total: 8, thumb: null, nextEpisode: 'The Trap', nextIndex: 6 },
+    { show: 'Slow Horses', season: 4, watched: 3, total: 6, thumb: null, nextEpisode: 'Returns', nextIndex: 4 },
+  ],
+}
+
 export const mockPlexShows = {
   shows: [
     { show: 'Severance', season: 2, episode: 10, title: 'Cold Harbor', addedAt: String(Math.floor(Date.now() / 1000) - 43200), thumb: null, watched: false, episodes: 3, genres: ['Thriller', 'Science-Fiction'], contentRating: 'TV-MA', rating: '8.9', summary: 'Mark mène une équipe de bureau dont les souvenirs ont été chirurgicalement divisés entre leur vie professionnelle et personnelle.' },
