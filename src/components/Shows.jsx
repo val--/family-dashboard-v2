@@ -206,8 +206,8 @@ function Shows() {
   return (
     <>
       <div className="flex flex-col h-full items-center w-full">
-        <div className="flex flex-col gap-2" style={{ flex: '1 1 auto' }}>
-          <div className="text-sm text-white/40">Dernières séries ajoutées sur Plex</div>
+        <div className="flex flex-col gap-2" style={{ flex: '0 0 85%' }}>
+          <div className="text-sm text-white/40">Derniers épisodes ajoutés sur Plex</div>
           <div className="flex items-center gap-1 flex-1 min-h-0">
             <button
               onClick={() => setPage(page - 1)}
@@ -235,6 +235,7 @@ function Shows() {
             </button>
           </div>
         </div>
+        <div className="w-full" style={{ flex: '0 0 15%' }} />
       </div>
       {selectedShow && (
         <ShowDetailModal show={selectedShow} onClose={() => setSelectedShow(null)} />

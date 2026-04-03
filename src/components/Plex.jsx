@@ -415,7 +415,7 @@ function Plex() {
   return (
     <>
       <div className="flex flex-col h-full items-center w-full">
-        <div className="flex flex-col gap-2 w-fit" style={{ flex: trivia?.text ? '0 0 85%' : '1 1 auto' }}>
+        <div className="flex flex-col gap-2 w-fit" style={{ flex: '0 0 85%' }}>
           <div className="flex items-center justify-between">
             <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
             <button
@@ -452,11 +452,11 @@ function Plex() {
             </button>
           </div>
         </div>
-        {trivia?.text && (
-          <div className="w-full overflow-hidden" style={{ flex: '0 0 15%' }}>
+        <div className="w-full overflow-hidden" style={{ flex: '0 0 15%' }}>
+          {trivia?.text && (
             <MarqueeBanner text={trivia.text} movie={trivia.movie} onClick={() => setShowTrivia(true)} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
       {selectedMovie && (
         <MovieDetailModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
