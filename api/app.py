@@ -204,6 +204,26 @@ def calendar_events():
 #  Plex
 # ========================
 
+def parse_plex_episode(item):
+    """Extract episode info from a Plex XML element."""
+    thumb = item.get("grandparentThumb") or item.get("thumb")
+    return {
+        "show": item.get("grandparentTitle"),
+        "season": int(item.get("parentIndex", 0)),
+        "episode": int(item.get("index", 0)),
+        "title": item.get("title"),
+        "addedAt": item.get("addedAt"),
+        "lastViewedAt": item.get("lastViewedAt"),
+        "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
+        "watched": int(item.get("viewCount", 0)) > 0,
+        "year": item.get("year"),
+        "summary": item.get("summary"),
+        "rating": item.get("audienceRating") or item.get("rating"),
+        "contentRating": item.get("contentRating"),
+        "genres": [g.get("tag") for g in item.findall("Genre")][:4],
+    }
+
+
 def parse_plex_movie(item):
     """Extract movie info from a Plex XML element."""
     thumb = item.get("thumb")
@@ -254,6 +274,45 @@ def plex_recent():
                 break
 
         return jsonify({"movies": movies})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/plex/shows")
+def plex_shows():
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        import xml.etree.ElementTree as ET
+
+        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        # Group episodes by show, keep the most recent episode per show
+        shows = {}
+        for item in tree.getroot():
+            if item.get("type") != "episode":
+                continue
+            ep = parse_plex_episode(item)
+            show_name = ep["show"]
+            if show_name not in shows:
+                shows[show_name] = ep
+                shows[show_name]["episodes"] = 1
+            else:
+                shows[show_name]["episodes"] += 1
+                # Keep the most recent addedAt
+                if int(ep["addedAt"] or 0) > int(shows[show_name]["addedAt"] or 0):
+                    episodes_count = shows[show_name]["episodes"]
+                    shows[show_name] = ep
+                    shows[show_name]["episodes"] = episodes_count
+
+        # Sort by addedAt desc
+        result = sorted(shows.values(), key=lambda s: int(s.get("addedAt") or 0), reverse=True)
+        return jsonify({"shows": result[:20]})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

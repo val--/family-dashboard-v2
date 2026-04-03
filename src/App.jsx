@@ -2,6 +2,7 @@ import Clock from './components/Clock'
 import Weather from './components/Weather'
 import Calendar from './components/Calendar'
 import Plex from './components/Plex'
+import Shows from './components/Shows'
 import Devices from './components/Devices'
 import WidgetCarousel from './components/WidgetCarousel'
 import { useVpn } from './hooks/useVpn'
@@ -39,11 +40,12 @@ function App() {
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
         <WidgetCarousel
-          titles={['Agenda', 'Films', 'Appareils']}
-          indicators={[null, null, devicesIndicator]}
+          titles={['Agenda', 'Films', 'Séries', 'Appareils']}
+          indicators={[null, null, null, devicesIndicator]}
         >
           <Calendar />
           <Plex />
+          <Shows />
           <Devices />
         </WidgetCarousel>
       </div>

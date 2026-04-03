@@ -51,6 +51,18 @@ export const mockPlex = {
   ],
 }
 
+export const mockPlexShows = {
+  shows: [
+    { show: 'Severance', season: 2, episode: 10, title: 'Cold Harbor', addedAt: String(Math.floor(Date.now() / 1000) - 43200), thumb: null, watched: false, episodes: 3, genres: ['Thriller', 'Science-Fiction'], contentRating: 'TV-MA', rating: '8.9', summary: 'Mark mène une équipe de bureau dont les souvenirs ont été chirurgicalement divisés entre leur vie professionnelle et personnelle.' },
+    { show: 'The Bear', season: 3, episode: 8, title: 'Ice Chips', addedAt: String(Math.floor(Date.now() / 1000) - 172800), thumb: null, watched: true, episodes: 2, genres: ['Drame', 'Comédie'], contentRating: 'TV-MA', rating: '8.6' },
+    { show: 'Shogun', season: 1, episode: 5, title: 'Broken to the Fist', addedAt: String(Math.floor(Date.now() / 1000) - 345600), thumb: null, watched: false, episodes: 5, genres: ['Drame', 'Historique'], contentRating: 'TV-MA', rating: '8.7' },
+    { show: 'Fallout', season: 1, episode: 3, title: 'The Head', addedAt: String(Math.floor(Date.now() / 1000) - 518400), thumb: null, watched: true, episodes: 3, genres: ['Science-Fiction', 'Action'], contentRating: 'TV-MA', rating: '8.4' },
+    { show: 'Slow Horses', season: 4, episode: 6, title: 'Returns', addedAt: String(Math.floor(Date.now() / 1000) - 691200), thumb: null, watched: false, episodes: 1, genres: ['Thriller', 'Espionnage'], contentRating: 'TV-MA', rating: '8.2' },
+    { show: 'Ripley', season: 1, episode: 8, title: 'Finale', addedAt: String(Math.floor(Date.now() / 1000) - 864000), thumb: null, watched: true, episodes: 8, genres: ['Thriller', 'Drame'], contentRating: 'TV-MA', rating: '7.9' },
+    { show: 'True Detective', season: 4, episode: 4, title: 'Part 4', addedAt: String(Math.floor(Date.now() / 1000) - 1036800), thumb: null, watched: false, episodes: 2, genres: ['Policier', 'Drame'], contentRating: 'TV-MA', rating: '7.5' },
+  ],
+}
+
 export const mockRadarr = {
   downloading: [
     { title: 'Highlander', year: '1986', progress: 42, eta: new Date(Date.now() + 23 * 60000).toISOString(), poster: 'https://image.tmdb.org/t/p/w300/8Z8dptJEypuLoOQro1WugD855YE.jpg' },
