@@ -73,6 +73,15 @@ export const mockPlexShows = {
   ],
 }
 
+export const mockSonarr = {
+  downloading: [
+    { title: 'Severance', year: 2022, progress: 65, eta: new Date(Date.now() + 18 * 60000).toISOString(), poster: null, episodeCount: 3, season: 2, episode: 8 },
+  ],
+  missing: [
+    { title: 'The Last of Us', year: 2023, poster: null },
+  ],
+}
+
 export const mockRadarr = {
   downloading: [
     { title: 'Highlander', year: '1986', progress: 42, eta: new Date(Date.now() + 23 * 60000).toISOString(), poster: 'https://image.tmdb.org/t/p/w300/8Z8dptJEypuLoOQro1WugD855YE.jpg' },

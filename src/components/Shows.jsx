@@ -2,9 +2,11 @@ import { memo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { usePlexShows } from '../hooks/usePlexShows'
 import { usePlexOnDeck } from '../hooks/usePlexOnDeck'
+import { useSonarr } from '../hooks/useSonarr'
 
 const MAX_RECENT = 4
 const ONDECK_ROTATE_INTERVAL = 5000
+const DOWNLOAD_ROTATE_INTERVAL = 5000
 
 function ShowDetailModal({ show, onClose }) {
   return createPortal(
@@ -73,6 +75,189 @@ function ShowDetailModal({ show, onClose }) {
   )
 }
 
+function DownloadDetailModal({ item, onClose }) {
+  const isDownloading = item.type === 'downloading'
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="flex items-center justify-end p-4">
+        <button
+          onClick={onClose}
+          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
+        >
+          &times;
+        </button>
+      </div>
+      <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
+        <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
+          {item.poster ? (
+            <img src={item.poster} alt={item.title} className="h-full w-full object-cover rounded-lg" />
+          ) : (
+            <div className="h-full w-full bg-white/10 rounded-lg" />
+          )}
+        </div>
+        <div className="flex flex-col gap-3 max-w-md">
+          <h2 className="text-2xl font-light text-white">{item.title}</h2>
+          {item.year && <span className="text-base text-white/40">{item.year}</span>}
+
+          <div className={`inline-flex self-start px-3 py-1 rounded-lg text-sm font-medium ${
+            isDownloading ? 'bg-orange-500/20 text-orange-400' : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {isDownloading ? 'En cours de téléchargement' : 'En attente'}
+          </div>
+
+          {isDownloading && item.episodeCount > 1 && (
+            <div className="text-sm text-white/40">
+              {item.episodeCount} épisodes en téléchargement
+            </div>
+          )}
+
+          {isDownloading && (
+            <div className="flex flex-col gap-2">
+              <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-500 rounded-full transition-all duration-1000"
+                  style={{ width: `${item.progress || 0}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-sm text-white/50">
+                <span>{item.progress}%</span>
+                {item.size && <span>{(item.size - (item.sizeleft || 0)).toFixed(1)} / {item.size} Go</span>}
+              </div>
+
+              {item.eta && (
+                <div className="text-sm text-white/40">
+                  Fin estimée : {new Date(item.eta).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  {item.timeleft && <span className="ml-2">({item.timeleft})</span>}
+                </div>
+              )}
+
+              {item.quality && (
+                <div className="text-sm text-white/40">
+                  Qualité : <span className="text-white/60">{item.quality}</span>
+                </div>
+              )}
+
+              {item.release && (
+                <div className="text-xs text-white/30 break-all">{item.release}</div>
+              )}
+
+              <div className="flex gap-4 text-sm text-white/40">
+                {item.downloadClient && <span>Client : <span className="text-white/60">{item.downloadClient}</span></span>}
+                {item.indexer && <span>Source : <span className="text-white/60">{item.indexer}</span></span>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
+function DownloadingSlide({ item, isActive }) {
+  const progress = item.progress || 0
+
+  let etaText = ''
+  if (item.eta) {
+    const mins = Math.max(0, Math.round((new Date(item.eta) - Date.now()) / 60000))
+    etaText = mins < 60 ? `${mins}min` : `~${Math.round(mins / 60)}h`
+  }
+
+  return (
+    <div
+      className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+      style={{ opacity: isActive ? 1 : 0 }}
+    >
+      <div className="relative w-full overflow-hidden rounded">
+        {item.poster ? (
+          <img src={item.poster} alt={item.title} className="w-full aspect-[2/3] object-cover grayscale brightness-50" />
+        ) : (
+          <div className="w-full aspect-[2/3] bg-white/10" />
+        )}
+        {item.poster && (
+          <div
+            className="absolute bottom-0 left-0 right-0 overflow-hidden transition-[height] duration-1000 ease-out"
+            style={{ height: `${progress}%` }}
+          >
+            <img src={item.poster} alt="" className="absolute bottom-0 left-0 w-full aspect-[2/3] object-cover" />
+          </div>
+        )}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          {progress}%{etaText && ` · ${etaText}`}
+        </div>
+        <span className="absolute top-2 right-2 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
+        </span>
+      </div>
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
+        {item.title}
+      </div>
+    </div>
+  )
+}
+
+function WaitingSlide({ item, isActive }) {
+  return (
+    <div
+      className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+      style={{ opacity: isActive ? 1 : 0 }}
+    >
+      <div className="relative w-full overflow-hidden rounded">
+        {item.poster ? (
+          <img src={item.poster} alt={item.title} className="w-full aspect-[2/3] object-cover grayscale brightness-50" />
+        ) : (
+          <div className="w-full aspect-[2/3] bg-white/10" />
+        )}
+        <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
+          En attente
+        </div>
+      </div>
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
+        {item.title}
+      </div>
+    </div>
+  )
+}
+
+function StatusCard({ downloads, missing, onSelect }) {
+  const downloadTitles = new Set(downloads.map((s) => s.title))
+  const slides = [
+    ...downloads.map((s) => ({ ...s, type: 'downloading' })),
+    ...missing.filter((s) => !downloadTitles.has(s.title)).map((s) => ({ ...s, type: 'waiting' })),
+  ]
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (slides.length <= 1) return
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length)
+    }, DOWNLOAD_ROTATE_INTERVAL)
+    return () => clearInterval(timer)
+  }, [slides.length])
+
+  if (slides.length === 0) return null
+
+  const current = slides[index % slides.length]
+
+  return (
+    <div
+      className="flex-1 max-w-36 relative cursor-pointer"
+      style={{ aspectRatio: '2/3.4' }}
+      onClick={() => onSelect?.(current)}
+    >
+      {slides.map((item, i) => (
+        item.type === 'downloading' ? (
+          <DownloadingSlide key={`dl-${item.title}`} item={item} isActive={i === index % slides.length} />
+        ) : (
+          <WaitingSlide key={`wait-${item.title}`} item={item} isActive={i === index % slides.length} />
+        )
+      ))}
+    </div>
+  )
+}
+
 function OnDeckSlide({ show, isActive }) {
   const pct = show.total ? Math.round((show.watched / show.total) * 100) : 0
 
@@ -83,11 +268,7 @@ function OnDeckSlide({ show, isActive }) {
     >
       <div className="relative w-full overflow-hidden rounded">
         {show.thumb ? (
-          <img
-            src={show.thumb}
-            alt={show.show}
-            className="w-full aspect-[2/3] object-cover"
-          />
+          <img src={show.thumb} alt={show.show} className="w-full aspect-[2/3] object-cover" />
         ) : (
           <div className="w-full aspect-[2/3] bg-white/10" />
         )}
@@ -96,10 +277,7 @@ function OnDeckSlide({ show, isActive }) {
         </div>
         {show.total && (
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50 overflow-hidden">
-            <div
-              className="h-full bg-purple-500 transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
+            <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         )}
       </div>
@@ -122,16 +300,9 @@ function OnDeckCard({ shows }) {
   }, [shows.length])
 
   return (
-    <div
-      className="flex-1 max-w-36 relative"
-      style={{ aspectRatio: '2/3.4' }}
-    >
+    <div className="flex-1 max-w-36 relative" style={{ aspectRatio: '2/3.4' }}>
       {shows.map((show, i) => (
-        <OnDeckSlide
-          key={show.show}
-          show={show}
-          isActive={i === index % shows.length}
-        />
+        <OnDeckSlide key={show.show} show={show} isActive={i === index % shows.length} />
       ))}
     </div>
   )
@@ -139,17 +310,10 @@ function OnDeckCard({ shows }) {
 
 function RecentCard({ show, onClick }) {
   return (
-    <div
-      className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer"
-      onClick={onClick}
-    >
+    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer" onClick={onClick}>
       <div className="relative w-full">
         {show.thumb ? (
-          <img
-            src={show.thumb}
-            alt={show.show}
-            className="w-full aspect-[2/3] object-cover rounded"
-          />
+          <img src={show.thumb} alt={show.show} className="w-full aspect-[2/3] object-cover rounded" />
         ) : (
           <div className="w-full aspect-[2/3] bg-white/10 rounded" />
         )}
@@ -179,7 +343,9 @@ function RecentCard({ show, onClick }) {
 function Shows() {
   const { shows: onDeck } = usePlexOnDeck()
   const { shows: recent, loading, error } = usePlexShows()
+  const { data: sonarrData } = useSonarr()
   const [selectedShow, setSelectedShow] = useState(null)
+  const [selectedDownload, setSelectedDownload] = useState(null)
   const [page, setPage] = useState(0)
 
   // Preload thumbs
@@ -193,13 +359,18 @@ function Shows() {
     })
   }, [onDeck, recent])
 
+  const downloads = sonarrData?.downloading || []
+  const missing = sonarrData?.missing || []
+  const hasStatus = downloads.length > 0 || missing.length > 0
   const hasOnDeck = onDeck?.length > 0
   const hasRecent = recent?.length > 0
 
   if (error || loading) return null
-  if (!hasOnDeck && !hasRecent) return null
+  if (!hasOnDeck && !hasRecent && !hasStatus) return null
 
-  const firstPageSize = hasOnDeck ? MAX_RECENT : MAX_RECENT + 1
+  // Count special cards on page 0
+  const specialCards = (hasStatus ? 1 : 0) + (hasOnDeck ? 1 : 0)
+  const firstPageSize = MAX_RECENT + 1 - specialCards
   const fullPage = MAX_RECENT + 1
   const totalItems = recent?.length || 0
   const remaining = totalItems - firstPageSize
@@ -223,6 +394,9 @@ function Shows() {
               &#8249;
             </button>
             <div className="flex items-start gap-4 flex-1 min-h-0">
+              {hasStatus && page === 0 && (
+                <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
+              )}
               {hasOnDeck && page === 0 && (
                 <OnDeckCard shows={onDeck} />
               )}
@@ -250,6 +424,9 @@ function Shows() {
       </div>
       {selectedShow && (
         <ShowDetailModal show={selectedShow} onClose={() => setSelectedShow(null)} />
+      )}
+      {selectedDownload && (
+        <DownloadDetailModal item={selectedDownload} onClose={() => setSelectedDownload(null)} />
       )}
     </>
   )

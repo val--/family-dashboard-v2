@@ -24,6 +24,10 @@ PLEX_TOKEN = os.environ.get("PLEX_TOKEN", "")
 RADARR_URL = os.environ.get("RADARR_URL", "http://localhost:7878")
 RADARR_API_KEY = os.environ.get("RADARR_API_KEY", "")
 
+# -- Sonarr config --
+SONARR_URL = os.environ.get("SONARR_URL", "http://localhost:8989")
+SONARR_API_KEY = os.environ.get("SONARR_API_KEY", "")
+
 # -- TMDb config --
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 
@@ -626,6 +630,116 @@ def tmdb_streaming(tmdb_id):
             })
 
         return jsonify({"providers": providers})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ========================
+#  Sonarr
+# ========================
+
+def sonarr_request(path, method="GET", data=None):
+    """Helper for Sonarr API calls."""
+    headers = {"X-Api-Key": SONARR_API_KEY, "Content-Type": "application/json"}
+    url = f"{SONARR_URL}{path}"
+    req = urllib.request.Request(url, headers=headers, method=method)
+    if data:
+        req.data = jsonlib.dumps(data).encode()
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return jsonlib.loads(resp.read())
+
+
+@app.route("/api/sonarr/status")
+def sonarr_status():
+    if not SONARR_API_KEY:
+        return jsonify({"error": "SONARR_API_KEY not configured"}), 500
+
+    try:
+        queue_data = sonarr_request("/api/v3/queue?pageSize=50&includeSeries=true&includeEpisode=true")
+
+        # Group downloading items by series
+        seen_series = {}
+        for record in queue_data.get("records", []):
+            if record.get("status") != "downloading":
+                continue
+            series = record.get("series", {})
+            series_id = record.get("seriesId")
+            episode = record.get("episode", {})
+            size = record.get("size", 0)
+            sizeleft = record.get("sizeleft", 0)
+            progress = round(100 - (sizeleft / max(size, 1) * 100))
+
+            poster = None
+            for img in series.get("images", []):
+                if img.get("coverType") == "poster":
+                    poster = img.get("remoteUrl")
+                    break
+
+            size_gb = round(size / (1024**3), 1)
+            sizeleft_gb = round(sizeleft / (1024**3), 1)
+            quality_name = record.get("quality", {}).get("quality", {}).get("name")
+
+            if series_id not in seen_series:
+                seen_series[series_id] = {
+                    "title": series.get("title"),
+                    "year": series.get("year"),
+                    "progress": progress,
+                    "eta": record.get("estimatedCompletionTime"),
+                    "poster": poster,
+                    "release": record.get("title"),
+                    "quality": quality_name,
+                    "size": size_gb,
+                    "sizeleft": sizeleft_gb,
+                    "downloadClient": record.get("downloadClient"),
+                    "indexer": record.get("indexer"),
+                    "timeleft": record.get("timeleft"),
+                    "episodeCount": 1,
+                    "season": episode.get("seasonNumber"),
+                    "episode": episode.get("episodeNumber"),
+                }
+            else:
+                # Aggregate: sum sizes, recompute overall progress
+                existing = seen_series[series_id]
+                existing["episodeCount"] += 1
+                total_size = existing["size"] + size_gb
+                total_left = existing["sizeleft"] + sizeleft_gb
+                existing["size"] = round(total_size, 1)
+                existing["sizeleft"] = round(total_left, 1)
+                existing["progress"] = round(100 - (total_left / max(total_size, 0.1) * 100))
+                # Keep the latest ETA
+                if record.get("estimatedCompletionTime") and (
+                    not existing["eta"] or record["estimatedCompletionTime"] > existing["eta"]
+                ):
+                    existing["eta"] = record["estimatedCompletionTime"]
+                    existing["timeleft"] = record.get("timeleft")
+
+        downloading = list(seen_series.values())
+
+        # Fetch missing/monitored episodes
+        wanted = sonarr_request("/api/v3/wanted/missing?pageSize=20&includeSeries=true")
+
+        missing_series = {}
+        for record in wanted.get("records", []):
+            series = record.get("series", {})
+            sid = series.get("id")
+            if sid in missing_series or sid in seen_series:
+                continue
+            poster = None
+            for img in series.get("images", []):
+                if img.get("coverType") == "poster":
+                    poster = img.get("remoteUrl")
+                    break
+            missing_series[sid] = {
+                "title": series.get("title"),
+                "year": series.get("year"),
+                "poster": poster,
+            }
+
+        return jsonify({
+            "downloading": downloading,
+            "missing": list(missing_series.values()),
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
