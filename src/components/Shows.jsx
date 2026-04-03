@@ -191,9 +191,16 @@ function DownloadingSlide({ item, isActive }) {
           <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
         </span>
       </div>
-      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-1 leading-tight">
         {item.title}
       </div>
+      {item.season != null && (
+        <div className="text-xs text-center text-white/40 leading-tight">
+          {item.episodeCount > 1
+            ? `Saison ${item.season} · ${item.episodeCount} ép.`
+            : `S${String(item.season).padStart(2, '0')}E${String(item.episode).padStart(2, '0')}`}
+        </div>
+      )}
     </div>
   )
 }
@@ -214,9 +221,14 @@ function WaitingSlide({ item, isActive }) {
           En attente
         </div>
       </div>
-      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-2 leading-tight">
+      <div className="mt-1.5 text-sm text-center text-white/70 line-clamp-1 leading-tight">
         {item.title}
       </div>
+      {item.season != null && (
+        <div className="text-xs text-center text-white/40 leading-tight">
+          S{String(item.season).padStart(2, '0')}E{String(item.episode).padStart(2, '0')}
+        </div>
+      )}
     </div>
   )
 }

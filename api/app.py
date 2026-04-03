@@ -734,6 +734,8 @@ def sonarr_status():
                 "title": series.get("title"),
                 "year": series.get("year"),
                 "poster": poster,
+                "season": record.get("seasonNumber"),
+                "episode": record.get("episodeNumber"),
             }
 
         return jsonify({
