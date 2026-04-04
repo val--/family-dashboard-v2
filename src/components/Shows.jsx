@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { usePlexShows } from '../hooks/usePlexShows'
 import { usePlexOnDeck } from '../hooks/usePlexOnDeck'
 import { useSonarr } from '../hooks/useSonarr'
+import Poster from './Poster'
 
 const MAX_RECENT = 4
 const ONDECK_ROTATE_INTERVAL = 5000
@@ -169,15 +170,11 @@ function DownloadingSlide({ item, isActive }) {
       className="absolute inset-0 transition-opacity duration-700 ease-in-out"
       style={{ opacity: isActive ? 1 : 0 }}
     >
-      <div className="relative w-full overflow-hidden rounded">
-        {item.poster ? (
-          <img src={item.poster} alt={item.title} className="w-full aspect-[2/3] object-cover grayscale brightness-50" />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10" />
-        )}
+      <div className="relative w-full">
+        <Poster src={item.poster} alt={item.title} grayscale />
         {item.poster && (
           <div
-            className="absolute bottom-0 left-0 right-0 overflow-hidden transition-[height] duration-1000 ease-out"
+            className="absolute bottom-0 left-0 right-0 overflow-hidden rounded-b transition-[height] duration-1000 ease-out"
             style={{ height: `${progress}%` }}
           >
             <img src={item.poster} alt="" className="absolute bottom-0 left-0 w-full aspect-[2/3] object-cover" />
@@ -211,12 +208,8 @@ function WaitingSlide({ item, isActive }) {
       className="absolute inset-0 transition-opacity duration-700 ease-in-out"
       style={{ opacity: isActive ? 1 : 0 }}
     >
-      <div className="relative w-full overflow-hidden rounded">
-        {item.poster ? (
-          <img src={item.poster} alt={item.title} className="w-full aspect-[2/3] object-cover grayscale brightness-50" />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10" />
-        )}
+      <div className="relative w-full">
+        <Poster src={item.poster} alt={item.title} grayscale />
         <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           En attente
         </div>
@@ -255,7 +248,7 @@ function StatusCard({ downloads, missing, onSelect }) {
 
   return (
     <div
-      className="flex-1 max-w-36 relative cursor-pointer"
+      className="relative cursor-pointer"
       style={{ aspectRatio: '2/3.4' }}
       onClick={() => onSelect?.(current)}
     >
@@ -278,17 +271,13 @@ function OnDeckSlide({ show, isActive }) {
       className="absolute inset-0 transition-opacity duration-700 ease-in-out"
       style={{ opacity: isActive ? 1 : 0 }}
     >
-      <div className="relative w-full overflow-hidden rounded">
-        {show.thumb ? (
-          <img src={show.thumb} alt={show.show} className="w-full aspect-[2/3] object-cover" />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10" />
-        )}
+      <div className="relative w-full">
+        <Poster src={show.thumb} alt={show.show} />
         <div className="absolute top-2 left-2 px-2 py-0.5 bg-purple-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           S{String(show.season).padStart(2, '0')} · {show.watched}/{show.total}
         </div>
         {show.total && (
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50 overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/50 rounded-b overflow-hidden">
             <div className="h-full bg-purple-500 transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
         )}
@@ -312,7 +301,7 @@ function OnDeckCard({ shows }) {
   }, [shows.length])
 
   return (
-    <div className="flex-1 max-w-36 relative" style={{ aspectRatio: '2/3.4' }}>
+    <div className="relative" style={{ aspectRatio: '2/3.4' }}>
       {shows.map((show, i) => (
         <OnDeckSlide key={show.show} show={show} isActive={i === index % shows.length} />
       ))}
@@ -322,13 +311,9 @@ function OnDeckCard({ shows }) {
 
 function RecentCard({ show, onClick }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer" onClick={onClick}>
+    <div className="flex flex-col items-center gap-1.5 cursor-pointer" onClick={onClick}>
       <div className="relative w-full">
-        {show.thumb ? (
-          <img src={show.thumb} alt={show.show} className="w-full aspect-[2/3] object-cover rounded" />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10 rounded" />
-        )}
+        <Poster src={show.thumb} alt={show.show} />
         <div className="absolute top-2 left-2 px-2 py-0.5 bg-purple-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           S{String(show.season).padStart(2, '0')}E{String(show.episode).padStart(2, '0')}
         </div>
@@ -390,6 +375,7 @@ function Shows() {
   const start = page === 0 ? 0 : firstPageSize + (page - 1) * fullPage
   const count = page === 0 ? firstPageSize : fullPage
   const visibleRecent = hasRecent ? recent.slice(start, start + count) : []
+  const itemsOnPage = (hasStatus && page === 0 ? 1 : 0) + (hasOnDeck && page === 0 ? 1 : 0) + visibleRecent.length
 
   return (
     <>
@@ -400,12 +386,12 @@ function Shows() {
             <button
               onClick={() => setPage(page - 1)}
               className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
               }`}
             >
               &#8249;
             </button>
-            <div className="flex items-start gap-4 flex-1 min-h-0">
+            <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: `repeat(${Math.min(itemsOnPage, 5)}, minmax(0, 1fr))` }}>
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
               )}
@@ -419,7 +405,7 @@ function Shows() {
             <button
               onClick={() => setPage(page + 1)}
               className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
               }`}
             >
               &#8250;

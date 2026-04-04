@@ -4,6 +4,7 @@ import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
 import { useTrivia } from '../hooks/useTrivia'
 import MovieSearch from './MovieSearch'
+import Poster from './Poster'
 
 const MAX_PREVIEW_MOVIES = 4
 const DOWNLOAD_ROTATE_INTERVAL = 5000
@@ -38,19 +39,11 @@ function DownloadingSlide({ movie, isActive }) {
       className="absolute inset-0 transition-opacity duration-700 ease-in-out"
       style={{ opacity: isActive ? 1 : 0 }}
     >
-      <div className="relative w-full overflow-hidden rounded">
-        {movie.poster ? (
-          <img
-            src={movie.poster}
-            alt={movie.title}
-            className="w-full aspect-[2/3] object-cover grayscale brightness-50"
-          />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10" />
-        )}
+      <div className="relative w-full">
+        <Poster src={movie.poster} alt={movie.title} grayscale />
         {movie.poster && (
           <div
-            className="absolute bottom-0 left-0 right-0 overflow-hidden transition-[height] duration-1000 ease-out"
+            className="absolute bottom-0 left-0 right-0 overflow-hidden rounded-b transition-[height] duration-1000 ease-out"
             style={{ height: `${progress}%` }}
           >
             <img
@@ -81,16 +74,8 @@ function WaitingSlide({ movie, isActive }) {
       className="absolute inset-0 transition-opacity duration-700 ease-in-out"
       style={{ opacity: isActive ? 1 : 0 }}
     >
-      <div className="relative w-full overflow-hidden rounded">
-        {movie.poster ? (
-          <img
-            src={movie.poster}
-            alt={movie.title}
-            className="w-full aspect-[2/3] object-cover grayscale brightness-50"
-          />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10" />
-        )}
+      <div className="relative w-full">
+        <Poster src={movie.poster} alt={movie.title} grayscale />
         <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           En attente
         </div>
@@ -199,7 +184,7 @@ function StatusCard({ downloads, missing, onSelect }) {
 
   return (
     <div
-      className="flex-1 max-w-36 relative cursor-pointer"
+      className="relative cursor-pointer"
       style={{ aspectRatio: '2/3.4' }}
       onClick={() => onSelect?.(current)}
     >
@@ -297,19 +282,11 @@ function MovieDetailModal({ movie, onClose }) {
 function MovieCard({ movie, onClick }) {
   return (
     <div
-      className="flex flex-col items-center gap-1.5 flex-1 max-w-36 cursor-pointer"
+      className="flex flex-col items-center gap-1.5 cursor-pointer"
       onClick={onClick}
     >
       <div className="relative w-full">
-        {movie.thumb ? (
-          <img
-            src={movie.thumb}
-            alt={movie.title}
-            className="w-full aspect-[2/3] object-cover rounded"
-          />
-        ) : (
-          <div className="w-full aspect-[2/3] bg-white/10 rounded" />
-        )}
+        <Poster src={movie.thumb} alt={movie.title} />
         <div className="absolute top-2 left-2 px-2 py-0.5 bg-blue-500/80 rounded text-xs font-medium text-white whitespace-nowrap">
           Ajouté {movie.addedAt ? timeAgo(movie.addedAt).toLowerCase() : ''}
         </div>
@@ -429,12 +406,12 @@ function Plex() {
             <button
               onClick={() => setPage(page - 1)}
               className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
               }`}
             >
               ‹
             </button>
-            <div className="flex items-start gap-4 flex-1 min-h-0">
+            <div className="grid grid-cols-5 gap-4 flex-1 min-h-0">
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
               )}
@@ -445,7 +422,7 @@ function Plex() {
             <button
               onClick={() => setPage(page + 1)}
               className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-transparent pointer-events-none'
+                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
               }`}
             >
               ›
