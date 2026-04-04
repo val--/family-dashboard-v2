@@ -385,9 +385,14 @@ function Plex() {
   const downloads = radarrData?.downloading || []
   const missing = radarrData?.missing || []
   const hasStatus = downloads.length > 0 || missing.length > 0
-  const perPage = MAX_PREVIEW_MOVIES + 1
-  const totalPages = movies ? Math.ceil(movies.length / perPage) : 1
-  const visibleMovies = movies?.slice(page * perPage, (page + 1) * perPage) || []
+  const firstPageSize = hasStatus ? MAX_PREVIEW_MOVIES : MAX_PREVIEW_MOVIES + 1
+  const fullPage = MAX_PREVIEW_MOVIES + 1
+  const totalItems = movies?.length || 0
+  const remaining = totalItems - firstPageSize
+  const totalPages = totalItems <= firstPageSize ? 1 : 1 + Math.ceil(Math.max(0, remaining) / fullPage)
+  const start = page === 0 ? 0 : firstPageSize + (page - 1) * fullPage
+  const count = page === 0 ? firstPageSize : fullPage
+  const visibleMovies = movies?.slice(start, start + count) || []
 
   return (
     <>
