@@ -298,7 +298,7 @@ function MovieCard({ movie, onClick }) {
           </div>
         )}
       </div>
-      <span className="text-sm text-center text-white/70 line-clamp-2 leading-tight">
+      <span className="text-sm text-center text-white/70 line-clamp-1 leading-tight">
         {movie.title}
       </span>
     </div>
@@ -397,7 +397,7 @@ function Plex() {
   return (
     <>
       <div className="flex flex-col h-full items-center w-full">
-        <div className="flex flex-col gap-2 w-fit" style={{ flex: '0 0 85%' }}>
+        <div className="flex flex-col gap-2 self-stretch" style={{ flex: '0 0 85%' }}>
           <div className="flex items-center justify-between">
             <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
             <button
