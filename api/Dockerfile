@@ -14,4 +14,4 @@ COPY app.py .
 ENV CUPS_SERVER=/var/run/cups/cups.sock
 
 EXPOSE 5100
-CMD ["python", "app.py"]
+CMD ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:5100", "--timeout", "30", "app:app"]
