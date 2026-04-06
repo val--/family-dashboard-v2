@@ -468,9 +468,19 @@ def radarr_status():
                     "poster": poster,
                 })
 
+        # Disk space
+        disk = {}
+        try:
+            roots = radarr_request("/api/v3/rootfolder")
+            if roots:
+                disk = {"freeSpace": round(roots[0].get("freeSpace", 0) / (1024**3)), "totalSpace": round(roots[0].get("totalSpace", 0) / (1024**3))}
+        except Exception:
+            pass
+
         return jsonify({
             "downloading": downloading,
             "missing": missing,
+            "disk": disk,
         })
 
     except Exception as e:
@@ -742,9 +752,19 @@ def sonarr_status():
                 "episode": record.get("episodeNumber"),
             }
 
+        # Disk space
+        disk = {}
+        try:
+            roots = sonarr_request("/api/v3/rootfolder")
+            if roots:
+                disk = {"freeSpace": round(roots[0].get("freeSpace", 0) / (1024**3)), "totalSpace": round(roots[0].get("totalSpace", 0) / (1024**3))}
+        except Exception:
+            pass
+
         return jsonify({
             "downloading": downloading,
             "missing": list(missing_series.values()),
+            "disk": disk,
         })
 
     except Exception as e:

@@ -399,7 +399,12 @@ function Plex() {
       <div className="flex flex-col h-full items-center w-full">
         <div className="flex flex-col gap-2 self-stretch" style={{ flex: '0 0 85%' }}>
           <div className="flex items-center justify-between">
-            <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
+              {radarrData?.disk?.totalSpace > 0 && (
+                <div className="text-xs text-white/25">{radarrData.disk.freeSpace} Go libres / {radarrData.disk.totalSpace} Go</div>
+              )}
+            </div>
             <button
               onClick={() => setShowSearch(true)}
               className="px-4 py-1.5 bg-white/10 hover:bg-white/15 rounded-lg text-sm text-white/60 hover:text-white"
