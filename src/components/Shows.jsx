@@ -380,16 +380,7 @@ function Shows() {
     <>
       <div className="flex flex-col h-full items-center w-full">
         <div className="flex flex-col gap-2 self-stretch" style={{ flex: '0 0 85%' }}>
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-white/40">Derniers épisodes ajoutés sur Plex</div>
-            {sonarrData?.disks?.length > 0 && (
-              <div className="text-xs text-white/25">
-                {sonarrData.disks.map((d, i) => (
-                  <span key={i}>{i > 0 ? ' · ' : ''}{d.path} : {d.totalSpace ? `${d.totalSpace - d.freeSpace} / ${d.totalSpace} Go` : `${d.freeSpace} Go libres`}</span>
-                ))}
-              </div>
-            )}
-          </div>
+          <div className="text-sm text-white/40">Derniers épisodes ajoutés sur Plex</div>
           <div className="flex items-center gap-1 flex-1 min-h-0">
             <button
               onClick={() => setPage(page - 1)}
