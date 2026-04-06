@@ -401,8 +401,8 @@ function Plex() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="text-sm text-white/40">Derniers films ajoutés sur Plex</div>
-              {radarrData?.disk?.totalSpace > 0 && (
-                <div className="text-xs text-white/25">{radarrData.disk.freeSpace} Go libres / {radarrData.disk.totalSpace} Go</div>
+              {radarrData?.disk?.freeSpace > 0 && (
+                <div className="text-xs text-white/25">{radarrData.disk.freeSpace} Go libres</div>
               )}
             </div>
             <button

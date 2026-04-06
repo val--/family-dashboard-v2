@@ -473,7 +473,8 @@ def radarr_status():
         try:
             roots = radarr_request("/api/v3/rootfolder")
             if roots:
-                disk = {"freeSpace": round(roots[0].get("freeSpace", 0) / (1024**3)), "totalSpace": round(roots[0].get("totalSpace", 0) / (1024**3))}
+                free = sum(r.get("freeSpace", 0) for r in roots)
+                disk = {"freeSpace": round(free / (1024**3))}
         except Exception:
             pass
 
@@ -757,7 +758,8 @@ def sonarr_status():
         try:
             roots = sonarr_request("/api/v3/rootfolder")
             if roots:
-                disk = {"freeSpace": round(roots[0].get("freeSpace", 0) / (1024**3)), "totalSpace": round(roots[0].get("totalSpace", 0) / (1024**3))}
+                free = sum(r.get("freeSpace", 0) for r in roots)
+                disk = {"freeSpace": round(free / (1024**3))}
         except Exception:
             pass
 
