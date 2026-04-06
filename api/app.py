@@ -406,6 +406,34 @@ def plex_shows():
         return jsonify({"error": str(e)}), 500
 
 
+def _get_disks(api_request):
+    """Get disk space for rootfolders. Uses diskspace API for total, falls back to rootfolder for NAS mounts."""
+    disks = []
+    try:
+        roots = api_request("/api/v3/rootfolder")
+        accessible = {r["path"].split("/")[1]: r for r in roots if r.get("accessible")}
+
+        # diskspace gives us totalSpace
+        diskspace = {d["path"].strip("/"): d for d in api_request("/api/v3/diskspace")}
+
+        seen = set()
+        for mount, root in accessible.items():
+            if mount in seen:
+                continue
+            seen.add(mount)
+            if mount in diskspace:
+                d = diskspace[mount]
+                free = round(d.get("freeSpace", 0) / (1024**3))
+                total = round(d.get("totalSpace", 0) / (1024**3))
+            else:
+                free = round(root.get("freeSpace", 0) / (1024**3))
+                total = None
+            disks.append({"path": mount, "freeSpace": free, "totalSpace": total})
+    except Exception:
+        pass
+    return disks
+
+
 # ========================
 #  Radarr
 # ========================
@@ -469,18 +497,7 @@ def radarr_status():
                 })
 
         # Disk space
-        disks = []
-        try:
-            roots = radarr_request("/api/v3/rootfolder")
-            root_paths = {r["path"].split("/")[1] for r in roots if r.get("accessible")}
-            for d in radarr_request("/api/v3/diskspace"):
-                mount = d["path"].strip("/")
-                if mount and mount in root_paths:
-                    free = round(d.get("freeSpace", 0) / (1024**3))
-                    total = round(d.get("totalSpace", 0) / (1024**3))
-                    disks.append({"path": mount, "freeSpace": free, "totalSpace": total})
-        except Exception:
-            pass
+        disks = _get_disks(radarr_request)
 
         return jsonify({
             "downloading": downloading,
@@ -757,19 +774,7 @@ def sonarr_status():
                 "episode": record.get("episodeNumber"),
             }
 
-        # Disk space
-        disks = []
-        try:
-            roots = sonarr_request("/api/v3/rootfolder")
-            root_paths = {r["path"].split("/")[1] for r in roots if r.get("accessible")}
-            for d in sonarr_request("/api/v3/diskspace"):
-                mount = d["path"].strip("/")
-                if mount and mount in root_paths:
-                    free = round(d.get("freeSpace", 0) / (1024**3))
-                    total = round(d.get("totalSpace", 0) / (1024**3))
-                    disks.append({"path": mount, "freeSpace": free, "totalSpace": total})
-        except Exception:
-            pass
+        disks = _get_disks(sonarr_request)
 
         return jsonify({
             "downloading": downloading,

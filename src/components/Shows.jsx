@@ -385,7 +385,7 @@ function Shows() {
             {sonarrData?.disks?.length > 0 && (
               <div className="text-xs text-white/25">
                 {sonarrData.disks.map((d, i) => (
-                  <span key={i}>{i > 0 ? ' · ' : ''}{d.path} : {d.totalSpace - d.freeSpace} / {d.totalSpace} Go</span>
+                  <span key={i}>{i > 0 ? ' · ' : ''}{d.path} : {d.totalSpace ? `${d.totalSpace - d.freeSpace} / ${d.totalSpace} Go` : `${d.freeSpace} Go libres`}</span>
                 ))}
               </div>
             )}
