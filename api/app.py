@@ -264,7 +264,11 @@ def plex_recent():
         import urllib.request
         import xml.etree.ElementTree as ET
 
-        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
+        section_key = find_plex_section(ET, "movie")
+        if not section_key:
+            return jsonify({"movies": []})
+
+        url = f"{PLEX_URL}/library/sections/{section_key}/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)
