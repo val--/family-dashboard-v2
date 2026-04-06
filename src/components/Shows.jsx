@@ -375,7 +375,6 @@ function Shows() {
   const start = page === 0 ? 0 : firstPageSize + (page - 1) * fullPage
   const count = page === 0 ? firstPageSize : fullPage
   const visibleRecent = hasRecent ? recent.slice(start, start + count) : []
-  const itemsOnPage = (hasStatus && page === 0 ? 1 : 0) + (hasOnDeck && page === 0 ? 1 : 0) + visibleRecent.length
 
   return (
     <>
@@ -391,7 +390,7 @@ function Shows() {
             >
               &#8249;
             </button>
-            <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns: `repeat(${Math.min(itemsOnPage, 5)}, minmax(0, 1fr))` }}>
+            <div className="grid grid-cols-5 gap-4 flex-1 min-h-0">
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
               )}
