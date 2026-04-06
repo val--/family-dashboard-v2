@@ -472,13 +472,13 @@ def radarr_status():
         disks = []
         try:
             roots = radarr_request("/api/v3/rootfolder")
-            seen = set()
-            for r in roots:
-                free = r.get("freeSpace", 0)
-                if not r.get("accessible") or free <= 0 or free in seen:
-                    continue
-                seen.add(free)
-                disks.append({"path": r["path"].split("/")[-1] or r["path"], "freeSpace": round(free / (1024**3))})
+            root_paths = {r["path"].split("/")[1] for r in roots if r.get("accessible")}
+            for d in radarr_request("/api/v3/diskspace"):
+                mount = d["path"].strip("/")
+                if mount and mount in root_paths:
+                    free = round(d.get("freeSpace", 0) / (1024**3))
+                    total = round(d.get("totalSpace", 0) / (1024**3))
+                    disks.append({"path": mount, "freeSpace": free, "totalSpace": total})
         except Exception:
             pass
 
@@ -761,13 +761,13 @@ def sonarr_status():
         disks = []
         try:
             roots = sonarr_request("/api/v3/rootfolder")
-            seen = set()
-            for r in roots:
-                free = r.get("freeSpace", 0)
-                if not r.get("accessible") or free <= 0 or free in seen:
-                    continue
-                seen.add(free)
-                disks.append({"path": r["path"].split("/")[-1] or r["path"], "freeSpace": round(free / (1024**3))})
+            root_paths = {r["path"].split("/")[1] for r in roots if r.get("accessible")}
+            for d in sonarr_request("/api/v3/diskspace"):
+                mount = d["path"].strip("/")
+                if mount and mount in root_paths:
+                    free = round(d.get("freeSpace", 0) / (1024**3))
+                    total = round(d.get("totalSpace", 0) / (1024**3))
+                    disks.append({"path": mount, "freeSpace": free, "totalSpace": total})
         except Exception:
             pass
 
