@@ -469,19 +469,23 @@ def radarr_status():
                 })
 
         # Disk space
-        disk = {}
+        disks = []
         try:
             roots = radarr_request("/api/v3/rootfolder")
-            if roots:
-                free = sum(r.get("freeSpace", 0) for r in roots)
-                disk = {"freeSpace": round(free / (1024**3))}
+            seen = set()
+            for r in roots:
+                free = r.get("freeSpace", 0)
+                if not r.get("accessible") or free <= 0 or free in seen:
+                    continue
+                seen.add(free)
+                disks.append({"path": r["path"].split("/")[-1] or r["path"], "freeSpace": round(free / (1024**3))})
         except Exception:
             pass
 
         return jsonify({
             "downloading": downloading,
             "missing": missing,
-            "disk": disk,
+            "disks": disks,
         })
 
     except Exception as e:
@@ -754,19 +758,23 @@ def sonarr_status():
             }
 
         # Disk space
-        disk = {}
+        disks = []
         try:
             roots = sonarr_request("/api/v3/rootfolder")
-            if roots:
-                free = sum(r.get("freeSpace", 0) for r in roots)
-                disk = {"freeSpace": round(free / (1024**3))}
+            seen = set()
+            for r in roots:
+                free = r.get("freeSpace", 0)
+                if not r.get("accessible") or free <= 0 or free in seen:
+                    continue
+                seen.add(free)
+                disks.append({"path": r["path"].split("/")[-1] or r["path"], "freeSpace": round(free / (1024**3))})
         except Exception:
             pass
 
         return jsonify({
             "downloading": downloading,
             "missing": list(missing_series.values()),
-            "disk": disk,
+            "disks": disks,
         })
 
     except Exception as e:
