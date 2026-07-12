@@ -773,27 +773,46 @@ def plex_trivia():
     try:
         import xml.etree.ElementTree as ET
 
-        # Find last watched movie from Plex
-        url = f"{PLEX_URL}/library/recentlyAdded?X-Plex-Token={PLEX_TOKEN}"
+        # Find last watched movie from Plex play history (type=1 → movies),
+        # sorted by most recent view. recentlyAdded only lists newly-added
+        # items, so a movie watched recently but added long ago is missed.
+        url = (
+            f"{PLEX_URL}/status/sessions/history/all"
+            f"?X-Plex-Token={PLEX_TOKEN}&type=1&sort=viewedAt:desc&X-Plex-Container-Size=1"
+        )
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)
 
         last_watched = None
         for item in tree.getroot():
-            if item.get("type") != "movie":
-                continue
-            if int(item.get("viewCount", 0)) > 0:
-                viewed_at = int(item.get("lastViewedAt", 0))
-                if last_watched is None or viewed_at > int(last_watched.get("lastViewedAt", 0)):
-                    last_watched = item
+            if item.get("type") == "movie":
+                last_watched = item
+                break
 
-        if not last_watched:
+        if last_watched is None:
             return jsonify({"text": None, "movie": None})
 
         movie_title = last_watched.get("title")
         movie_year = last_watched.get("year", "")
-        directors = [d.get("tag") for d in last_watched.findall("Director")]
+
+        # History entries don't carry Director tags; fetch them from metadata.
+        directors = []
+        rating_key = last_watched.get("ratingKey")
+        if rating_key:
+            try:
+                meta_url = f"{PLEX_URL}/library/metadata/{rating_key}?X-Plex-Token={PLEX_TOKEN}"
+                meta_req = urllib.request.Request(meta_url, headers={"Accept": "application/xml"})
+                with urllib.request.urlopen(meta_req, timeout=10) as meta_resp:
+                    meta_tree = ET.parse(meta_resp)
+                video = meta_tree.getroot().find("Video")
+                if video is not None:
+                    if not movie_year:
+                        movie_year = video.get("year", "")
+                    directors = [d.get("tag") for d in video.findall("Director")]
+            except Exception:
+                pass
+
         movie_key = f"{movie_title} ({movie_year})"
 
         # Return cache if same movie and not expired
