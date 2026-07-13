@@ -773,45 +773,33 @@ def plex_trivia():
     try:
         import xml.etree.ElementTree as ET
 
-        # Find last watched movie from Plex play history (type=1 → movies),
-        # sorted by most recent view. recentlyAdded only lists newly-added
-        # items, so a movie watched recently but added long ago is missed.
+        # Find the last watched movie from the Films library, sorted by
+        # lastViewedAt. This is the item-level "watched" date, so it also
+        # covers movies marked as watched (or played without a scrobbled
+        # session) — which never appear in /status/sessions/history/all.
+        section_key = find_plex_section(ET, "movie")
+        if section_key is None:
+            return jsonify({"text": None, "movie": None})
+
         url = (
-            f"{PLEX_URL}/status/sessions/history/all"
-            f"?X-Plex-Token={PLEX_TOKEN}&type=1&sort=viewedAt:desc&X-Plex-Container-Size=1"
+            f"{PLEX_URL}/library/sections/{section_key}/all"
+            f"?X-Plex-Token={PLEX_TOKEN}&type=1&sort=lastViewedAt:desc"
+            f"&viewCount%3E=1&X-Plex-Container-Size=1"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/xml"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             tree = ET.parse(resp)
 
-        last_watched = None
-        for item in tree.getroot():
-            if item.get("type") == "movie":
-                last_watched = item
-                break
-
+        # Container-Size is best-effort on this endpoint, so take the first
+        # movie entry (already sorted most-recently-viewed first).
+        last_watched = tree.getroot().find("Video")
         if last_watched is None:
             return jsonify({"text": None, "movie": None})
 
         movie_title = last_watched.get("title")
         movie_year = last_watched.get("year", "")
-
-        # History entries don't carry Director tags; fetch them from metadata.
-        directors = []
-        rating_key = last_watched.get("ratingKey")
-        if rating_key:
-            try:
-                meta_url = f"{PLEX_URL}/library/metadata/{rating_key}?X-Plex-Token={PLEX_TOKEN}"
-                meta_req = urllib.request.Request(meta_url, headers={"Accept": "application/xml"})
-                with urllib.request.urlopen(meta_req, timeout=10) as meta_resp:
-                    meta_tree = ET.parse(meta_resp)
-                video = meta_tree.getroot().find("Video")
-                if video is not None:
-                    if not movie_year:
-                        movie_year = video.get("year", "")
-                    directors = [d.get("tag") for d in video.findall("Director")]
-            except Exception:
-                pass
+        # The section listing carries Director tags directly — no extra fetch.
+        directors = [d.get("tag") for d in last_watched.findall("Director")]
 
         movie_key = f"{movie_title} ({movie_year})"
 
