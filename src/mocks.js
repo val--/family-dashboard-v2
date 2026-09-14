@@ -95,6 +95,28 @@ export const mockRadarr = {
   ],
 }
 
+export const mockSorties = {
+  days: [nextWeekendDay(0), nextWeekendDay(1)],
+  events: [
+    { id: 'm1', title: 'Marché de la Petite Hollande', date: nextWeekendDay(0), start: '08:30', end: '13:00', allDay: false, place: 'Place de la Petite Hollande · Nantes', address: 'Place de la Petite Hollande', city: 'Nantes', description: 'Le plus grand marché de Nantes, avec ses producteurs locaux et ses étals de poissonniers.', categories: ['Marché'], themes: ['Commerce'], free: true, price: null, audience: 'Tout public', organizer: 'VILLE DE NANTES', image: null, url: null },
+    { id: 'm2', title: 'Atelier créatif en famille', date: nextWeekendDay(0), start: '10:00', end: '12:00', allDay: false, place: 'Le Lieu Unique · Nantes', address: 'Quai Ferdinand-Favre', city: 'Nantes', description: 'Un atelier parents-enfants autour du papier découpé, animé par une illustratrice nantaise.', categories: ['Atelier'], themes: ['Culture - Loisirs'], free: false, price: '5 € par enfant', audience: 'À partir de 5 ans', organizer: 'LE LIEU UNIQUE', image: null, url: null },
+    { id: 'm3', title: 'Visite guidée du Château des ducs', date: nextWeekendDay(0), start: '14:30', end: '16:00', allDay: false, place: 'Château des ducs de Bretagne · Nantes', address: '4 place Marc Elder', city: 'Nantes', description: 'Parcours commenté des remparts et de la cour intérieure.', categories: ['Visite - Balade'], themes: ['Patrimoine'], free: false, price: '9 €, gratuit -18 ans', audience: 'Tout public', organizer: 'CHATEAU DES DUCS', image: null, url: null },
+    { id: 'm4', title: 'Concert — Trio jazz au Pannonica', date: nextWeekendDay(0), start: '20:30', end: '23:00', allDay: false, place: 'Pannonica · Nantes', address: '9 rue Basse Porte', city: 'Nantes', description: 'Soirée jazz contemporain.', categories: ['Concert'], themes: ['Musique'], free: false, price: '12 €', audience: 'Tout public', organizer: 'PANNONICA', image: null, url: null },
+    { id: 'm5', title: 'Exposition « Nantes au fil de l\'eau »', date: nextWeekendDay(0), start: null, end: null, allDay: true, place: 'Musée d\'histoire · Nantes', address: null, city: 'Nantes', description: 'Deux siècles de rapport de la ville à son fleuve.', categories: ['Exposition'], themes: ['Patrimoine'], free: true, price: null, audience: 'Tout public', organizer: 'MUSEE HISTOIRE', image: null, url: null },
+    { id: 'm6', title: 'Brocante du dimanche', date: nextWeekendDay(1), start: '07:00', end: '18:00', allDay: false, place: 'Parc des Chantiers · Nantes', address: 'Boulevard Léon Bureau', city: 'Nantes', description: 'Une centaine d\'exposants sur l\'île de Nantes.', categories: ['Brocante'], themes: ['Commerce'], free: true, price: null, audience: 'Tout public', organizer: 'VILLE DE NANTES', image: null, url: null },
+    { id: 'm7', title: 'Spectacle jeune public — Les Trois Brigands', date: nextWeekendDay(1), start: '11:00', end: '11:45', allDay: false, place: 'Théâtre de Poche · Nantes', address: null, city: 'Nantes', description: 'Adaptation du classique de Tomi Ungerer.', categories: ['Spectacle'], themes: ['Jeune public'], free: false, price: '7 €', audience: 'De 3 à 8 ans', organizer: 'THEATRE DE POCHE', image: null, url: null },
+    { id: 'm8', title: 'Balade nature au bord de l\'Erdre', date: nextWeekendDay(1), start: '15:00', end: '17:00', allDay: false, place: 'Port de la Jonelière · Nantes', address: null, city: 'Nantes', description: 'Sortie accompagnée par un animateur nature.', categories: ['Visite - Balade'], themes: ['Nature'], free: true, price: null, audience: 'Tout public', organizer: 'ERDRE ET LOIRE', image: null, url: null },
+  ],
+}
+
+// Saturday (offset 0) or Sunday (offset 1) of the upcoming weekend.
+function nextWeekendDay(offset) {
+  const d = new Date()
+  const weekday = d.getDay() // Sunday = 0, Saturday = 6
+  d.setDate(d.getDate() + (weekday === 0 ? -1 : 6 - weekday) + offset)
+  return d.toISOString().slice(0, 10)
+}
+
 function futureDate(daysFromNow, time) {
   const d = new Date()
   d.setDate(d.getDate() + daysFromNow)

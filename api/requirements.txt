@@ -3,3 +3,4 @@ flask-cors==5.*
 gunicorn==23.*
 google-auth==2.*
 google-api-python-client==2.*
+tzdata
