@@ -16,6 +16,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+from postits import bp as postits_bp  # noqa: E402
+
+app.register_blueprint(postits_bp)
+
 # -- Printer config --
 PRINTER_NAME = "Deskjet_3630"
 USB_ID = "03f0:e311"

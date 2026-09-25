@@ -28,6 +28,9 @@ services:
       - SONARR_API_KEY=${SONARR_API_KEY}
       - TMDB_API_KEY=${TMDB_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - FAMILY_CODE=${FAMILY_CODE:-}
+      - FAMILY_MEMBERS=${FAMILY_MEMBERS:-}
+      - POSTIT_DAYS=${POSTIT_DAYS:-7}
       - "SYSTEM_DISKS=${SYSTEM_DISKS:-Système:/;Stockage:/host/mnt/internal_storage;NAS:/host/mnt/synology_movies;NAS 2:/host/mnt/synology_tv_shows_2}"
     extra_hosts:
       - "host-gateway:host-gateway"
@@ -35,6 +38,7 @@ services:
       - /var/run/cups:/var/run/cups
       - /var/run/docker.sock:/var/run/docker.sock
       - ./credentials:/app/credentials:ro
+      - ./data:/app/data
       - /mnt:/host/mnt:ro
       - /sys/class/net/${SYSTEM_NET_INTERFACE:-enp7s0}/statistics:/host/net:ro
     devices:
