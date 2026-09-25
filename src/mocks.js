@@ -10,17 +10,20 @@ export const mockVpn = {
   since: '2026-09-23T15:27:52Z',
 }
 
-export const mockSeedbox = {
-  connection: 'connected',
-  ratio: 1.65,
-  uploaded: 3917333146819,
-  downloaded: 2373133768618,
-  upSpeed: 1250000,
-  downSpeed: 0,
-  peers: 8,
-  torrents: 3,
-  seeding: 3,
-  downloading: 0,
+export const mockSystem = {
+  cpu: 6,
+  cores: 8,
+  load: 0.4,
+  memory: { total: 16681050112, used: 4759535616, percent: 28.5 },
+  temperature: 46,
+  uptime: 6113396,
+  network: { down: 1250000, up: 340000 },
+  disks: [
+    { name: 'Système', total: 250901458944, free: 143910453248 },
+    { name: 'Stockage', total: 2000396742656, free: 907816226816 },
+    { name: 'NAS', total: 5948993568768, free: 4383267356672 },
+    { name: 'NAS 2', total: 3933136617472, free: 2310926630912 },
+  ],
 }
 
 export const mockPrinter = {

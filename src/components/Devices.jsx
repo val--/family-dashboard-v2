@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { usePrinter } from '../hooks/usePrinter'
 import { useVpn } from '../hooks/useVpn'
-import { useSeedbox } from '../hooks/useSeedbox'
+import { useSystem } from '../hooks/useSystem'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
@@ -23,30 +23,97 @@ function formatUptime(since) {
 }
 
 function formatBytes(bytes) {
-  if (bytes == null) return null
   const units = [['To', 1024 ** 4], ['Go', 1024 ** 3], ['Mo', 1024 ** 2]]
   const [unit, size] = units.find(([, s]) => bytes >= s) || units[units.length - 1]
-  return `${(bytes / size).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ${unit}`
+  return `${(bytes / size).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} ${unit}`
 }
 
-function formatSpeed(bytesPerSec) {
-  if (!bytesPerSec) return '0'
+function formatRate(bytesPerSec) {
   if (bytesPerSec >= 1024 ** 2) return `${(bytesPerSec / 1024 ** 2).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Mo/s`
   return `${Math.round(bytesPerSec / 1024)} Ko/s`
 }
 
-const SEEDBOX_STATUS = {
-  connected: 'Connectée',
-  firewalled: 'Pare-feu',
-  disconnected: 'Déconnectée',
+function formatDays(seconds) {
+  const days = Math.floor(seconds / 86400)
+  return days > 0 ? `${days} j` : `${Math.floor(seconds / 3600)} h`
 }
 
-// One compact row per device: title + status on the left, details on the right
-function Card({ title, ok, label, children }) {
+const LEVELS = {
+  ok: { text: 'text-white', bar: 'bg-green-400' },
+  warn: { text: 'text-orange-400', bar: 'bg-orange-400' },
+  alert: { text: 'text-red-400', bar: 'bg-red-400' },
+}
+
+// Orange from `warn`, red from `alert`
+function level(value, warn, alert) {
+  if (value >= alert) return LEVELS.alert
+  if (value >= warn) return LEVELS.warn
+  return LEVELS.ok
+}
+
+// One accent per card so they read as separate widgets. Avoid green/orange/red: those mean status.
+const ACCENTS = {
+  sky: { card: 'bg-sky-500/10 border-sky-400/25', stripe: 'bg-sky-400', badge: 'bg-sky-400/20 text-sky-300' },
+  purple: { card: 'bg-purple-500/10 border-purple-400/25', stripe: 'bg-purple-400', badge: 'bg-purple-400/20 text-purple-300' },
+  teal: { card: 'bg-teal-500/10 border-teal-400/25', stripe: 'bg-teal-400', badge: 'bg-teal-400/20 text-teal-300' },
+}
+
+const ICON_PROPS = {
+  className: 'w-4 h-4 shrink-0',
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.8,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+}
+
+function ShieldIcon() {
   return (
-    <div className="bg-white/5 rounded-2xl px-4 py-3 flex items-center gap-4">
+    <svg {...ICON_PROPS}>
+      <path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  )
+}
+
+function PrinterIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
+      <rect x="6" y="14" width="12" height="8" rx="1" />
+    </svg>
+  )
+}
+
+// Simplified Ubuntu "circle of friends": three dots on a ring, on an orange disc
+function UbuntuIcon() {
+  return (
+    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="12" fill="#E95420" />
+      <circle cx="12" cy="12" r="6.5" fill="none" stroke="#fff" strokeWidth="1.8" />
+      {[[5.5, 12], [15.25, 6.4], [15.25, 17.6]].map(([x, y]) => (
+        <circle key={x + '-' + y} cx={x} cy={y} r="2.4" fill="#fff" stroke="#E95420" strokeWidth="1.3" />
+      ))}
+    </svg>
+  )
+}
+
+// One compact row per device: icon + title + status on the left, details on the right
+function Card({ accent, icon, title, ok, label, children }) {
+  const colors = ACCENTS[accent]
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl border pl-5 pr-4 py-3 flex items-center gap-4 ${colors.card}`}>
+      <span className={`absolute inset-y-0 left-0 w-1.5 ${colors.stripe}`} />
       <div className="shrink-0 w-40">
-        <h2 className="text-xl font-light leading-tight">{title}</h2>
+        <h2 className="flex items-center gap-2 text-xl font-light leading-tight">
+          {icon && (
+            <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colors.badge}`}>{icon}</span>
+          )}
+          {title}
+        </h2>
         <div className={`flex items-center gap-2 text-base leading-tight ${ok ? 'text-green-400' : 'text-red-400'}`}>
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-400'}`} />
           <span className="truncate">{label}</span>
@@ -57,12 +124,21 @@ function Card({ title, ok, label, children }) {
   )
 }
 
-function Field({ label, value, valueClassName = 'text-white' }) {
+function Bar({ percent, level: { bar } }) {
+  return (
+    <div className="mt-1 h-1 rounded-full bg-white/10 overflow-hidden">
+      <div className={`h-full rounded-full ${bar}`} style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+    </div>
+  )
+}
+
+function Field({ label, value, valueClassName = 'text-white', className = '', children }) {
   if (!value) return null
   return (
-    <div className="min-w-0">
-      <div className="text-sm leading-tight text-white/40">{label}</div>
+    <div className={`min-w-0 ${className}`}>
+      <div className="text-sm leading-tight text-white/40 truncate">{label}</div>
       <div className={`text-lg leading-tight truncate ${valueClassName}`}>{value}</div>
+      {children}
     </div>
   )
 }
@@ -71,7 +147,7 @@ function VpnCard({ vpn }) {
   const location = [vpn.city, vpn.country].filter(Boolean).join(', ')
 
   return (
-    <Card title="VPN" ok={vpn.healthy} label={vpn.healthy ? 'Connecté' : 'Déconnecté'}>
+    <Card accent="sky" icon={<ShieldIcon />} title="VPN" ok={vpn.healthy} label={vpn.healthy ? 'Connecté' : 'Déconnecté'}>
       {vpn.healthy && (
         <div className="grid grid-cols-4 gap-x-4">
           <Field label="Fournisseur" value={vpn.provider} />
@@ -84,27 +160,67 @@ function VpnCard({ vpn }) {
   )
 }
 
-function SeedboxCard({ seedbox }) {
-  const ratio = seedbox.ratio
-  const speed = seedbox.downSpeed > 0
-    ? `↑ ${formatSpeed(seedbox.upSpeed)} ↓ ${formatSpeed(seedbox.downSpeed)}`
-    : `↑ ${formatSpeed(seedbox.upSpeed)}`
+function ServerCard({ system }) {
+  const { cpu, memory, temperature, network, disks } = system
+  const usedPercent = (disk) => (100 * (disk.total - disk.free)) / disk.total
+  const ok =
+    cpu < 90 && memory.percent < 90 && !(temperature >= 80) && disks.every((disk) => usedPercent(disk) < 90)
+
+  const cpuLevel = level(cpu, 70, 90)
+  const memLevel = level(memory.percent, 75, 90)
+  const tempLevel = level(temperature, 70, 80)
 
   return (
     <Card
-      title="Seedbox"
-      ok={seedbox.connection === 'connected'}
-      label={SEEDBOX_STATUS[seedbox.connection] || 'Inconnue'}
+      accent="purple"
+      icon={<UbuntuIcon />}
+      title="Serveur"
+      ok={ok}
+      label={ok ? `Actif ${formatDays(system.uptime)}` : 'Attention'}
     >
-      <div className="grid grid-cols-4 gap-x-4">
-        <Field
-          label="Ratio"
-          value={ratio != null && ratio.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          valueClassName={ratio >= 1 ? 'text-green-400' : 'text-orange-400'}
-        />
-        <Field label="Envoyé" value={formatBytes(seedbox.uploaded)} />
-        <Field label="Téléchargé" value={formatBytes(seedbox.downloaded)} />
-        <Field label="Débit" value={speed} />
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-5 gap-x-4">
+          <Field label="CPU" value={`${Math.round(cpu)} %`} valueClassName={cpuLevel.text}>
+            <Bar percent={cpu} level={cpuLevel} />
+          </Field>
+          <Field label={`RAM (${formatBytes(memory.total)})`} value={formatBytes(memory.used)} valueClassName={memLevel.text}>
+            <Bar percent={memory.percent} level={memLevel} />
+          </Field>
+          <Field
+            label="Température"
+            value={temperature != null && `${temperature} °C`}
+            valueClassName={tempLevel.text}
+          >
+            <Bar percent={temperature} level={tempLevel} />
+          </Field>
+          <Field
+            label="Réseau"
+            className="col-span-2"
+            value={
+              network && (
+                <>
+                  <span className="text-sky-400">↓</span> {formatRate(network.down)}{' '}
+                  <span className="text-orange-400">↑</span> {formatRate(network.up)}
+                </>
+              )
+            }
+          />
+        </div>
+        <div className="grid grid-flow-col auto-cols-fr gap-x-4">
+          {disks.map((disk) => {
+            const diskLevel = level(usedPercent(disk), 85, 95)
+            return (
+              <Field
+                key={disk.name}
+                label={disk.name}
+                value={`${formatBytes(disk.free)} libres`}
+                valueClassName={diskLevel.text}
+              >
+                <Bar percent={usedPercent(disk)} level={diskLevel} />
+              </Field>
+            )
+          })}
+        </div>
       </div>
     </Card>
   )
@@ -135,6 +251,8 @@ function PrinterCard({ printer, refresh }) {
 
   return (
     <Card
+      accent="teal"
+      icon={<PrinterIcon />}
       title="Imprimante"
       ok={available}
       label={PRINTER_STATUS[printer.status] || (available ? 'En ligne' : 'Hors ligne')}
@@ -162,12 +280,12 @@ function PrinterCard({ printer, refresh }) {
 export default function Devices() {
   const { data: printer, loading: printerLoading, error: printerError, refresh } = usePrinter()
   const { data: vpn, loading: vpnLoading, error: vpnError } = useVpn()
-  const { data: seedbox, loading: seedboxLoading, error: seedboxError } = useSeedbox()
+  const { data: system, loading: systemLoading, error: systemError } = useSystem()
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-2">
+    <div className="h-full overflow-y-auto flex flex-col gap-3">
       {!vpnLoading && !vpnError && vpn && <VpnCard vpn={vpn} />}
-      {!seedboxLoading && !seedboxError && seedbox && <SeedboxCard seedbox={seedbox} />}
+      {!systemLoading && !systemError && system && <ServerCard system={system} />}
       {!printerLoading && !printerError && printer && (
         <PrinterCard printer={printer} refresh={refresh} />
       )}
