@@ -260,6 +260,49 @@ def vpn_status():
 
 
 # ========================
+#  Seedbox (qBittorrent)
+# ========================
+
+QBIT_LOCAL_URL = "http://127.0.0.1:8080"  # qBittorrent shares gluetun's network namespace
+QBIT_SEEDING_STATES = {"uploading", "stalledUP", "queuedUP", "forcedUP"}
+QBIT_DOWNLOADING_STATES = {"downloading", "stalledDL", "queuedDL", "forcedDL", "metaDL", "allocating"}
+
+
+@app.route("/api/seedbox")
+def seedbox_status():
+    # qBittorrent skips auth for localhost (LocalHostAuth=false), so query it from inside
+    # gluetun's namespace instead of storing WebUI credentials here
+    try:
+        out = docker_exec_output(
+            GLUETUN_CONTAINER,
+            ["wget", "-qO-", "-T", "5", f"{QBIT_LOCAL_URL}/api/v2/sync/maindata"],
+        )
+        data = jsonlib.loads(out)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 503
+
+    state = data.get("server_state", {})
+    torrents = list(data.get("torrents", {}).values())
+    try:
+        ratio = float(state.get("global_ratio"))
+    except (TypeError, ValueError):
+        ratio = None
+
+    return jsonify({
+        "connection": state.get("connection_status"),
+        "ratio": ratio,
+        "uploaded": state.get("alltime_ul"),
+        "downloaded": state.get("alltime_dl"),
+        "upSpeed": state.get("up_info_speed"),
+        "downSpeed": state.get("dl_info_speed"),
+        "peers": state.get("total_peer_connections"),
+        "torrents": len(torrents),
+        "seeding": sum(1 for t in torrents if t.get("state") in QBIT_SEEDING_STATES),
+        "downloading": sum(1 for t in torrents if t.get("state") in QBIT_DOWNLOADING_STATES),
+    })
+
+
+# ========================
 #  Calendar
 # ========================
 
