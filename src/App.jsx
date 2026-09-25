@@ -23,6 +23,9 @@ function useDevicesIndicator() {
   return 'orange'
 }
 
+// Sorties widget is hidden for now; flip to true to bring it back
+const SHOW_SORTIES = false
+
 function App() {
   const devicesIndicator = useDevicesIndicator()
 
@@ -41,11 +44,11 @@ function App() {
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
         <WidgetCarousel
-          titles={['Agenda', 'Sorties', 'Films', 'Séries', 'Appareils']}
-          indicators={[null, null, null, null, devicesIndicator]}
+          titles={['Agenda', ...(SHOW_SORTIES ? ['Sorties'] : []), 'Films', 'Séries', 'Appareils']}
+          indicators={[null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
         >
           <Calendar />
-          <Sorties />
+          {SHOW_SORTIES && <Sorties />}
           <Plex />
           <Shows />
           <Devices />
