@@ -66,7 +66,7 @@ function DateTile({ date, soon }) {
   return (
     <div
       className={`w-12 shrink-0 rounded-lg py-1 text-center leading-none ${
-        soon ? 'bg-amber-400 text-black' : 'bg-amber-400/15 text-amber-300'
+        soon ? 'bg-sky-400 text-black' : 'bg-white/20 text-white'
       }`}
     >
       <div className="text-xs uppercase tracking-wide">
@@ -79,7 +79,7 @@ function DateTile({ date, soon }) {
 
 function Relative({ days }) {
   return (
-    <span className={`text-sm shrink-0 ${days <= 1 ? 'text-amber-300 font-medium' : 'text-white/40'}`}>
+    <span className={`text-sm shrink-0 ${days <= 1 ? 'text-sky-300 font-semibold' : 'text-white/60'}`}>
       {relativeLabel(days)}
     </span>
   )
@@ -92,12 +92,12 @@ function EventCard({ event, now, onSelect }) {
   return (
     <button
       onClick={() => onSelect(event)}
-      className="flex items-center gap-3 min-w-0 rounded-xl bg-white/[0.04] px-3 py-2 text-left"
+      className="flex items-center gap-3 min-w-0 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-left"
     >
       <DateTile date={eventStart(event)} soon={days <= 1} />
       <div className="min-w-0 flex-1">
-        <div className="text-base leading-tight line-clamp-2 text-white/90">{event.title}</div>
-        <div className="mt-0.5 text-sm leading-tight text-white/40 truncate">
+        <div className="text-base leading-tight line-clamp-2 text-white">{event.title}</div>
+        <div className="mt-0.5 text-sm leading-tight text-white/70 truncate">
           {timeLabel(event)}
           {place && ` · 📍 ${place}`}
         </div>
@@ -112,10 +112,10 @@ function LaterRow({ event, now, onSelect }) {
 
   return (
     <button onClick={() => onSelect(event)} className="flex w-full items-baseline gap-3 px-3 py-1.5 text-left">
-      <span className="w-24 shrink-0 text-sm capitalize text-amber-400/80">
+      <span className="w-24 shrink-0 text-sm capitalize text-sky-300">
         {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
       </span>
-      <span className="min-w-0 flex-1 truncate text-base text-white/80">{event.title}</span>
+      <span className="min-w-0 flex-1 truncate text-base text-white">{event.title}</span>
       <Relative days={daysUntil(event, now)} />
     </button>
   )
@@ -125,11 +125,11 @@ function ModalShell({ title, onClose, children }) {
   return createPortal(
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
       <div className="flex items-center justify-between pl-6 pr-2 pt-2">
-        <div className="text-sm uppercase tracking-wider text-white/40">{title}</div>
+        <div className="text-sm uppercase tracking-wider text-white/60">{title}</div>
         <button
           onClick={onClose}
           aria-label="Fermer"
-          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
+          className="text-white/70 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
         >
           &times;
         </button>
@@ -166,9 +166,9 @@ function EventDetailModal({ event, now, onClose }) {
         <DateTile date={start} soon={daysUntil(event, now) <= 1} />
         <div className="flex flex-col gap-2 max-w-xl">
           <h2 className="text-3xl font-light text-white">{event.title}</h2>
-          <div className="text-lg capitalize text-white/70">{start.toLocaleDateString('fr-FR', dayFormat)}</div>
-          <div className="text-lg text-white/50">{when}</div>
-          {event.location && <div className="text-base text-white/50">📍 {event.location}</div>}
+          <div className="text-lg capitalize text-white/85">{start.toLocaleDateString('fr-FR', dayFormat)}</div>
+          <div className="text-lg text-white/70">{when}</div>
+          {event.location && <div className="text-base text-white/70">📍 {event.location}</div>}
           <div className="mt-1">
             <Relative days={daysUntil(event, now)} />
           </div>
@@ -183,9 +183,9 @@ function AgendaModal({ events, now, onClose, onSelect }) {
     <ModalShell title="Agenda" onClose={onClose}>
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-3">
         {groupByDay(events).map(({ day, items }) => (
-          <div key={day.getTime()} className="rounded-xl bg-white/[0.04] px-4 py-3 flex flex-col gap-2">
+          <div key={day.getTime()} className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 flex flex-col gap-2">
             <div className="flex items-baseline justify-between gap-3">
-              <div className="text-base font-medium capitalize text-amber-400/80">
+              <div className="text-base font-medium capitalize text-sky-300">
                 {day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </div>
               <Relative days={daysUntil(items[0], now)} />
@@ -196,8 +196,8 @@ function AgendaModal({ events, now, onClose, onSelect }) {
                 onClick={() => onSelect(event)}
                 className="flex items-baseline gap-3 text-left"
               >
-                <span className="w-16 shrink-0 text-right text-base tabular-nums text-white/30">{timeLabel(event)}</span>
-                <span className="text-base text-white/90">{event.title}</span>
+                <span className="w-16 shrink-0 text-right text-base tabular-nums text-white/60">{timeLabel(event)}</span>
+                <span className="text-base text-white">{event.title}</span>
               </button>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default function Calendar() {
   if (error || loading || !events) return null
 
   if (events.length === 0) {
-    return <div className="text-white/30 text-sm">Aucun événement à venir</div>
+    return <div className="text-white/60 text-sm">Aucun événement à venir</div>
   }
 
   const now = new Date()
@@ -233,20 +233,20 @@ export default function Calendar() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl bg-white/[0.04] px-4 py-3 text-white/50">
+          <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white/70">
             Rien de prévu dans les 3 prochaines semaines
           </div>
         )}
         {later.length > 0 && (
           <div>
-            <div className="mb-1 px-1 text-xs uppercase tracking-wider text-white/30">Plus tard</div>
-            <div className="rounded-xl bg-white/[0.03] divide-y divide-white/5">
+            <div className="mb-1 px-1 text-xs uppercase tracking-wider text-white/60">Plus tard</div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.07] divide-y divide-white/10">
               {later.slice(0, MAX_LATER).map((event) => (
                 <LaterRow key={`${event.start}-${event.title}`} event={event} now={now} onSelect={setSelected} />
               ))}
             </div>
             {later.length > MAX_LATER && (
-              <button onClick={() => setShowAll(true)} className="mt-1 px-1 py-1 text-sm text-amber-400/80">
+              <button onClick={() => setShowAll(true)} className="mt-1 px-1 py-1 text-sm text-sky-300">
                 + {later.length - MAX_LATER} autre{later.length - MAX_LATER > 1 ? 's' : ''} · Tout l'agenda
               </button>
             )}
