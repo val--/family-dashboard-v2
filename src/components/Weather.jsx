@@ -1,5 +1,3 @@
-import { useWeather } from '../hooks/useWeather'
-
 function weatherIconUrl(code) {
   return `https://openweathermap.org/img/wn/${code}@2x.png`
 }
@@ -38,8 +36,8 @@ function groupForecastByDay(list) {
   }))
 }
 
-export default function Weather() {
-  const { current, forecast, loading, error } = useWeather()
+export default function Weather({ weather }) {
+  const { current, forecast, loading, error } = weather
 
   if (error) {
     return <div className="text-red-400 text-sm">{error}</div>
