@@ -1,7 +1,16 @@
 import { useState, useRef, Children } from 'react'
 
+const plain = (text) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
+// ?tab=appareils opens that tab first (handy for screenshots and bookmarks)
+function initialTab(titles) {
+  const wanted = new URLSearchParams(window.location.search).get('tab')
+  const index = wanted ? titles.findIndex((title) => plain(title) === plain(wanted)) : -1
+  return index >= 0 ? index : 0
+}
+
 export default function WidgetCarousel({ children, titles = [], indicators = [] }) {
-  const [active, setActive] = useState(0)
+  const [active, setActive] = useState(() => initialTab(titles))
   const touchStart = useRef(null)
   const items = Children.toArray(children)
   const count = items.length
