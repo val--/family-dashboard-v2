@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import Clock from './components/Clock'
 import Weather from './components/Weather'
 import Calendar from './components/Calendar'
+import PostIts from './components/PostIts'
 import Plex from './components/Plex'
 import Shows from './components/Shows'
 import Sorties from './components/Sorties'
@@ -10,6 +12,7 @@ import { useVpn } from './hooks/useVpn'
 import { usePrinter } from './hooks/usePrinter'
 import { useWeather } from './hooks/useWeather'
 import { useIdle } from './hooks/useIdle'
+import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import Screensaver from './components/Screensaver'
 
 function useDevicesIndicator() {
@@ -36,6 +39,9 @@ function App() {
   const devicesIndicator = useDevicesIndicator()
   const weather = useWeather()
   const { idle, wake, sleep } = useIdle(IDLE_SECONDS * 1000)
+  const postits = usePostits()
+  const [activeTab, setActiveTab] = useState('')
+  const hasNewPostit = useUnseenPostits(postits.notes, postits.config !== null, activeTab === 'Post-it' && !idle)
 
   return (
     <div
@@ -75,10 +81,12 @@ function App() {
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
         <WidgetCarousel
-          titles={['Agenda', ...(SHOW_SORTIES ? ['Sorties'] : []), 'Films', 'Séries', 'Appareils']}
-          indicators={[null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
+          titles={['Agenda', 'Post-it', ...(SHOW_SORTIES ? ['Sorties'] : []), 'Films', 'Séries', 'Appareils']}
+          indicators={[null, hasNewPostit ? 'sky' : null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
+          onActiveChange={setActiveTab}
         >
           <Calendar />
+          <PostIts postits={postits} />
           {SHOW_SORTIES && <Sorties />}
           <Plex />
           <Shows />
@@ -86,7 +94,7 @@ function App() {
         </WidgetCarousel>
       </div>
 
-      {idle && <Screensaver weather={weather} onWake={wake} />}
+      {idle && <Screensaver weather={weather} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} />}
     </div>
   )
 }

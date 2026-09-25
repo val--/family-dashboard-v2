@@ -1,16 +1,28 @@
-import { useState, useRef, Children } from 'react'
+import { useState, useRef, useEffect, Children } from 'react'
 
 const plain = (text) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
-// ?tab=appareils opens that tab first (handy for screenshots and bookmarks)
+// ?tab=appareils opens that tab first (bookmarks, screenshots, and how a reload keeps your place)
 function initialTab(titles) {
   const wanted = new URLSearchParams(window.location.search).get('tab')
   const index = wanted ? titles.findIndex((title) => plain(title) === plain(wanted)) : -1
   return index >= 0 ? index : 0
 }
 
-export default function WidgetCarousel({ children, titles = [], indicators = [] }) {
+export default function WidgetCarousel({ children, titles = [], indicators = [], onActiveChange }) {
   const [active, setActive] = useState(() => initialTab(titles))
+
+  useEffect(() => {
+    const title = titles[active]
+    onActiveChange?.(title)
+
+    // Keep the current tab in the URL: a reload (the refresh button, F5) then lands on the same screen
+    if (title) {
+      const url = new URL(window.location.href)
+      url.searchParams.set('tab', plain(title))
+      window.history.replaceState(null, '', url)
+    }
+  }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
   const touchStart = useRef(null)
   const items = Children.toArray(children)
   const count = items.length
@@ -53,6 +65,7 @@ export default function WidgetCarousel({ children, titles = [], indicators = [] 
                   className={`absolute top-0 -right-3 w-2.5 h-2.5 rounded-full ${
                     indicators[i] === 'green' ? 'bg-green-400' :
                     indicators[i] === 'orange' ? 'bg-orange-400' :
+                    indicators[i] === 'sky' ? 'bg-sky-400' :
                     indicators[i] === 'red' ? 'bg-red-400' : ''
                   }`}
                 />

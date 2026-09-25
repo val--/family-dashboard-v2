@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Handwriting font for the post-it notes (self-hosted through @fontsource, see main.jsx) */
+@theme {
+  --font-hand: "Caveat", cursive;
+}
+
 /* Marquee scrolling animation */
 @keyframes marquee {
   0% { transform: translateX(0); }
