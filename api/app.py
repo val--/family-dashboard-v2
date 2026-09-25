@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import time
 import urllib.parse
 import urllib.request
 import json as jsonlib
@@ -71,6 +72,18 @@ def get_cups_status():
         return "unknown"
 
 
+def count_print_jobs():
+    """Number of jobs waiting on the printer queue."""
+    try:
+        result = subprocess.run(
+            ["lpstat", "-o", PRINTER_NAME],
+            capture_output=True, text=True, timeout=5,
+        )
+        return len([line for line in result.stdout.splitlines() if line.strip()])
+    except Exception:
+        return 0
+
+
 @app.route("/api/printer")
 def printer_status():
     connected = is_usb_connected()
@@ -80,71 +93,167 @@ def printer_status():
         "name": PRINTER_NAME,
         "connected": connected,
         "status": status,
+        "jobs": count_print_jobs() if connected else 0,
     })
+
+
+PRINT_TEST_TEXT = "Je fonctionne très bien!\n"
+PRINT_TEST_COOLDOWN = 30  # seconds; the endpoint is open on the LAN, so avoid paper floods
+PRINT_TEST_STAMP = "/tmp/.printer_test_last"  # shared between gunicorn workers
+
+
+@app.route("/api/printer/test", methods=["POST"])
+def printer_test():
+    if not is_usb_connected() or get_cups_status() in ("offline", "disabled", "unknown"):
+        return jsonify({"ok": False, "error": "Imprimante indisponible"}), 503
+
+    try:
+        elapsed = time.time() - os.path.getmtime(PRINT_TEST_STAMP)
+    except OSError:
+        elapsed = PRINT_TEST_COOLDOWN
+    if elapsed < PRINT_TEST_COOLDOWN:
+        wait = int(PRINT_TEST_COOLDOWN - elapsed) + 1
+        return jsonify({"ok": False, "error": f"Patiente encore {wait} s"}), 429
+
+    try:
+        result = subprocess.run(
+            ["lp", "-d", PRINTER_NAME, "-t", "Test dashboard"],
+            input=PRINT_TEST_TEXT.encode("utf-8"),
+            capture_output=True, timeout=10,
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    if result.returncode != 0:
+        error = result.stderr.decode("utf-8", errors="ignore").strip() or "Échec de l'impression"
+        return jsonify({"ok": False, "error": error}), 500
+
+    with open(PRINT_TEST_STAMP, "w"):
+        pass
+    os.utime(PRINT_TEST_STAMP)
+    return jsonify({"ok": True, "message": result.stdout.decode("utf-8", errors="ignore").strip()})
+
+
+# ========================
+#  VPN (gluetun)
+# ========================
+
+DOCKER_SOCKET = "/var/run/docker.sock"
+GLUETUN_CONTAINER = "gluetun"
+VPN_PROVIDER_NAMES = {"protonvpn": "ProtonVPN"}
+VPN_PROTOCOL_NAMES = {"wireguard": "WireGuard", "openvpn": "OpenVPN"}
+
+_geo_cache = {}  # ip -> {city, country, org}; only successful lookups are kept
+
+
+def docker_request(method, path, body=None):
+    """Minimal Docker Engine API call over the unix socket; returns the raw response body."""
+    import http.client
+    import socket
+
+    conn = http.client.HTTPConnection("localhost")
+    conn.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    conn.sock.settimeout(5)
+    conn.sock.connect(DOCKER_SOCKET)
+    try:
+        payload = jsonlib.dumps(body) if body is not None else None
+        headers = {"Content-Type": "application/json"} if payload else {}
+        conn.request(method, path, body=payload, headers=headers)
+        return conn.getresponse().read()
+    finally:
+        conn.close()
+
+
+def docker_exec_output(container, cmd):
+    """Run a command in a container and return its stdout (demultiplexed)."""
+    exec_id = jsonlib.loads(docker_request(
+        "POST", f"/containers/{container}/exec",
+        {"AttachStdout": True, "Cmd": cmd},
+    )).get("Id")
+    raw = docker_request("POST", f"/exec/{exec_id}/start", {"Detach": False})
+
+    # Non-TTY streams are framed: 1 byte stream type, 3 padding bytes, 4 bytes big-endian length
+    out, i = b"", 0
+    while i + 8 <= len(raw):
+        size = int.from_bytes(raw[i + 4:i + 8], "big")
+        out += raw[i + 8:i + 8 + size]
+        i += 8 + size
+    return out.decode("utf-8", errors="ignore")
+
+
+def lookup_ip_geo(ip):
+    """City/country/org for an IP. Cached per IP: free geo APIs rate-limit (429) fast."""
+    if ip in _geo_cache:
+        return _geo_cache[ip]
+
+    def ipwho():
+        with urllib.request.urlopen(f"https://ipwho.is/{ip}", timeout=5) as r:
+            data = jsonlib.loads(r.read())
+        if not data.get("success"):
+            raise ValueError("lookup failed")
+        return {
+            "city": data.get("city"),
+            "country": data.get("country"),
+            "org": (data.get("connection") or {}).get("org"),
+        }
+
+    def ipinfo():
+        with urllib.request.urlopen(f"https://ipinfo.io/{ip}/json", timeout=5) as r:
+            data = jsonlib.loads(r.read())
+        return {"city": data.get("city"), "country": data.get("country"), "org": data.get("org")}
+
+    for lookup in (ipwho, ipinfo):
+        try:
+            geo = lookup()
+            _geo_cache[ip] = geo
+            return geo
+        except Exception:
+            continue
+    return {}
 
 
 @app.route("/api/vpn")
 def vpn_status():
-    import http.client
-
     try:
-        # Query Docker API via socket for container health
-        conn = http.client.HTTPConnection("localhost")
-        conn.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
-        conn.sock.connect("/var/run/docker.sock")
-        conn.request("GET", "/containers/gluetun/json")
-        resp = conn.getresponse()
-        container = jsonlib.loads(resp.read())
-        conn.close()
+        container = jsonlib.loads(docker_request("GET", f"/containers/{GLUETUN_CONTAINER}/json"))
+        state = container.get("State", {})
+        is_healthy = state.get("Health", {}).get("Status") == "healthy"
 
-        health_status = container.get("State", {}).get("Health", {}).get("Status", "")
-        is_healthy = health_status == "healthy"
+        # Only whitelisted, non-sensitive settings are read: the env also holds the WireGuard key
+        env = dict(e.split("=", 1) for e in container.get("Config", {}).get("Env", []) if "=" in e)
+        provider = env.get("VPN_SERVICE_PROVIDER", "")
+        protocol = env.get("VPN_TYPE", "")
 
-        # Get public IP from gluetun's /tmp/gluetun/ip file via docker exec
-        public_ip = None
-        ip_info = {}
+        result = {
+            "healthy": is_healthy,
+            "provider": VPN_PROVIDER_NAMES.get(provider, provider) or None,
+            "protocol": VPN_PROTOCOL_NAMES.get(protocol, protocol) or None,
+            "since": (state.get("StartedAt") or "")[:19] + "Z" if state.get("StartedAt") else None,
+            "ip": None,
+            "port": None,
+            "city": None,
+            "country": None,
+            "org": None,
+        }
+
         if is_healthy:
-            import urllib.request
-            # Read IP from gluetun's IP file
             try:
-                exec_body = jsonlib.dumps({"AttachStdout": True, "Cmd": ["cat", "/tmp/gluetun/ip"]})
-                conn2 = http.client.HTTPConnection("localhost")
-                conn2.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
-                conn2.sock.connect("/var/run/docker.sock")
-                conn2.request("POST", "/containers/gluetun/exec", body=exec_body,
-                             headers={"Content-Type": "application/json"})
-                exec_id = jsonlib.loads(conn2.getresponse().read()).get("Id")
-                conn2.close()
-
-                conn3 = http.client.HTTPConnection("localhost")
-                conn3.sock = __import__('socket').socket(__import__('socket').AF_UNIX, __import__('socket').SOCK_STREAM)
-                conn3.sock.connect("/var/run/docker.sock")
-                conn3.request("POST", f"/exec/{exec_id}/start",
-                             body=jsonlib.dumps({"Detach": False}),
-                             headers={"Content-Type": "application/json"})
-                raw = conn3.getresponse().read()
-                conn3.close()
-                public_ip = raw.decode("utf-8", errors="ignore").strip().lstrip("\x01\x00\x00\x00\x00\x00\x00")
-                # Remove any remaining non-printable chars
-                public_ip = ''.join(c for c in public_ip if c.isdigit() or c == '.') or None
+                out = docker_exec_output(
+                    GLUETUN_CONTAINER,
+                    ["sh", "-c", "cat /tmp/gluetun/ip; echo; cat /tmp/gluetun/forwarded_port 2>/dev/null"],
+                )
+                lines = [line.strip() for line in out.splitlines()]
+                ip = re.sub(r"[^0-9.]", "", lines[0]) if lines else ""
+                port = re.sub(r"[^0-9]", "", lines[1]) if len(lines) > 1 else ""
+                result["ip"] = ip or None
+                result["port"] = int(port) if port else None
             except Exception:
                 pass
 
-            # Get geo info from ipinfo.io using the VPN IP
-            if public_ip:
-                try:
-                    with urllib.request.urlopen(f"https://ipinfo.io/{public_ip}/json", timeout=5) as r:
-                        ip_info = jsonlib.loads(r.read())
-                except Exception:
-                    pass
+            if result["ip"]:
+                result.update(lookup_ip_geo(result["ip"]))
 
-        return jsonify({
-            "healthy": is_healthy,
-            "ip": public_ip,
-            "country": ip_info.get("country"),
-            "city": ip_info.get("city"),
-            "org": ip_info.get("org"),
-        })
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({"healthy": False, "error": str(e)})
