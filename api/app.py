@@ -210,6 +210,17 @@ def calendar_events():
 #  Plex
 # ========================
 
+def plex_thumb_url(thumb, width=400, height=600):
+    """Resized poster URL through Plex's transcoder (originals are ~2000x3000)."""
+    if not thumb:
+        return None
+    src = urllib.parse.quote(thumb, safe="")
+    return (
+        f"{PLEX_PUBLIC_URL}/photo/:/transcode?width={width}&height={height}"
+        f"&minSize=1&upscale=0&url={src}&X-Plex-Token={PLEX_TOKEN}"
+    )
+
+
 def parse_plex_episode(item):
     """Extract episode info from a Plex XML element."""
     thumb = item.get("grandparentThumb") or item.get("thumb")
@@ -220,7 +231,7 @@ def parse_plex_episode(item):
         "title": item.get("title"),
         "addedAt": item.get("addedAt"),
         "lastViewedAt": item.get("lastViewedAt"),
-        "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
+        "thumb": plex_thumb_url(thumb),
         "watched": int(item.get("viewCount", 0)) > 0,
         "year": item.get("year"),
         "summary": item.get("summary"),
@@ -252,7 +263,7 @@ def parse_plex_movie(item):
         "actors": roles[:5],
         "addedAt": item.get("addedAt"),
         "lastViewedAt": item.get("lastViewedAt"),
-        "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
+        "thumb": plex_thumb_url(thumb),
         "watched": int(item.get("viewCount", 0)) > 0,
     }
 
@@ -354,7 +365,7 @@ def plex_ondeck():
                 "season": season_num,
                 "watched": watched,
                 "total": total,
-                "thumb": f"{PLEX_PUBLIC_URL}{thumb}?X-Plex-Token={PLEX_TOKEN}" if thumb else None,
+                "thumb": plex_thumb_url(thumb),
                 "nextEpisode": item.get("title"),
                 "nextIndex": int(item.get("index", 0)),
             })
