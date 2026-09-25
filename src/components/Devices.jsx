@@ -39,7 +39,7 @@ function formatDays(seconds) {
 }
 
 const LEVELS = {
-  ok: { text: 'text-white', bar: 'bg-green-400' },
+  ok: { text: 'text-white', bar: 'bg-white/60' },
   warn: { text: 'text-orange-400', bar: 'bg-orange-400' },
   alert: { text: 'text-red-400', bar: 'bg-red-400' },
 }
@@ -51,15 +51,11 @@ function level(value, warn, alert) {
   return LEVELS.ok
 }
 
-// One accent per card so they read as separate widgets. Avoid green/orange/red: those mean status.
-const ACCENTS = {
-  sky: { card: 'bg-sky-500/10 border-sky-400/25', stripe: 'bg-sky-400', badge: 'bg-sky-400/20 text-sky-300' },
-  purple: { card: 'bg-purple-500/10 border-purple-400/25', stripe: 'bg-purple-400', badge: 'bg-purple-400/20 text-purple-300' },
-  teal: { card: 'bg-teal-500/10 border-teal-400/25', stripe: 'bg-teal-400', badge: 'bg-teal-400/20 text-teal-300' },
-}
+// Neutral cards; the only color is a tint on each card's icon
+const ICON_COLORS = { sky: 'text-sky-300', purple: 'text-purple-300', teal: 'text-teal-300' }
 
 const ICON_PROPS = {
-  className: 'w-4 h-4 shrink-0',
+  className: 'w-5 h-5 shrink-0',
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
@@ -102,24 +98,17 @@ function UbuntuIcon() {
 
 // One compact row per device: icon + title + status on the left, details on the right
 function Card({ accent, icon, title, ok, label, children }) {
-  const colors = ACCENTS[accent]
-
   return (
-    <div className={`relative overflow-hidden rounded-2xl border pl-5 pr-4 py-3 flex items-center gap-4 ${colors.card}`}>
-      <span className={`absolute inset-y-0 left-0 w-1.5 ${colors.stripe}`} />
-      <div className="shrink-0 w-40">
-        <h2 className="flex items-center gap-2 text-lg font-light leading-tight">
-          {icon && (
-            <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colors.badge}`}>{icon}</span>
-          )}
-          {title}
-        </h2>
-        <div className={`flex items-center gap-2 text-base leading-tight ${ok ? 'text-green-400' : 'text-red-400'}`}>
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-400'}`} />
-          <span className="truncate">{label}</span>
-        </div>
+    <div className="rounded-2xl bg-white/10 px-4 py-3 flex items-center gap-4">
+      {/* Icon column: the icon on the title row, the status dot centered under it,
+          so the title and the status text start at the same x */}
+      <div className="shrink-0 w-36 grid grid-cols-[1.25rem_1fr] items-center gap-x-2 gap-y-0.5">
+        <span className={ICON_COLORS[accent]}>{icon}</span>
+        <h2 className="text-lg font-light leading-tight truncate">{title}</h2>
+        <span className={`justify-self-center w-2 h-2 rounded-full ${ok ? 'bg-green-400' : 'bg-red-400'}`} />
+        <span className={`text-sm leading-tight truncate ${ok ? 'text-green-400' : 'text-red-400'}`}>{label}</span>
       </div>
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="flex-1 min-w-0 border-l border-white/10 pl-4">{children}</div>
     </div>
   )
 }
@@ -190,9 +179,7 @@ function ServerCard({ system }) {
             label="Température"
             value={temperature != null && `${temperature} °C`}
             valueClassName={tempLevel.text}
-          >
-            <Bar percent={temperature} level={tempLevel} />
-          </Field>
+          />
           <Field
             label="Réseau"
             className="col-span-2"
