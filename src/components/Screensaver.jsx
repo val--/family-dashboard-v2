@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useClock } from '../hooks/useClock'
 import PostitNote from './postit/Note'
+import ArrowButton from './ArrowButton'
 
 const NOTE_ROTATE_MS = 30 * 1000
 const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this long
@@ -31,13 +32,30 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
     setIndex(0) // a new arrival starts the rotation at the newest note
   }, [freshKey])
 
+  // Re-armed whenever the note changes, by itself or by hand: the note you just moved to stays 30 s
   useEffect(() => {
     if (rotation.length <= 1) return
-    const timer = setInterval(() => setIndex((i) => i + 1), NOTE_ROTATE_MS)
-    return () => clearInterval(timer)
-  }, [rotation.length])
+    const timer = setTimeout(() => setIndex((i) => i + 1), NOTE_ROTATE_MS)
+    return () => clearTimeout(timer)
+  }, [rotation.length, index])
 
-  const note = rotation.length > 0 ? rotation[index % rotation.length] : null
+  const count = rotation.length
+  const note = count > 0 ? rotation[((index % count) + count) % count] : null
+  const browsable = count > 1
+
+  // Arrows browse the notes and keep the screen asleep, so they must not bubble up to the wake-up tap
+  const go = (delta) => (event) => {
+    event.stopPropagation()
+    setIndex((i) => i + delta)
+  }
+  const arrows = (direction) =>
+    browsable && (
+      <ArrowButton
+        direction={direction}
+        label={direction === 'prev' ? 'Post-it précédent' : 'Post-it suivant'}
+        onClick={go(direction === 'prev' ? -1 : 1)}
+      />
+    )
   const withPhoto = Boolean(note?.photo)
 
   // A tap on the note opens it (the dashboard wakes up on the Post-it tab); anywhere else just wakes
@@ -71,15 +89,19 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
       className="visible fixed inset-0 z-[100] bg-black flex items-center justify-center select-none"
     >
       {withPhoto ? (
-        <div className="flex items-center justify-center gap-10 px-8">
+        <div className="flex items-center justify-center gap-8 px-4">
           <div className="flex min-w-0 flex-col items-center">
             <div className="text-[7rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>
             <div className="mt-3 text-xl capitalize text-white/50">{date}</div>
             {weatherLine}
           </div>
-          <div onClick={openNote} className={`relative shrink-0 opacity-90 ${onOpenNote ? 'cursor-pointer' : ''}`}>
-            <PostitNote note={note} size="lg" rotate={-1} className="h-[min(80vh,22rem)] aspect-square" />
-            {newBadge}
+          <div className="flex shrink-0 items-center gap-1">
+            {arrows('prev')}
+            <div onClick={openNote} className={`relative opacity-90 ${onOpenNote ? 'cursor-pointer' : ''}`}>
+              <PostitNote note={note} size="lg" rotate={-1} showDate className="h-[min(80vh,22rem)] aspect-square" />
+              {newBadge}
+            </div>
+            {arrows('next')}
           </div>
         </div>
       ) : (
@@ -88,9 +110,13 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
           <div className="mt-4 text-2xl capitalize text-white/50">{date}</div>
           {weatherLine}
           {note && (
-            <div onClick={openNote} className={`relative mt-6 w-[26rem] max-w-[90vw] opacity-80 ${onOpenNote ? 'cursor-pointer' : ''}`}>
-              <PostitNote note={note} size="sm" rotate={-1} />
-              {newBadge}
+            <div className="mt-6 flex items-center gap-1">
+              {arrows('prev')}
+              <div onClick={openNote} className={`relative w-[26rem] max-w-[80vw] opacity-80 ${onOpenNote ? 'cursor-pointer' : ''}`}>
+                <PostitNote note={note} size="sm" rotate={-1} showDate />
+                {newBadge}
+              </div>
+              {arrows('next')}
             </div>
           )}
         </div>

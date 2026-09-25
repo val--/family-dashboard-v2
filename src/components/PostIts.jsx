@@ -4,6 +4,7 @@ import PostitNote, { tilt } from './postit/Note'
 import { timeAgo } from './postit/theme'
 import { photoUrl } from './postit/photos'
 import QrCode from './QrCode'
+import ArrowButton from './ArrowButton'
 
 const CELLS_PER_PAGE = 6 // 3 columns x 2 rows, the QR tile takes the first cell of the first page
 
@@ -64,8 +65,11 @@ export default function PostIts({ postits, openRequest }) {
 
   return (
     <>
-      <div className="h-full flex flex-col gap-3">
-        <div className="flex-1 min-h-0 grid grid-cols-3 grid-rows-2 gap-4">
+      <div className="h-full flex items-center gap-1">
+        {pages > 1 && (
+          <ArrowButton direction="prev" label="Page précédente" enabled={current > 0} onClick={() => setPage(current - 1)} />
+        )}
+        <div className="h-full min-w-0 flex-1 grid grid-cols-3 grid-rows-2 gap-4">
           {visible.map((cell) =>
             cell.type === 'qr' ? (
               <QrCell key="qr" onOpen={() => setShowQr(true)} />
@@ -74,6 +78,7 @@ export default function PostIts({ postits, openRequest }) {
                 key={cell.note.id}
                 note={cell.note}
                 rotate={tilt(cell.note.id)}
+                showDate
                 className="min-h-0"
                 onClick={() => setSelected(cell.note)}
               />
@@ -90,29 +95,8 @@ export default function PostIts({ postits, openRequest }) {
             </div>
           )}
         </div>
-
         {pages > 1 && (
-          <div className="flex items-center justify-center gap-3 text-white/70">
-            <button
-              onClick={() => setPage(current - 1)}
-              disabled={current === 0}
-              aria-label="Page précédente"
-              className="w-10 h-8 text-2xl leading-none disabled:opacity-30"
-            >
-              ‹
-            </button>
-            <span className="text-sm tabular-nums">
-              {current + 1} / {pages}
-            </span>
-            <button
-              onClick={() => setPage(current + 1)}
-              disabled={current === pages - 1}
-              aria-label="Page suivante"
-              className="w-10 h-8 text-2xl leading-none disabled:opacity-30"
-            >
-              ›
-            </button>
-          </div>
+          <ArrowButton direction="next" label="Page suivante" enabled={current < pages - 1} onClick={() => setPage(current + 1)} />
         )}
       </div>
 
