@@ -63,6 +63,18 @@ export default function PostIts({ postits, openRequest }) {
   const visible = cells.slice(current * CELLS_PER_PAGE, (current + 1) * CELLS_PER_PAGE)
   const empty = !loading && !error && notes.length === 0
 
+  // The detail view walks through the notes in the wall's order. The note is looked up in the live list
+  // (so it stays current), and the arrows disappear if it expired meanwhile.
+  const selectedIndex = selected ? notes.findIndex((n) => n.id === selected.id) : -1
+  const shown = selectedIndex >= 0 ? notes[selectedIndex] : selected
+  const canBrowse = selectedIndex >= 0 && notes.length > 1
+  // From the note actually shown, even on rapid taps
+  const goTo = (delta) =>
+    setSelected((current) => {
+      const at = notes.findIndex((n) => n.id === current.id)
+      return notes[at + delta] ?? current
+    })
+
   return (
     <>
       <div className="h-full flex items-center gap-1">
@@ -102,18 +114,32 @@ export default function PostIts({ postits, openRequest }) {
 
       {selected && (
         <Modal onClose={() => setSelected(null)}>
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-y-auto px-8 pb-8">
-            <PostitNote
-              note={selected}
-              size="lg"
-              rotate={-1}
-              onPhotoClick={() => setViewing(selected.photo)}
-              className="h-[min(70vh,20rem)] aspect-square shrink-0"
-            />
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-y-auto px-4 pb-8">
+            <div className="flex items-center gap-2">
+              {canBrowse && (
+                <ArrowButton direction="prev" label="Post-it précédent" enabled={selectedIndex > 0} onClick={() => goTo(-1)} />
+              )}
+              <PostitNote
+                note={shown}
+                size="lg"
+                rotate={-1}
+                onPhotoClick={() => setViewing(shown.photo)}
+                className="h-[min(70vh,20rem)] aspect-square shrink-0"
+              />
+              {canBrowse && (
+                <ArrowButton
+                  direction="next"
+                  label="Post-it suivant"
+                  enabled={selectedIndex < notes.length - 1}
+                  onClick={() => goTo(1)}
+                />
+              )}
+            </div>
             <div className="text-sm text-white/60">
-              {timeAgo(selected.createdAt)}
-              {selected.pinned && ' · épinglé'}
-              {selected.photo && ' · touche la photo pour l’agrandir'}
+              {canBrowse && `${selectedIndex + 1} / ${notes.length} · `}
+              {timeAgo(shown.createdAt)}
+              {shown.pinned && ' · épinglé'}
+              {shown.photo && ' · touche la photo pour l’agrandir'}
             </div>
           </div>
         </Modal>
