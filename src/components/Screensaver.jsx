@@ -3,6 +3,7 @@ import { useClock } from '../hooks/useClock'
 import PostitNote from './postit/Note'
 
 const NOTE_ROTATE_MS = 30 * 1000
+const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this long
 
 // Minimal night-stand screen: big clock, date, current weather and one post-it, on pure black.
 // A post-it with a photo gets the stage instead: clock on the left, the note big on the right.
@@ -16,13 +17,27 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
     return () => window.removeEventListener('keydown', onWake)
   }, [onWake])
 
+  // Fresh = arrived in the last few minutes and not looked at yet (hasNew: nobody opened the Post-it
+  // tab since). While there are some, only they are shown, newest first; then the normal rotation.
+  // This component re-renders every second (clock), so the window closes by itself.
+  const nowSeconds = Date.now() / 1000
+  const fresh = hasNew
+    ? notes.filter((n) => nowSeconds - n.createdAt < FRESH_SECONDS).sort((a, b) => b.createdAt - a.createdAt)
+    : []
+  const rotation = fresh.length > 0 ? fresh : notes
+  const freshKey = fresh.map((n) => n.id).join(',')
+
   useEffect(() => {
-    if (notes.length <= 1) return
+    setIndex(0) // a new arrival starts the rotation at the newest note
+  }, [freshKey])
+
+  useEffect(() => {
+    if (rotation.length <= 1) return
     const timer = setInterval(() => setIndex((i) => i + 1), NOTE_ROTATE_MS)
     return () => clearInterval(timer)
-  }, [notes.length])
+  }, [rotation.length])
 
-  const note = notes.length > 0 ? notes[index % notes.length] : null
+  const note = rotation.length > 0 ? rotation[index % rotation.length] : null
   const withPhoto = Boolean(note?.photo)
 
   // A tap on the note opens it (the dashboard wakes up on the Post-it tab); anywhere else just wakes
@@ -44,7 +59,7 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
     </div>
   )
 
-  const newBadge = hasNew && (
+  const newBadge = fresh.length > 0 && (
     <span className="absolute -top-2 -right-2 rounded-full bg-sky-400 px-2 py-0.5 text-xs font-semibold text-black">
       nouveau
     </span>
