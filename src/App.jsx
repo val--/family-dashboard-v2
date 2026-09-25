@@ -54,6 +54,18 @@ function App() {
           <Devices />
         </WidgetCarousel>
       </div>
+
+      {/* Discreet full reload for the kiosk (picks up new builds, frees browser memory) */}
+      <button
+        onClick={() => window.location.reload()}
+        aria-label="Rafraîchir"
+        className="fixed bottom-0 right-0 w-12 h-12 flex items-center justify-center text-white/15 active:text-white/60"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+          <path d="M21 3v6h-6" />
+        </svg>
+      </button>
     </div>
   )
 }
