@@ -19,6 +19,7 @@ CORS(app)
 from postits import bp as postits_bp  # noqa: E402
 
 app.register_blueprint(postits_bp)
+app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024  # photo uploads
 
 # -- Printer config --
 PRINTER_NAME = "Deskjet_3630"

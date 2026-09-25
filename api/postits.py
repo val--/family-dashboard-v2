@@ -1,15 +1,19 @@
 """Family post-it board: notes written from phones on the LAN, shown on the kiosk."""
 import hmac
 import os
+import re
 import sqlite3
 import time
+import uuid
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_from_directory
+from PIL import Image, ImageOps
 
 bp = Blueprint("postits", __name__)
 
 DATA_DIR = os.environ.get("DATA_DIR", "/app/data")
 DB_PATH = os.path.join(DATA_DIR, "postits.db")
+PHOTO_DIR = os.path.join(DATA_DIR, "photos")
 
 FAMILY_CODE = os.environ.get("FAMILY_CODE", "").strip()  # empty = no code required
 MEMBERS = [m.strip() for m in os.environ.get("FAMILY_MEMBERS", "").split(",") if m.strip()]
@@ -28,6 +32,13 @@ COLORS = ["yellow", "pink", "blue", "green", "orange", "purple"]
 STICKERS = ["heart", "star", "smile", "sun", "music", "coffee", "pizza", "cat", "gift", "party", "book", "ball"]
 
 POST_COOLDOWN = 5  # seconds between two notes from the same device
+
+# Phone photos are huge (4000x3000): keep a 1200 px version for full screen and a 400 px one for the
+# wall, so the kiosk never has to decode more than it shows.
+PHOTO_SIZES = (("", 1200, 82), ("_thumb", 400, 78))  # (file suffix, longest side, JPEG quality)
+PHOTO_FORMATS = {"JPEG", "PNG", "WEBP"}
+PHOTO_NAME = re.compile(r"^[0-9a-f]{32}(_thumb)?\.jpg$")
+Image.MAX_IMAGE_PIXELS = 50_000_000  # refuse decompression bombs (error above twice this)
 MAX_FAILURES = 5  # wrong family codes allowed per device...
 FAILURE_WINDOW = 300  # ...within this many seconds
 
@@ -61,6 +72,12 @@ def ensure_db():
                    pinned INTEGER NOT NULL DEFAULT 0
                )"""
         )
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(notes)")}
+        if "photo" not in columns:
+            try:
+                conn.execute("ALTER TABLE notes ADD COLUMN photo TEXT")
+            except sqlite3.OperationalError:
+                pass  # the other gunicorn worker added it first
     _ready = True
 
 
@@ -81,12 +98,61 @@ def note_dict(row):
         "sticker": row["sticker"],
         "createdAt": row["created_at"],
         "pinned": bool(row["pinned"]),
+        "photo": row["photo"],
     }
 
 
+class PhotoError(ValueError):
+    pass
+
+
+def save_photo(file_storage):
+    """Validate an uploaded image and re-encode it: fixed formats, rotated upright, no metadata (GPS...),
+    two sizes. Returns the base name of the files."""
+    try:
+        image = Image.open(file_storage.stream)
+        if image.format not in PHOTO_FORMATS:
+            raise PhotoError("Format non pris en charge (JPEG, PNG ou WebP)")
+        image.load()  # decodes everything: catches truncated or corrupted files
+    except PhotoError:
+        raise
+    except (OSError, ValueError, Image.DecompressionBombError):
+        raise PhotoError("Photo illisible (JPEG, PNG ou WebP)") from None
+
+    image = ImageOps.exif_transpose(image)
+    if image.mode in ("RGBA", "LA") or "transparency" in image.info:
+        flat = Image.new("RGB", image.size, (255, 255, 255))
+        flat.paste(image.convert("RGBA"), mask=image.convert("RGBA").split()[3])
+        image = flat
+    image = image.convert("RGB")
+
+    os.makedirs(PHOTO_DIR, exist_ok=True)
+    name = uuid.uuid4().hex
+    for suffix, side, quality in PHOTO_SIZES:
+        version = image.copy()
+        version.thumbnail((side, side), Image.LANCZOS)
+        version.save(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"), "JPEG", quality=quality, optimize=True, progressive=True)
+    return name
+
+
+def remove_photos(names):
+    for name in names:
+        for suffix, _, _ in PHOTO_SIZES:
+            try:
+                os.remove(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"))
+            except OSError:
+                pass
+
+
 def purge_expired(conn):
+    """Delete expired notes; returns their photo names so the caller can remove the files after commit."""
     cutoff = int(time.time()) - RETENTION_DAYS * 86400
+    photos = [
+        row["photo"]
+        for row in conn.execute("SELECT photo FROM notes WHERE pinned = 0 AND created_at < ? AND photo IS NOT NULL", (cutoff,))
+    ]
     conn.execute("DELETE FROM notes WHERE pinned = 0 AND created_at < ?", (cutoff,))
+    return photos
 
 
 def error(message, status=400):
@@ -125,8 +191,9 @@ def config():
 @bp.route("/api/postits")
 def list_notes():
     with db() as conn:
-        purge_expired(conn)
+        expired = purge_expired(conn)
         rows = conn.execute("SELECT * FROM notes ORDER BY pinned DESC, created_at DESC, id DESC").fetchall()
+    remove_photos(expired)
     return jsonify({"notes": [note_dict(r) for r in rows], "config": config()})
 
 
@@ -138,7 +205,11 @@ def verify_code():
 
 @bp.route("/api/postits", methods=["POST"])
 def create_note():
-    payload = request.get_json(silent=True) or {}
+    # JSON for a text-only note, multipart/form-data when a photo comes along
+    if request.is_json:
+        payload, upload = request.get_json(silent=True) or {}, None
+    else:
+        payload, upload = request.form.to_dict(), request.files.get("photo")
     bad = check_code(payload)
     if bad:
         return bad
@@ -168,14 +239,40 @@ def create_note():
         return error("Doucement, un post-it à la fois", 429)
     _last_post[ip] = now
 
-    with db() as conn:
-        purge_expired(conn)
-        cur = conn.execute(
-            "INSERT INTO notes (author, text, color, sticker, created_at) VALUES (?, ?, ?, ?, ?)",
-            (author, text, color, sticker, int(now)),
-        )
-        row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
+    photo = None
+    if upload and upload.filename:
+        try:
+            photo = save_photo(upload)
+        except PhotoError as e:
+            return error(str(e))
+
+    try:
+        with db() as conn:
+            expired = purge_expired(conn)
+            cur = conn.execute(
+                "INSERT INTO notes (author, text, color, sticker, created_at, photo) VALUES (?, ?, ?, ?, ?, ?)",
+                (author, text, color, sticker, int(now), photo),
+            )
+            row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
+    except Exception:
+        remove_photos([photo] if photo else [])  # don't leave orphans behind
+        raise
+    remove_photos(expired)
     return jsonify(note_dict(row)), 201
+
+
+@bp.route("/api/postits/photos/<path:filename>")
+def get_photo(filename):
+    if not PHOTO_NAME.match(filename):
+        return error("Photo introuvable", 404)
+    response = send_from_directory(PHOTO_DIR, filename, mimetype="image/jpeg")
+    response.headers["Cache-Control"] = "public, max-age=604800, immutable"  # a file never changes
+    return response
+
+
+@bp.app_errorhandler(413)
+def too_large(_):
+    return error("Fichier trop volumineux (12 Mo maximum)", 413)
 
 
 def _own_note(conn, note_id, payload):
@@ -199,6 +296,8 @@ def delete_note(note_id):
         if bad:
             return bad
         conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    if row["photo"]:
+        remove_photos([row["photo"]])
     return jsonify({"ok": True})
 
 

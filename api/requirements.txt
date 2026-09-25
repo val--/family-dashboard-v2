@@ -4,3 +4,4 @@ gunicorn==23.*
 google-auth==2.*
 google-api-python-client==2.*
 tzdata
+pillow==11.*
