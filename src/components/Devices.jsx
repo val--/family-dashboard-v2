@@ -108,7 +108,7 @@ function Card({ accent, icon, title, ok, label, children }) {
     <div className={`relative overflow-hidden rounded-2xl border pl-5 pr-4 py-3 flex items-center gap-4 ${colors.card}`}>
       <span className={`absolute inset-y-0 left-0 w-1.5 ${colors.stripe}`} />
       <div className="shrink-0 w-40">
-        <h2 className="flex items-center gap-2 text-xl font-light leading-tight">
+        <h2 className="flex items-center gap-2 text-lg font-light leading-tight">
           {icon && (
             <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colors.badge}`}>{icon}</span>
           )}
@@ -136,7 +136,7 @@ function Field({ label, value, valueClassName = 'text-white', className = '', ch
   if (!value) return null
   return (
     <div className={`min-w-0 ${className}`}>
-      <div className="text-sm leading-tight text-white/40 truncate">{label}</div>
+      <div className="text-sm leading-tight text-white/60 truncate">{label}</div>
       <div className={`text-lg leading-tight truncate ${valueClassName}`}>{value}</div>
       {children}
     </div>
@@ -283,7 +283,7 @@ export default function Devices() {
   const { data: system, loading: systemLoading, error: systemError } = useSystem()
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-3">
+    <div className="h-full overflow-y-auto flex flex-col gap-4">
       {!vpnLoading && !vpnError && vpn && <VpnCard vpn={vpn} />}
       {!systemLoading && !systemError && system && <ServerCard system={system} />}
       {!printerLoading && !printerError && printer && (

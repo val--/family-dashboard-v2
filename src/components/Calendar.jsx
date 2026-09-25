@@ -62,17 +62,14 @@ function groupByDay(events) {
   return [...groups.values()]
 }
 
+// Month over day number, no box: the 'soon' ones are simply tinted
 function DateTile({ date, soon }) {
   return (
-    <div
-      className={`w-12 shrink-0 rounded-lg py-1 text-center leading-none ${
-        soon ? 'bg-sky-400 text-black' : 'bg-white/20 text-white'
-      }`}
-    >
-      <div className="text-xs uppercase tracking-wide">
+    <div className={`w-12 shrink-0 text-center leading-none ${soon ? 'text-sky-300' : 'text-white'}`}>
+      <div className="text-xs uppercase tracking-wide opacity-70">
         {date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')}
       </div>
-      <div className="mt-0.5 text-2xl font-medium">{date.getDate()}</div>
+      <div className={`mt-1 text-3xl ${soon ? 'font-medium' : 'font-light'}`}>{date.getDate()}</div>
     </div>
   )
 }
@@ -92,7 +89,7 @@ function EventCard({ event, now, onSelect }) {
   return (
     <button
       onClick={() => onSelect(event)}
-      className="flex items-center gap-3 min-w-0 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-left"
+      className="flex items-center gap-4 min-w-0 rounded-2xl bg-white/10 px-4 py-3 text-left"
     >
       <DateTile date={eventStart(event)} soon={days <= 1} />
       <div className="min-w-0 flex-1">
@@ -111,7 +108,7 @@ function LaterRow({ event, now, onSelect }) {
   const date = eventStart(event)
 
   return (
-    <button onClick={() => onSelect(event)} className="flex w-full items-baseline gap-3 px-3 py-1.5 text-left">
+    <button onClick={() => onSelect(event)} className="flex w-full items-baseline gap-4 px-1 py-1 text-left">
       <span className="w-24 shrink-0 text-sm capitalize text-sky-300">
         {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
       </span>
@@ -183,7 +180,7 @@ function AgendaModal({ events, now, onClose, onSelect }) {
     <ModalShell title="Agenda" onClose={onClose}>
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-3">
         {groupByDay(events).map(({ day, items }) => (
-          <div key={day.getTime()} className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 flex flex-col gap-2">
+          <div key={day.getTime()} className="rounded-2xl bg-white/10 px-4 py-3 flex flex-col gap-2">
             <div className="flex items-baseline justify-between gap-3">
               <div className="text-base font-medium capitalize text-sky-300">
                 {day.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -225,28 +222,28 @@ export default function Calendar() {
 
   return (
     <>
-      <div className="h-full overflow-y-auto flex flex-col gap-3">
+      <div className="h-full overflow-y-auto flex flex-col gap-6">
         {near.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {near.map((event) => (
               <EventCard key={`${event.start}-${event.title}`} event={event} now={now} onSelect={setSelected} />
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-white/70">
+          <div className="rounded-2xl bg-white/10 px-4 py-3 text-white/70">
             Rien de prévu dans les 3 prochaines semaines
           </div>
         )}
         {later.length > 0 && (
           <div>
             <div className="mb-1 px-1 text-xs uppercase tracking-wider text-white/60">Plus tard</div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.07] divide-y divide-white/10">
+            <div className="divide-y divide-white/10">
               {later.slice(0, MAX_LATER).map((event) => (
                 <LaterRow key={`${event.start}-${event.title}`} event={event} now={now} onSelect={setSelected} />
               ))}
             </div>
             {later.length > MAX_LATER && (
-              <button onClick={() => setShowAll(true)} className="mt-1 px-1 py-1 text-sm text-sky-300">
+              <button onClick={() => setShowAll(true)} className="mt-2 px-1 py-1 text-sm text-sky-300">
                 + {later.length - MAX_LATER} autre{later.length - MAX_LATER > 1 ? 's' : ''} · Tout l'agenda
               </button>
             )}

@@ -4,13 +4,11 @@ function weatherIconUrl(code) {
 
 function DayForecast({ label, icon, tempMin, tempMax }) {
   return (
-    <div className="flex flex-col items-center gap-0">
-      <span className="text-xs text-white/50">{label}</span>
-      <img src={weatherIconUrl(icon)} alt="" className="w-7 h-7 -my-1" />
+    <div className="flex flex-col items-center">
+      <span className="text-xs capitalize text-white/60">{label}</span>
+      <img src={weatherIconUrl(icon)} alt="" className="w-8 h-8 -my-1" />
       <div className="text-xs">
-        <span className="text-white/50">{tempMin}°</span>
-        <span className="mx-0.5">/</span>
-        <span>{tempMax}°</span>
+        <span className="text-white">{tempMax}°</span> <span className="text-white/60">{tempMin}°</span>
       </div>
     </div>
   )
@@ -44,28 +42,28 @@ export default function Weather({ weather }) {
   }
 
   if (loading || !current) {
-    return <div className="text-white/30 text-sm">Chargement météo…</div>
+    return <div className="text-white/60 text-sm">Chargement météo…</div>
   }
 
   const temp = Math.round(current.main.temp)
   const description = current.weather[0].description
   const icon = current.weather[0].icon
-  const days = forecast ? groupForecastByDay(forecast.list).slice(0, 4) : []
+  const days = forecast ? groupForecastByDay(forecast.list).slice(0, 3) : []
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-6">
       {/* Current */}
       <div className="flex items-center gap-2">
-        <img src={weatherIconUrl(icon)} alt={description} className="w-9 h-9 -my-1" />
+        <img src={weatherIconUrl(icon)} alt={description} className="w-10 h-10" />
         <div>
-          <div className="text-2xl font-light">{temp}°</div>
-          <div className="text-xs text-white/50 capitalize">{description}</div>
+          <div className="text-3xl font-light leading-none">{temp}°</div>
+          <div className="mt-1 text-sm capitalize text-white/70">{description}</div>
         </div>
       </div>
 
       {/* Forecast */}
       {days.length > 0 && (
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           {days.map((day) => (
             <DayForecast key={day.label} {...day} />
           ))}

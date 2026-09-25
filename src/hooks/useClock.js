@@ -20,5 +20,11 @@ export function useClock() {
     year: 'numeric',
   })
 
-  return { time, date }
+  const shortDate = now.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+
+  return { time, date, shortDate }
 }

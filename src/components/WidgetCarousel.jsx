@@ -38,19 +38,19 @@ export default function WidgetCarousel({ children, titles = [], indicators = [] 
       onTouchEnd={onTouchEnd}
     >
       {count > 1 && (
-        <div className="flex items-center justify-center gap-6 mb-2">
+        <div className="flex items-center justify-center gap-8 mb-3">
           {titles.map((title, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`text-xl uppercase tracking-wider relative ${
-                i === active ? 'text-white' : 'text-white/30'
+              className={`relative py-1.5 text-lg border-b-2 ${
+                i === active ? 'text-white border-sky-400' : 'text-white/60 border-transparent'
               }`}
             >
               {title}
               {indicators[i] && (
                 <span
-                  className={`absolute -top-1 -right-3 w-2.5 h-2.5 rounded-full ${
+                  className={`absolute top-0 -right-3 w-2.5 h-2.5 rounded-full ${
                     indicators[i] === 'green' ? 'bg-green-400' :
                     indicators[i] === 'orange' ? 'bg-orange-400' :
                     indicators[i] === 'red' ? 'bg-red-400' : ''
@@ -76,18 +76,6 @@ export default function WidgetCarousel({ children, titles = [], indicators = [] 
           ))}
         </div>
       </div>
-      {count > 1 && (
-        <div className="flex justify-center gap-1.5 pt-1">
-          {items.map((_, i) => (
-            <div
-              key={i}
-              className={`w-1.5 h-1.5 rounded-full ${
-                i === active ? 'bg-white/60' : 'bg-white/20'
-              }`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }

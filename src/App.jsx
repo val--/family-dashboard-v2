@@ -39,27 +39,38 @@ function App() {
 
   return (
     <div
-      className="flex flex-col h-screen overflow-hidden bg-black text-white px-4 pt-3 pb-2"
+      className="flex flex-col h-screen overflow-hidden bg-black text-white px-4 pt-3 pb-3"
       style={{ visibility: idle ? 'hidden' : 'visible' }} // hidden = not painted, animations sleep
     >
-      {/* Top: Clock left half, Weather right half */}
-      <div className="flex items-center">
-        <div className="flex-1 flex justify-center">
-          <Clock />
-        </div>
-        <div className="flex-1 flex justify-center">
+      {/* Header: clock left, weather and system buttons right */}
+      <header className="flex items-center justify-between gap-6">
+        <Clock />
+        <div className="flex items-center gap-4">
           <Weather weather={weather} />
+          <div className="flex items-center -mr-2">
+            <button
+              onClick={sleep}
+              aria-label="Mise en veille"
+              className="w-10 h-10 flex items-center justify-center text-white/50 active:text-white"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            </button>
+            {/* Full reload: picks up new builds and frees browser memory */}
+            <button
+              onClick={() => window.location.reload()}
+              aria-label="Rafraîchir"
+              className="w-10 h-10 flex items-center justify-center text-white/50 active:text-white"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                <path d="M21 3v6h-6" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={sleep}
-          aria-label="Mise en veille"
-          className="shrink-0 -mr-2 w-10 h-10 flex items-center justify-center text-white/40 active:text-white"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-          </svg>
-        </button>
-      </div>
+      </header>
 
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
@@ -74,18 +85,6 @@ function App() {
           <Devices />
         </WidgetCarousel>
       </div>
-
-      {/* Discreet full reload for the kiosk (picks up new builds, frees browser memory) */}
-      <button
-        onClick={() => window.location.reload()}
-        aria-label="Rafraîchir"
-        className="fixed bottom-0 right-0 w-12 h-12 flex items-center justify-center text-white/15 active:text-white/60"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-          <path d="M21 3v6h-6" />
-        </svg>
-      </button>
 
       {idle && <Screensaver weather={weather} onWake={wake} />}
     </div>
