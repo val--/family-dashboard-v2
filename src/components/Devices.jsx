@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { usePrinter } from '../hooks/usePrinter'
 import { useVpn } from '../hooks/useVpn'
+import { useSeedbox } from '../hooks/useSeedbox'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
 const PRINTER_STATUS = {
   idle: 'Prête',
-  printing: 'Impression en cours…',
+  printing: 'Impression…',
   disabled: 'Désactivée',
   offline: 'Débranchée',
 }
@@ -21,25 +22,47 @@ function formatUptime(since) {
   return `${minutes} min`
 }
 
-function StatusBadge({ ok, label }) {
+function formatBytes(bytes) {
+  if (bytes == null) return null
+  const units = [['To', 1024 ** 4], ['Go', 1024 ** 3], ['Mo', 1024 ** 2]]
+  const [unit, size] = units.find(([, s]) => bytes >= s) || units[units.length - 1]
+  return `${(bytes / size).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ${unit}`
+}
+
+function formatSpeed(bytesPerSec) {
+  if (!bytesPerSec) return '0'
+  if (bytesPerSec >= 1024 ** 2) return `${(bytesPerSec / 1024 ** 2).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Mo/s`
+  return `${Math.round(bytesPerSec / 1024)} Ko/s`
+}
+
+const SEEDBOX_STATUS = {
+  connected: 'Connectée',
+  firewalled: 'Pare-feu',
+  disconnected: 'Déconnectée',
+}
+
+// One compact row per device: title + status on the left, details on the right
+function Card({ title, ok, label, children }) {
   return (
-    <div
-      className={`flex items-center gap-2.5 px-4 py-1.5 rounded-full text-lg ${
-        ok ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
-      }`}
-    >
-      <span className={`w-3 h-3 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-400'}`} />
-      {label}
+    <div className="bg-white/5 rounded-2xl px-4 py-3 flex items-center gap-4">
+      <div className="shrink-0 w-40">
+        <h2 className="text-xl font-light leading-tight">{title}</h2>
+        <div className={`flex items-center gap-2 text-base leading-tight ${ok ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${ok ? 'bg-green-400' : 'bg-red-400'}`} />
+          <span className="truncate">{label}</span>
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   )
 }
 
-function Field({ label, value }) {
+function Field({ label, value, valueClassName = 'text-white' }) {
   if (!value) return null
   return (
     <div className="min-w-0">
-      <div className="text-sm text-white/40">{label}</div>
-      <div className="text-lg text-white truncate">{value}</div>
+      <div className="text-sm leading-tight text-white/40">{label}</div>
+      <div className={`text-lg leading-tight truncate ${valueClassName}`}>{value}</div>
     </div>
   )
 }
@@ -48,11 +71,7 @@ function VpnCard({ vpn }) {
   const location = [vpn.city, vpn.country].filter(Boolean).join(', ')
 
   return (
-    <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-light">VPN</h2>
-        <StatusBadge ok={vpn.healthy} label={vpn.healthy ? 'Connecté' : 'Déconnecté'} />
-      </div>
+    <Card title="VPN" ok={vpn.healthy} label={vpn.healthy ? 'Connecté' : 'Déconnecté'}>
       {vpn.healthy && (
         <div className="grid grid-cols-4 gap-x-4">
           <Field label="Fournisseur" value={vpn.provider} />
@@ -61,7 +80,33 @@ function VpnCard({ vpn }) {
           <Field label="Localisation" value={location} />
         </div>
       )}
-    </div>
+    </Card>
+  )
+}
+
+function SeedboxCard({ seedbox }) {
+  const ratio = seedbox.ratio
+  const speed = seedbox.downSpeed > 0
+    ? `↑ ${formatSpeed(seedbox.upSpeed)} ↓ ${formatSpeed(seedbox.downSpeed)}`
+    : `↑ ${formatSpeed(seedbox.upSpeed)}`
+
+  return (
+    <Card
+      title="Seedbox"
+      ok={seedbox.connection === 'connected'}
+      label={SEEDBOX_STATUS[seedbox.connection] || 'Inconnue'}
+    >
+      <div className="grid grid-cols-4 gap-x-4">
+        <Field
+          label="Ratio"
+          value={ratio != null && ratio.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          valueClassName={ratio >= 1 ? 'text-green-400' : 'text-orange-400'}
+        />
+        <Field label="Envoyé" value={formatBytes(seedbox.uploaded)} />
+        <Field label="Téléchargé" value={formatBytes(seedbox.downloaded)} />
+        <Field label="Débit" value={speed} />
+      </div>
+    </Card>
   )
 }
 
@@ -85,45 +130,44 @@ function PrinterCard({ printer, refresh }) {
     setTimeout(() => setTest({ state: 'idle', message: '' }), 6000)
   }
 
+  const info = test.message
+    || (printer.jobs > 0 ? `${printer.jobs} document${printer.jobs > 1 ? 's' : ''} en attente` : '')
+
   return (
-    <div className="bg-white/5 rounded-2xl p-4 flex items-center justify-between gap-4">
-      <div className="flex flex-col gap-2 min-w-0">
-        <h2 className="text-2xl font-light">Imprimante</h2>
-        <StatusBadge
-          ok={available}
-          label={PRINTER_STATUS[printer.status] || (available ? 'En ligne' : 'Hors ligne')}
-        />
-        {printer.jobs > 0 && (
-          <div className="text-base text-white/50">
-            {printer.jobs} document{printer.jobs > 1 ? 's' : ''} en attente
+    <Card
+      title="Imprimante"
+      ok={available}
+      label={PRINTER_STATUS[printer.status] || (available ? 'En ligne' : 'Hors ligne')}
+    >
+      <div className="flex items-center justify-end gap-4">
+        {info && (
+          <div className={`text-sm ${
+            test.state === 'error' ? 'text-red-400' : test.state === 'done' ? 'text-green-400' : 'text-white/50'
+          }`}>
+            {info}
           </div>
         )}
-      </div>
-      <div className="flex flex-col items-end gap-2 shrink-0">
         <button
           onClick={testPrint}
           disabled={!available || busy}
-          className="px-5 py-3 rounded-xl text-lg bg-white/10 active:bg-white/25 disabled:opacity-30"
+          className="px-5 py-2.5 rounded-xl text-lg bg-white/10 active:bg-white/25 disabled:opacity-30 shrink-0"
         >
           {busy ? 'Envoi…' : "Tester l'imprimante"}
         </button>
-        {test.message && (
-          <div className={`text-sm ${test.state === 'error' ? 'text-red-400' : 'text-green-400'}`}>
-            {test.message}
-          </div>
-        )}
       </div>
-    </div>
+    </Card>
   )
 }
 
 export default function Devices() {
   const { data: printer, loading: printerLoading, error: printerError, refresh } = usePrinter()
   const { data: vpn, loading: vpnLoading, error: vpnError } = useVpn()
+  const { data: seedbox, loading: seedboxLoading, error: seedboxError } = useSeedbox()
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-3">
+    <div className="h-full overflow-y-auto flex flex-col gap-2">
       {!vpnLoading && !vpnError && vpn && <VpnCard vpn={vpn} />}
+      {!seedboxLoading && !seedboxError && seedbox && <SeedboxCard seedbox={seedbox} />}
       {!printerLoading && !printerError && printer && (
         <PrinterCard printer={printer} refresh={refresh} />
       )}

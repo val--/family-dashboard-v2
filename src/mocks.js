@@ -10,6 +10,19 @@ export const mockVpn = {
   since: '2026-09-23T15:27:52Z',
 }
 
+export const mockSeedbox = {
+  connection: 'connected',
+  ratio: 1.65,
+  uploaded: 3917333146819,
+  downloaded: 2373133768618,
+  upSpeed: 1250000,
+  downSpeed: 0,
+  peers: 8,
+  torrents: 3,
+  seeding: 3,
+  downloading: 0,
+}
+
 export const mockPrinter = {
   name: 'Deskjet_3630',
   connected: true,
