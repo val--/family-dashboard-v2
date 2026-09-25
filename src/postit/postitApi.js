@@ -5,8 +5,9 @@ async function request(method, path = '', body) {
   try {
     res = await fetch(`${API_URL}/api/postits${path}`, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      // FormData (a note with a photo) sets its own multipart Content-Type
+      headers: body && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined,
+      body: body instanceof FormData || body === undefined ? body : JSON.stringify(body),
     })
   } catch {
     const err = new Error("Impossible de joindre la maison. Es-tu bien connecté au Wi‑Fi ?")
@@ -24,6 +25,12 @@ async function request(method, path = '', body) {
 
 export const getNotes = () => request('GET')
 export const verifyCode = (code) => request('POST', '/verify', { code })
-export const createNote = (payload) => request('POST', '', payload)
+export function createNote(payload, photo) {
+  if (!photo) return request('POST', '', payload)
+  const form = new FormData()
+  Object.entries(payload).forEach(([key, value]) => value != null && form.append(key, value))
+  form.append('photo', photo, photo.name || 'photo.jpg')
+  return request('POST', '', form)
+}
 export const deleteNote = (id, auth) => request('DELETE', `/${id}`, auth)
 export const pinNote = (id, auth, pinned) => request('POST', `/${id}/pin`, { ...auth, pinned })

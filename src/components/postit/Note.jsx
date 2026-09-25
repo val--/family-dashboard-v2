@@ -1,5 +1,6 @@
 import { NOTE_COLORS } from './theme'
 import { Sticker } from './stickers'
+import { photoUrl } from './photos'
 
 // A small deterministic tilt so a wall of notes feels hand-placed (static: no animation on the Pi)
 export function tilt(id) {
@@ -17,23 +18,61 @@ const SIZES = {
   lg: { box: 'p-5', text: (len) => (len <= 80 ? 'text-4xl' : len <= 140 ? 'text-3xl' : 'text-2xl'), sticker: 'w-12 h-12', sign: 'text-2xl' },
 }
 
-export default function PostitNote({ note, size = 'md', rotate = 0, className = '', onClick }) {
+const SIGNATURE = 'font-hand font-semibold text-stone-600'
+const TEXT = 'font-hand font-semibold leading-tight whitespace-pre-line break-words min-w-0'
+
+// `photoSrc` overrides the note's own photo (the phone previews a photo before it is uploaded).
+// `onPhotoClick` makes the photo tappable in the large version (full screen viewer).
+export default function PostitNote({ note, size = 'md', rotate = 0, className = '', onClick, photoSrc, onPhotoClick }) {
   const s = SIZES[size]
   const color = NOTE_COLORS[note.color] || NOTE_COLORS.yellow
+  const photo = photoSrc || (note.photo ? photoUrl(note.photo) : null)
+  const style = rotate ? { transform: `rotate(${rotate}deg)` } : undefined
+  const base = `relative overflow-hidden rounded-md text-stone-800 ${color} ${onClick ? 'cursor-pointer' : ''} ${className}`
+
+  // Large with a photo: photo on top (a polaroid in the note's color), caption below
+  if (photo && size === 'lg') {
+    return (
+      <div onClick={onClick} style={style} className={`${base} flex flex-col gap-2 p-4`}>
+        <img
+          src={photo}
+          alt=""
+          onClick={onPhotoClick}
+          className={`min-h-0 w-full flex-1 rounded-sm object-cover ${onPhotoClick ? 'cursor-zoom-in' : ''}`}
+        />
+        <div className="flex items-start gap-2">
+          <div className={`${TEXT} flex-1 line-clamp-3 ${note.text.length <= 60 ? 'text-2xl' : 'text-xl'}`}>{note.text}</div>
+          {note.sticker && <Sticker id={note.sticker} className="w-10 h-10 shrink-0" />}
+        </div>
+        <div className={`self-end text-xl ${SIGNATURE}`}>— {note.author}</div>
+      </div>
+    )
+  }
+
+  // Wall tile with a photo: square photo on the left, text on the right
+  if (photo && size === 'md') {
+    return (
+      <div onClick={onClick} style={style} className={`${base} flex gap-2 p-2`}>
+        <img src={photo} alt="" loading="lazy" decoding="async" className="h-full aspect-square shrink-0 rounded-sm object-cover" />
+        <div className="flex min-w-0 flex-1 flex-col justify-between">
+          <div className="flex items-start gap-1">
+            <div className={`${TEXT} flex-1 text-lg line-clamp-3`}>{note.text}</div>
+            {note.sticker && <Sticker id={note.sticker} className="w-6 h-6 shrink-0" />}
+          </div>
+          <div className={`self-end text-base ${SIGNATURE}`}>— {note.author}</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div
-      onClick={onClick}
-      style={rotate ? { transform: `rotate(${rotate}deg)` } : undefined}
-      className={`relative flex flex-col justify-between overflow-hidden rounded-md text-stone-800 ${color} ${s.box} ${onClick ? 'cursor-pointer' : ''} ${className}`}
-    >
+    <div onClick={onClick} style={style} className={`${base} flex flex-col justify-between ${s.box}`}>
       <div className="flex items-start gap-2">
-        <div className={`font-hand font-semibold leading-tight whitespace-pre-line break-words flex-1 min-w-0 ${s.text(note.text.length)}`}>
-          {note.text}
-        </div>
+        {photo && <img src={photo} alt="" loading="lazy" decoding="async" className="h-10 w-10 shrink-0 rounded-sm object-cover" />}
+        <div className={`${TEXT} flex-1 ${s.text(note.text.length)}`}>{note.text}</div>
         {note.sticker && <Sticker id={note.sticker} className={`${s.sticker} shrink-0`} />}
       </div>
-      <div className={`mt-1 self-end font-hand font-semibold text-stone-600 ${s.sign}`}>— {note.author}</div>
+      <div className={`mt-1 self-end ${SIGNATURE} ${s.sign}`}>— {note.author}</div>
     </div>
   )
 }

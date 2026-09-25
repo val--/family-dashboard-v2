@@ -41,6 +41,12 @@ function App() {
   const { idle, wake, sleep } = useIdle(IDLE_SECONDS * 1000)
   const postits = usePostits()
   const [activeTab, setActiveTab] = useState('')
+  const [postitRequest, setPostitRequest] = useState(null)
+
+  function openPostitFromScreensaver(note) {
+    wake()
+    setPostitRequest({ title: 'Post-it', note })
+  }
   const hasNewPostit = useUnseenPostits(postits.notes, postits.config !== null, activeTab === 'Post-it' && !idle)
 
   return (
@@ -84,9 +90,10 @@ function App() {
           titles={['Agenda', 'Post-it', ...(SHOW_SORTIES ? ['Sorties'] : []), 'Films', 'Séries', 'Appareils']}
           indicators={[null, hasNewPostit ? 'sky' : null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
           onActiveChange={setActiveTab}
+          goTo={postitRequest}
         >
           <Calendar />
-          <PostIts postits={postits} />
+          <PostIts postits={postits} openRequest={postitRequest} />
           {SHOW_SORTIES && <Sorties />}
           <Plex />
           <Shows />
@@ -94,7 +101,7 @@ function App() {
         </WidgetCarousel>
       </div>
 
-      {idle && <Screensaver weather={weather} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} />}
+      {idle && <Screensaver weather={weather} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} />}
     </div>
   )
 }

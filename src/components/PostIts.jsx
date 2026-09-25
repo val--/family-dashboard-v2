@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import PostitNote, { tilt } from './postit/Note'
 import { timeAgo } from './postit/theme'
+import { photoUrl } from './postit/photos'
 import QrCode from './QrCode'
 
 const CELLS_PER_PAGE = 6 // 3 columns x 2 rows, the QR tile takes the first cell of the first page
@@ -42,11 +43,18 @@ function QrCell({ onOpen }) {
   )
 }
 
-export default function PostIts({ postits }) {
+export default function PostIts({ postits, openRequest }) {
   const { notes, config, loading, error } = postits
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState(null)
   const [showQr, setShowQr] = useState(false)
+  const [viewing, setViewing] = useState(null)
+
+  // Asked to show a note (tapped on the screensaver): its detail opens over the wall, and closing
+  // it leaves you on the wall
+  useEffect(() => {
+    if (openRequest?.note) setSelected(openRequest.note)
+  }, [openRequest])
 
   const cells = [{ type: 'qr' }, ...notes.map((note) => ({ type: 'note', note }))]
   const pages = Math.ceil(cells.length / CELLS_PER_PAGE)
@@ -111,11 +119,26 @@ export default function PostIts({ postits }) {
       {selected && (
         <Modal onClose={() => setSelected(null)}>
           <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-y-auto px-8 pb-8">
-            <PostitNote note={selected} size="lg" rotate={-1} className="h-[min(70vh,20rem)] aspect-square shrink-0" />
+            <PostitNote
+              note={selected}
+              size="lg"
+              rotate={-1}
+              onPhotoClick={() => setViewing(selected.photo)}
+              className="h-[min(70vh,20rem)] aspect-square shrink-0"
+            />
             <div className="text-sm text-white/60">
               {timeAgo(selected.createdAt)}
               {selected.pinned && ' · épinglé'}
+              {selected.photo && ' · touche la photo pour l’agrandir'}
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {viewing && (
+        <Modal onClose={() => setViewing(null)}>
+          <div className="flex-1 min-h-0 flex items-center justify-center px-2 pb-3" onClick={() => setViewing(null)}>
+            <img src={photoUrl(viewing, true)} alt="" className="max-h-full max-w-full object-contain" />
           </div>
         </Modal>
       )}

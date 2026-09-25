@@ -9,8 +9,15 @@ function initialTab(titles) {
   return index >= 0 ? index : 0
 }
 
-export default function WidgetCarousel({ children, titles = [], indicators = [], onActiveChange }) {
+export default function WidgetCarousel({ children, titles = [], indicators = [], onActiveChange, goTo }) {
   const [active, setActive] = useState(() => initialTab(titles))
+
+  // goTo = { title }: a new object asks the carousel to switch to that tab (e.g. from the screensaver)
+  useEffect(() => {
+    if (!goTo) return
+    const index = titles.indexOf(goTo.title)
+    if (index >= 0) setActive(index)
+  }, [goTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const title = titles[active]

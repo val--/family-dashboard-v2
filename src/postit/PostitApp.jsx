@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import PostitNote from '../components/postit/Note'
 import { Sticker } from '../components/postit/stickers'
 import { NOTE_SWATCHES } from '../components/postit/theme'
 import * as api from './postitApi'
+import { MAX_UPLOAD_BYTES, shrinkImage } from './image'
 
 const AUTHOR_KEY = 'postit-author'
 const CODE_KEY = 'postit-code'
@@ -115,14 +116,42 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  const [photo, setPhoto] = useState(null)
+  const [photoPreview, setPhotoPreview] = useState(null)
+  const [preparing, setPreparing] = useState(false)
+  const fileInput = useRef(null)
+
+  useEffect(() => () => photoPreview && URL.revokeObjectURL(photoPreview), [photoPreview])
+
+  function dropPhoto() {
+    setPhoto(null)
+    setPhotoPreview(null)
+  }
+
+  async function pickPhoto(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // lets the same picture be chosen again
+    if (!file) return
+    setError('')
+    setPreparing(true)
+    const ready = await shrinkImage(file)
+    setPreparing(false)
+    if (ready.size > MAX_UPLOAD_BYTES) {
+      setError('Cette photo est trop lourde (12 Mo maximum).')
+      return
+    }
+    setPhoto(ready)
+    setPhotoPreview(URL.createObjectURL(ready))
+  }
 
   async function send() {
     setSending(true)
     setError('')
     try {
-      await api.createNote({ author, text, color, sticker, code })
+      await api.createNote({ author, text, color, sticker, code }, photo)
       setText('')
       setSticker(null)
+      dropPhoto()
       setDone(true)
       setTimeout(() => setDone(false), 3000)
       onPosted()
@@ -138,7 +167,7 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
 
   return (
     <section>
-      <PostitNote note={preview} size="lg" rotate={-1} className={`mx-auto aspect-square w-full max-w-xs ${text.trim() ? '' : 'opacity-60'}`} />
+      <PostitNote note={preview} size="lg" rotate={-1} photoSrc={photoPreview} className={`mx-auto aspect-square w-full max-w-xs ${text.trim() ? '' : 'opacity-60'}`} />
 
       <textarea
         value={text}
@@ -152,7 +181,24 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
         {text.length} / {config.maxChars}
       </div>
 
-      <h2 className="mb-2 mt-4 text-sm uppercase tracking-wide text-stone-400">Couleur</h2>
+      <h2 className="mb-2 mt-4 text-sm uppercase tracking-wide text-stone-400">Photo</h2>
+      <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={pickPhoto} className="hidden" />
+      <div className="flex gap-3">
+        <button
+          onClick={() => fileInput.current?.click()}
+          disabled={preparing}
+          className="flex-1 rounded-xl bg-stone-800 py-3 text-base active:bg-stone-700 disabled:opacity-50"
+        >
+          {preparing ? 'Préparation…' : photo ? 'Changer la photo' : 'Ajouter une photo'}
+        </button>
+        {photo && (
+          <button onClick={dropPhoto} className="rounded-xl bg-stone-800 px-4 py-3 text-red-300 active:bg-stone-700">
+            Retirer
+          </button>
+        )}
+      </div>
+
+      <h2 className="mb-2 mt-5 text-sm uppercase tracking-wide text-stone-400">Couleur</h2>
       <div className="flex gap-3">
         {config.colors.map((c) => (
           <button
