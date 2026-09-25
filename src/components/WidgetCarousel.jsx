@@ -58,7 +58,10 @@ export default function WidgetCarousel({ children, titles = [], indicators = [] 
           style={{ transform: `translateX(-${active * 100}%)` }}
         >
           {items.map((item, i) => (
-            <div key={i} className="w-full shrink-0 h-full">
+            <div
+              key={i}
+              className={`w-full shrink-0 h-full ${i === active ? '' : '[&_*]:[animation-play-state:paused]'}`}
+            >
               {item}
             </div>
           ))}
