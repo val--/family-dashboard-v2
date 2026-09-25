@@ -1,15 +1,20 @@
 export const mockVpn = {
   healthy: true,
+  provider: 'ProtonVPN',
+  protocol: 'WireGuard',
   ip: '185.230.126.42',
-  country: 'FR',
+  port: 37972,
+  country: 'France',
   city: 'Paris',
   org: 'AS9009 M247 Ltd',
+  since: '2026-09-23T15:27:52Z',
 }
 
 export const mockPrinter = {
   name: 'Deskjet_3630',
   connected: true,
   status: 'idle',
+  jobs: 0,
   ink: null,
 }
 

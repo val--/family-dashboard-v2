@@ -31,5 +31,5 @@ export function usePrinter() {
     return () => clearInterval(interval)
   }, [fetchStatus])
 
-  return { data, loading, error }
+  return { data, loading, error, refresh: fetchStatus }
 }
