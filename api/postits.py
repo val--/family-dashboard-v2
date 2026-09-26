@@ -26,7 +26,6 @@ def _int_env(name, default):
         return default
 
 
-RETENTION_DAYS = _int_env("POSTIT_DAYS", 7)
 MAX_CHARS = 200
 COLORS = ["yellow", "pink", "blue", "green", "orange", "purple"]
 STICKERS = ["heart", "star", "smile", "sun", "music", "coffee", "pizza", "cat", "gift", "party", "book", "ball"]
@@ -69,15 +68,23 @@ def ensure_db():
                    color TEXT NOT NULL,
                    sticker TEXT,
                    created_at INTEGER NOT NULL,
-                   pinned INTEGER NOT NULL DEFAULT 0
+                   pinned INTEGER NOT NULL DEFAULT 0  -- unused since pinning was removed, kept for old databases
                )"""
         )
         columns = {row["name"] for row in conn.execute("PRAGMA table_info(notes)")}
-        if "photo" not in columns:
+        for name, kind in (("photo", "TEXT"), ("photo_ratio", "REAL")):
+            if name not in columns:
+                try:
+                    conn.execute(f"ALTER TABLE notes ADD COLUMN {name} {kind}")
+                except sqlite3.OperationalError:
+                    pass  # the other gunicorn worker added it first
+        # Photos stored before the ratio was recorded: read it from the file header (cheap, done once)
+        for row in conn.execute("SELECT id, photo FROM notes WHERE photo IS NOT NULL AND photo_ratio IS NULL").fetchall():
             try:
-                conn.execute("ALTER TABLE notes ADD COLUMN photo TEXT")
-            except sqlite3.OperationalError:
-                pass  # the other gunicorn worker added it first
+                with Image.open(os.path.join(PHOTO_DIR, f"{row['photo']}.jpg")) as im:
+                    conn.execute("UPDATE notes SET photo_ratio = ? WHERE id = ?", (round(im.width / im.height, 4), row["id"]))
+            except OSError:
+                pass
     _ready = True
 
 
@@ -97,8 +104,8 @@ def note_dict(row):
         "color": row["color"],
         "sticker": row["sticker"],
         "createdAt": row["created_at"],
-        "pinned": bool(row["pinned"]),
         "photo": row["photo"],
+        "photoRatio": row["photo_ratio"],  # width / height: below 1 = portrait (e.g. 0.56 for 9:16)
     }
 
 
@@ -127,12 +134,13 @@ def save_photo(file_storage):
     image = image.convert("RGB")
 
     os.makedirs(PHOTO_DIR, exist_ok=True)
+    ratio = round(image.width / image.height, 4)
     name = uuid.uuid4().hex
     for suffix, side, quality in PHOTO_SIZES:
         version = image.copy()
         version.thumbnail((side, side), Image.LANCZOS)
         version.save(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"), "JPEG", quality=quality, optimize=True, progressive=True)
-    return name
+    return name, ratio
 
 
 def remove_photos(names):
@@ -142,17 +150,6 @@ def remove_photos(names):
                 os.remove(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"))
             except OSError:
                 pass
-
-
-def purge_expired(conn):
-    """Delete expired notes; returns their photo names so the caller can remove the files after commit."""
-    cutoff = int(time.time()) - RETENTION_DAYS * 86400
-    photos = [
-        row["photo"]
-        for row in conn.execute("SELECT photo FROM notes WHERE pinned = 0 AND created_at < ? AND photo IS NOT NULL", (cutoff,))
-    ]
-    conn.execute("DELETE FROM notes WHERE pinned = 0 AND created_at < ?", (cutoff,))
-    return photos
 
 
 def error(message, status=400):
@@ -183,17 +180,15 @@ def config():
         "colors": COLORS,
         "stickers": STICKERS,
         "maxChars": MAX_CHARS,
-        "retentionDays": RETENTION_DAYS,
         "codeRequired": bool(FAMILY_CODE),
     }
 
 
 @bp.route("/api/postits")
 def list_notes():
+    # Notes are kept until their author deletes them: there is no expiry
     with db() as conn:
-        expired = purge_expired(conn)
-        rows = conn.execute("SELECT * FROM notes ORDER BY pinned DESC, created_at DESC, id DESC").fetchall()
-    remove_photos(expired)
+        rows = conn.execute("SELECT * FROM notes ORDER BY created_at DESC, id DESC").fetchall()
     return jsonify({"notes": [note_dict(r) for r in rows], "config": config()})
 
 
@@ -239,25 +234,23 @@ def create_note():
         return error("Doucement, un post-it à la fois", 429)
     _last_post[ip] = now
 
-    photo = None
+    photo, ratio = None, None
     if upload and upload.filename:
         try:
-            photo = save_photo(upload)
+            photo, ratio = save_photo(upload)
         except PhotoError as e:
             return error(str(e))
 
     try:
         with db() as conn:
-            expired = purge_expired(conn)
             cur = conn.execute(
-                "INSERT INTO notes (author, text, color, sticker, created_at, photo) VALUES (?, ?, ?, ?, ?, ?)",
-                (author, text, color, sticker, int(now), photo),
+                "INSERT INTO notes (author, text, color, sticker, created_at, photo, photo_ratio) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (author, text, color, sticker, int(now), photo, ratio),
             )
             row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
     except Exception:
         remove_photos([photo] if photo else [])  # don't leave orphans behind
         raise
-    remove_photos(expired)
     return jsonify(note_dict(row)), 201
 
 
@@ -265,6 +258,15 @@ def create_note():
 def get_photo(filename):
     if not PHOTO_NAME.match(filename):
         return error("Photo introuvable", 404)
+    if request.args.get("download"):
+        # Scanned from the kiosk's QR code: the phone saves it as a file instead of just showing it
+        name = "post-it"
+        with db() as conn:
+            row = conn.execute("SELECT author, created_at FROM notes WHERE photo = ?", (filename.split("_")[0][:32],)).fetchone()
+        if row:
+            day = time.strftime("%Y-%m-%d", time.localtime(row["created_at"]))
+            name = f"post-it-{row['author']}-{day}"
+        return send_from_directory(PHOTO_DIR, filename, mimetype="image/jpeg", as_attachment=True, download_name=f"{name}.jpg")
     response = send_from_directory(PHOTO_DIR, filename, mimetype="image/jpeg")
     response.headers["Cache-Control"] = "public, max-age=604800, immutable"  # a file never changes
     return response
@@ -299,15 +301,3 @@ def delete_note(note_id):
     if row["photo"]:
         remove_photos([row["photo"]])
     return jsonify({"ok": True})
-
-
-@bp.route("/api/postits/<int:note_id>/pin", methods=["POST"])
-def pin_note(note_id):
-    payload = request.get_json(silent=True) or {}
-    with db() as conn:
-        row, bad = _own_note(conn, note_id, payload)
-        if bad:
-            return bad
-        conn.execute("UPDATE notes SET pinned = ? WHERE id = ?", (1 if payload.get("pinned") else 0, note_id))
-        row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
-    return jsonify(note_dict(row))
