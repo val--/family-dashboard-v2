@@ -10,7 +10,7 @@ const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this
 
 // Minimal night-stand screen: big clock, date, current weather and one post-it, on pure black.
 // A post-it with a photo gets the stage instead: clock on the left, the note big on the right.
-export default function Screensaver({ weather, notes = [], hasNew = false, onWake, onOpenNote }) {
+export default function Screensaver({ weather, notes = [], hasNew = false, onWake, onOpenNote, stickerViews }) {
   const { time, date } = useClock()
   const current = weather?.current
   const [index, setIndex] = useState(0)
@@ -134,7 +134,7 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
             {arrows('prev')}
             <div className="flex flex-col">
               <div onClick={openNote} className={`relative opacity-90 ${onOpenNote ? 'cursor-pointer' : ''}`}>
-                <PostitNote note={note} size="lg" rotate={-1} showDate className="h-[min(74vh,21rem)] aspect-square" />
+                <PostitNote note={note} size="lg" rotate={-1} showDate showSticker={stickerViews?.isSticker(note.id)} className="h-[min(74vh,21rem)] aspect-square" />
                 {isLatest && <Stamp key={note.id} big />}
                 {newBadge}
               </div>

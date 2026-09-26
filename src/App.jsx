@@ -13,6 +13,7 @@ import { usePrinter } from './hooks/usePrinter'
 import { useWeather } from './hooks/useWeather'
 import { useIdle } from './hooks/useIdle'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
+import { useStickerViews } from './hooks/useStickerViews'
 import Screensaver from './components/Screensaver'
 
 function useDevicesIndicator() {
@@ -40,6 +41,7 @@ function App() {
   const weather = useWeather()
   const { idle, wake, sleep } = useIdle(IDLE_SECONDS * 1000)
   const postits = usePostits()
+  const stickerViews = useStickerViews()
   const [activeTab, setActiveTab] = useState('')
   const [postitRequest, setPostitRequest] = useState(null)
 
@@ -93,7 +95,7 @@ function App() {
           goTo={postitRequest}
         >
           <Calendar />
-          <PostIts postits={postits} openRequest={postitRequest} />
+          <PostIts postits={postits} openRequest={postitRequest} stickerViews={stickerViews} />
           {SHOW_SORTIES && <Sorties />}
           <Plex />
           <Shows />
@@ -101,7 +103,7 @@ function App() {
         </WidgetCarousel>
       </div>
 
-      {idle && <Screensaver weather={weather} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} />}
+      {idle && <Screensaver weather={weather} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} />}
     </div>
   )
 }

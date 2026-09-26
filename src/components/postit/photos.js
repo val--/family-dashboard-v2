@@ -9,3 +9,12 @@ export function photoUrl(name, full = false) {
 export function photoDownloadUrl(name) {
   return `${photoUrl(name, true)}?download=1`
 }
+
+// Die-cut sticker made by ComfyUI after the upload (transparent PNG): 400 px for the notes, full size otherwise
+export function stickerUrl(name, full = false) {
+  return `${API_URL}/api/postits/photos/${name}_sticker${full ? '' : '_thumb'}.png`
+}
+
+export function stickerDownloadUrl(name) {
+  return `${stickerUrl(name, true)}?download=1`
+}
