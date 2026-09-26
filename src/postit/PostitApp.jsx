@@ -118,6 +118,7 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
   const [done, setDone] = useState(false)
   const [photo, setPhoto] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
+  const [photoRatio, setPhotoRatio] = useState(null)
   const [preparing, setPreparing] = useState(false)
   const fileInput = useRef(null)
 
@@ -126,6 +127,7 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
   function dropPhoto() {
     setPhoto(null)
     setPhotoPreview(null)
+    setPhotoRatio(null)
   }
 
   async function pickPhoto(e) {
@@ -139,6 +141,13 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
     if (ready.size > MAX_UPLOAD_BYTES) {
       setError('Cette photo est trop lourde (12 Mo maximum).')
       return
+    }
+    try {
+      const bitmap = await createImageBitmap(ready, { imageOrientation: 'from-image' })
+      setPhotoRatio(bitmap.width / bitmap.height)
+      bitmap.close?.()
+    } catch {
+      setPhotoRatio(null)
     }
     setPhoto(ready)
     setPhotoPreview(URL.createObjectURL(ready))
@@ -163,7 +172,7 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
     }
   }
 
-  const preview = { id: 0, author, text: text.trim() || 'Ton message apparaîtra ici…', color, sticker }
+  const preview = { id: 0, author, text: text.trim() || 'Ton message apparaîtra ici…', color, sticker, photoRatio }
 
   return (
     <section>
@@ -270,9 +279,6 @@ function MyNotes({ notes, auth, onChanged, onAuthError }) {
           <div key={note.id}>
             <PostitNote note={note} size="sm" />
             <div className="mt-1 flex gap-4 text-sm">
-              <button onClick={() => run(() => api.pinNote(note.id, auth, !note.pinned))} className="text-sky-300">
-                {note.pinned ? 'Désépingler' : 'Épingler (ne disparaît pas)'}
-              </button>
               <button
                 onClick={() => window.confirm('Supprimer ce post-it ?') && run(() => api.deleteNote(note.id, auth))}
                 className="text-red-300"

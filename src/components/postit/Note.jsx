@@ -11,9 +11,9 @@ const SIZES = {
   sm: { box: 'px-3 py-2', text: () => 'text-xl line-clamp-2', sticker: 'w-6 h-6', sign: 'text-base' },
   md: {
     box: 'p-3',
-    text: (len) => (len <= 50 ? 'text-2xl line-clamp-4' : len <= 110 ? 'text-xl line-clamp-4' : 'text-lg line-clamp-5'),
-    sticker: 'w-8 h-8',
-    sign: 'text-base',
+    text: (len) => (len <= 50 ? 'text-xl line-clamp-4' : len <= 110 ? 'text-lg line-clamp-4' : 'text-base line-clamp-5'),
+    sticker: 'w-7 h-7',
+    sign: 'text-sm',
   },
   lg: { box: 'p-5', text: (len) => (len <= 80 ? 'text-4xl' : len <= 140 ? 'text-3xl' : 'text-2xl'), sticker: 'w-12 h-12', sign: 'text-2xl' },
 }
@@ -41,6 +41,35 @@ export default function PostitNote({ note, size = 'md', rotate = 0, className = 
   const style = rotate ? { transform: `rotate(${rotate}deg)` } : undefined
   const base = `relative overflow-hidden rounded-md text-stone-800 ${color} ${onClick ? 'cursor-pointer' : ''} ${className}`
 
+  // Portrait photo (a phone held upright, 3:4 to 9:20): the photo stands at full height on the left and
+  // the caption runs beside it, instead of a thin cropped band. Extremely tall ones are trimmed to 1:2.
+  const portrait = photo && (size === 'lg' || size === 'md') && note.photoRatio != null && note.photoRatio < 0.9
+  if (portrait) {
+    const lg = size === 'lg'
+    return (
+      <div onClick={onClick} style={style} className={`${base} flex flex-col ${lg ? 'gap-2 p-4' : 'gap-1 p-2'}`}>
+        <div className={`flex min-h-0 flex-1 ${lg ? 'gap-3' : 'gap-2'}`}>
+          <img
+            src={photo}
+            alt=""
+            loading={lg ? undefined : 'lazy'}
+            decoding="async"
+            onClick={onPhotoClick}
+            style={{ aspectRatio: Math.max(note.photoRatio, 0.5) }}
+            className={`h-full shrink-0 rounded-sm object-cover ${lg ? 'max-w-[55%]' : 'max-w-[45%]'} ${onPhotoClick ? 'cursor-zoom-in' : ''}`}
+          />
+          <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
+            <div className={`${TEXT} ${lg ? (note.text.length <= 60 ? 'text-2xl line-clamp-6' : 'text-xl line-clamp-7') : 'text-base leading-tight line-clamp-5'}`}>
+              {note.text}
+            </div>
+            {note.sticker && <Sticker id={note.sticker} className={`${lg ? 'w-10 h-10' : 'w-6 h-6'} shrink-0 self-end`} />}
+          </div>
+        </div>
+        <Signature note={note} showDate={showDate} className={lg ? 'text-xl' : 'text-sm leading-tight'} />
+      </div>
+    )
+  }
+
   // Large with a photo: photo on top (a polaroid in the note's color), caption below
   if (photo && size === 'lg') {
     return (
@@ -60,26 +89,17 @@ export default function PostitNote({ note, size = 'md', rotate = 0, className = 
     )
   }
 
-  // Wall tile with a photo: a small thumbnail beside the text (the sticker sits on its corner), and the
-  // signature on its own full-width line underneath, so "author · age" fits on one line. The full
-  // picture is one tap away.
+  // Wall tile with a photo: the same polaroid as the screensaver's big card, scaled down (photo on top,
+  // caption and sticker below, then the signature). The full picture is one tap away.
   if (photo && size === 'md') {
     return (
-      <div onClick={onClick} style={style} className={`${base} flex flex-col justify-between gap-1 p-2`}>
-        <div className="flex min-h-0 gap-2">
-          <div className="relative h-20 w-20 shrink-0">
-            <img src={photo} alt="" loading="lazy" decoding="async" className="h-full w-full rounded-sm object-cover" />
-            {note.sticker && (
-              <span className="absolute -bottom-1 -right-1 rounded-full bg-white/85 p-0.5">
-                <Sticker id={note.sticker} className="h-6 w-6" />
-              </span>
-            )}
-          </div>
-          <div className="font-hand font-semibold whitespace-pre-line break-words min-w-0 flex-1 text-lg leading-[1.1] line-clamp-4">
-            {note.text}
-          </div>
+      <div onClick={onClick} style={style} className={`${base} flex flex-col gap-1 p-2`}>
+        <img src={photo} alt="" loading="lazy" decoding="async" className="min-h-0 w-full flex-1 rounded-sm object-cover" />
+        <div className="flex items-start gap-1">
+          <div className={`${TEXT} flex-1 text-base leading-tight line-clamp-2`}>{note.text}</div>
+          {note.sticker && <Sticker id={note.sticker} className="w-6 h-6 shrink-0" />}
         </div>
-        <Signature note={note} showDate={showDate} className="text-base" />
+        <Signature note={note} showDate={showDate} className="text-sm leading-tight" />
       </div>
     )
   }

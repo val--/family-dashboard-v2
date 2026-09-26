@@ -32,13 +32,12 @@ export const mockPostits = {
     colors: ['yellow', 'pink', 'blue', 'green', 'orange', 'purple'],
     stickers: ['heart', 'star', 'smile', 'sun', 'music', 'coffee', 'pizza', 'cat', 'gift', 'party', 'book', 'ball'],
     maxChars: 200,
-    retentionDays: 7,
     codeRequired: false,
   },
   notes: [
-    { id: 1, author: 'Maman', text: 'Dîner chez Mamie à 19h, ne rentrez pas tard !', color: 'pink', sticker: 'heart', createdAt: Math.floor(Date.now() / 1000) - 600, pinned: true },
-    { id: 2, author: 'Papa', text: 'Pizza ce soir ?', color: 'yellow', sticker: 'pizza', createdAt: Math.floor(Date.now() / 1000) - 7200, pinned: false },
-    { id: 3, author: 'Maman', text: "N'oubliez pas de sortir les poubelles", color: 'blue', sticker: null, createdAt: Math.floor(Date.now() / 1000) - 86400, pinned: false },
+    { id: 1, author: 'Maman', text: 'Dîner chez Mamie à 19h, ne rentrez pas tard !', color: 'pink', sticker: 'heart', createdAt: Math.floor(Date.now() / 1000) - 600 },
+    { id: 2, author: 'Papa', text: 'Pizza ce soir ?', color: 'yellow', sticker: 'pizza', createdAt: Math.floor(Date.now() / 1000) - 7200 },
+    { id: 3, author: 'Maman', text: "N'oubliez pas de sortir les poubelles", color: 'blue', sticker: null, createdAt: Math.floor(Date.now() / 1000) - 86400 },
   ],
 }
 

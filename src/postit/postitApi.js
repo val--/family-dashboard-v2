@@ -33,4 +33,3 @@ export function createNote(payload, photo) {
   return request('POST', '', form)
 }
 export const deleteNote = (id, auth) => request('DELETE', `/${id}`, auth)
-export const pinNote = (id, auth, pinned) => request('POST', `/${id}/pin`, { ...auth, pinned })

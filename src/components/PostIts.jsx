@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import PostitNote, { tilt } from './postit/Note'
 import { timeAgo } from './postit/theme'
-import { photoUrl } from './postit/photos'
+import { photoDownloadUrl, photoUrl } from './postit/photos'
 import QrCode from './QrCode'
 import ArrowButton from './ArrowButton'
 
@@ -29,6 +29,51 @@ function Modal({ onClose, children }) {
   )
 }
 
+// Full-screen photo. A tap closes it, except on the "Sur mon téléphone" button, which shows a QR code
+// to download the photo on a phone (on the home Wi-Fi).
+function PhotoViewer({ name, onClose }) {
+  const [showQr, setShowQr] = useState(false)
+  const stop = (event) => event.stopPropagation()
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="relative flex-1 min-h-0 flex items-center justify-center px-2 pb-3" onClick={onClose}>
+        <img src={photoUrl(name, true)} alt="" className="max-h-full max-w-full object-contain" />
+
+        {showQr ? (
+          <div
+            onClick={(event) => {
+              stop(event)
+              setShowQr(false)
+            }}
+            className="absolute bottom-4 right-4 flex items-center gap-4 rounded-2xl bg-black/85 p-4"
+          >
+            <QrCode value={photoDownloadUrl(name)} className="h-40 w-40 shrink-0 rounded" />
+            <div className="max-w-44 text-white">
+              <div className="text-lg leading-tight">Scanne pour télécharger la photo</div>
+              <div className="mt-1 text-sm text-white/60">Téléphone connecté au Wi‑Fi de la maison</div>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={(event) => {
+              stop(event)
+              setShowQr(true)
+            }}
+            className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/70 px-4 py-2.5 text-base text-white"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+              <path d="M12 8v6M9.5 11.5 12 14l2.5-2.5M10.5 18.5h3" />
+            </svg>
+            Sur mon téléphone
+          </button>
+        )}
+      </div>
+    </Modal>
+  )
+}
+
 function QrCell({ onOpen }) {
   return (
     <button
@@ -45,7 +90,9 @@ function QrCell({ onOpen }) {
 }
 
 export default function PostIts({ postits, openRequest }) {
-  const { notes, config, loading, error } = postits
+  const { notes: apiNotes, config, loading, error } = postits
+  // Newest first, in order of posting. The detail view's arrows follow the same order.
+  const notes = [...apiNotes].sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState(null)
   const [showQr, setShowQr] = useState(false)
@@ -138,20 +185,13 @@ export default function PostIts({ postits, openRequest }) {
             <div className="text-sm text-white/60">
               {canBrowse && `${selectedIndex + 1} / ${notes.length} · `}
               {timeAgo(shown.createdAt)}
-              {shown.pinned && ' · épinglé'}
               {shown.photo && ' · touche la photo pour l’agrandir'}
             </div>
           </div>
         </Modal>
       )}
 
-      {viewing && (
-        <Modal onClose={() => setViewing(null)}>
-          <div className="flex-1 min-h-0 flex items-center justify-center px-2 pb-3" onClick={() => setViewing(null)}>
-            <img src={photoUrl(viewing, true)} alt="" className="max-h-full max-w-full object-contain" />
-          </div>
-        </Modal>
-      )}
+      {viewing && <PhotoViewer name={viewing} onClose={() => setViewing(null)} />}
 
       {showQr && (
         <Modal onClose={() => setShowQr(false)}>

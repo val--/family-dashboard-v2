@@ -5,6 +5,16 @@
   --font-hand: "Caveat", cursive;
 }
 
+/* Screensaver: time left before the next post-it (a transform, cheap on the Pi) */
+@keyframes countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+.animate-countdown {
+  transform-origin: left;
+  animation: countdown linear forwards;
+}
+
 /* "Dernier posté !" stamp: it lands with a small thump */
 @keyframes stamp {
   0% { transform: rotate(var(--stamp-rotate)) scale(2); opacity: 0; }
