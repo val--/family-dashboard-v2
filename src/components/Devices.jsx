@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePrinter } from '../hooks/usePrinter'
 import { useVpn } from '../hooks/useVpn'
 import { useSystem } from '../hooks/useSystem'
+import { useRecalbox } from '../hooks/useRecalbox'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
@@ -52,7 +53,7 @@ function level(value, warn, alert) {
 }
 
 // Neutral cards; the only color is a tint on each card's icon
-const ICON_COLORS = { sky: 'text-sky-300', purple: 'text-purple-300', teal: 'text-teal-300' }
+const ICON_COLORS = { sky: 'text-sky-300', purple: 'text-purple-300', teal: 'text-teal-300', rose: 'text-rose-300' }
 
 const ICON_PROPS = {
   className: 'w-5 h-5 shrink-0',
@@ -79,6 +80,17 @@ function PrinterIcon() {
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
       <path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6" />
       <rect x="6" y="14" width="12" height="8" rx="1" />
+    </svg>
+  )
+}
+
+function GamepadIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M7 7h10a5 5 0 0 1 4.9 6l-.8 4a2.5 2.5 0 0 1-4.3 1.2L14.5 16h-5l-2.3 2.2A2.5 2.5 0 0 1 2.9 17l-.8-4A5 5 0 0 1 7 7z" />
+      <path d="M7.5 10.5v3M6 12h3" />
+      <circle cx="15.5" cy="11" r="0.6" fill="currentColor" />
+      <circle cx="17.5" cy="13" r="0.6" fill="currentColor" />
     </svg>
   )
 }
@@ -213,6 +225,42 @@ function ServerCard({ system }) {
   )
 }
 
+function RecalboxCard({ recalbox }) {
+  const { online, version, storage, cpu, memory, temperature } = recalbox
+  const usedPercent = storage ? (100 * (storage.total - storage.free)) / storage.total : 0
+  const storageLevel = level(usedPercent, 85, 95)
+  const cpuLevel = level(cpu, 70, 90)
+  const memLevel = level(memory?.percent, 75, 90)
+  const tempLevel = level(temperature, 70, 80)
+
+  return (
+    <Card
+      accent="rose"
+      icon={<GamepadIcon />}
+      title="Recalbox"
+      ok={online}
+      label={online ? (version ? `En ligne · v${version}` : 'En ligne') : 'Hors ligne'}
+    >
+      {online ? (
+        <div className="grid grid-cols-4 gap-x-4">
+          <Field label="Stockage" value={storage && `${formatBytes(storage.free)} libres`} valueClassName={storageLevel.text}>
+            <Bar percent={usedPercent} level={storageLevel} />
+          </Field>
+          <Field label="Température" value={temperature != null && `${temperature} °C`} valueClassName={tempLevel.text} />
+          <Field label="CPU" value={cpu != null && `${Math.round(cpu)} %`} valueClassName={cpuLevel.text}>
+            <Bar percent={cpu} level={cpuLevel} />
+          </Field>
+          <Field label={memory ? `RAM (${formatBytes(memory.total)})` : 'RAM'} value={memory && formatBytes(memory.used)} valueClassName={memLevel.text}>
+            {memory && <Bar percent={memory.percent} level={memLevel} />}
+          </Field>
+        </div>
+      ) : (
+        <div className="text-sm text-white/60">Éteinte ou injoignable</div>
+      )}
+    </Card>
+  )
+}
+
 function PrinterCard({ printer, refresh }) {
   const [test, setTest] = useState({ state: 'idle', message: '' })
 
@@ -268,11 +316,15 @@ export default function Devices() {
   const { data: printer, loading: printerLoading, error: printerError, refresh } = usePrinter()
   const { data: vpn, loading: vpnLoading, error: vpnError } = useVpn()
   const { data: system, loading: systemLoading, error: systemError } = useSystem()
+  const { data: recalbox } = useRecalbox()
+  // online is null while the API's first check is still running: wait for an answer
+  const showRecalbox = recalbox?.configured && recalbox.online !== null
 
   return (
-    <div className="h-full overflow-y-auto flex flex-col gap-4">
+    <div className="h-full overflow-y-auto flex flex-col gap-3">
       {!vpnLoading && !vpnError && vpn && <VpnCard vpn={vpn} />}
       {!systemLoading && !systemError && system && <ServerCard system={system} />}
+      {showRecalbox && <RecalboxCard recalbox={recalbox} />}
       {!printerLoading && !printerError && printer && (
         <PrinterCard printer={printer} refresh={refresh} />
       )}

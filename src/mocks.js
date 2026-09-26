@@ -42,6 +42,16 @@ export const mockPostits = {
   ],
 }
 
+export const mockRecalbox = {
+  configured: true,
+  online: true,
+  version: '10.1.1',
+  storage: { total: 983349346304, free: 934727024640 },
+  cpu: 4,
+  memory: { total: 17003003904, used: 523337728, percent: 3.1 },
+  temperature: 61,
+}
+
 export const mockPrinter = {
   name: 'Deskjet_3630',
   connected: true,
