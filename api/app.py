@@ -19,6 +19,10 @@ CORS(app)
 from postits import bp as postits_bp  # noqa: E402
 
 app.register_blueprint(postits_bp)
+
+from recalbox import bp as recalbox_bp  # noqa: E402
+
+app.register_blueprint(recalbox_bp)
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024  # photo uploads
 
 # -- Printer config --
