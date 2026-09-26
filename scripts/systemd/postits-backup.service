@@ -1,0 +1,12 @@
+[Unit]
+Description=Family dashboard: back up the post-it board to the NAS
+Documentation=file:///home/val/www/lab/family-dashboard-v2/scripts/backup-postits.sh
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/val/www/lab/family-dashboard-v2/scripts/backup-postits.sh
+# docker is a snap on this server: /snap/bin must be on the PATH
+Environment=PATH=/snap/bin:/usr/local/bin:/usr/bin:/bin
+Nice=10
+IOSchedulingClass=idle

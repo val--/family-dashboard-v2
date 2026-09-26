@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly backup of the post-it board
+
+[Timer]
+OnCalendar=*-*-* 03:30
+# If the server was off at 03:30, run at the next boot
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

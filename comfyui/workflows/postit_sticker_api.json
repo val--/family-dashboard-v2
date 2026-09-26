@@ -1,0 +1,84 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "postit_test.jpg"
+    },
+    "_meta": {
+      "title": "Photo du post-it"
+    }
+  },
+  "2": {
+    "class_type": "PostitBiRefNet",
+    "inputs": {
+      "image": [
+        "1",
+        0
+      ],
+      "model": "BiRefNet",
+      "resolution": 1024
+    },
+    "_meta": {
+      "title": "Détourage"
+    }
+  },
+  "3": {
+    "class_type": "PostitStickerOutline",
+    "inputs": {
+      "image": [
+        "2",
+        0
+      ],
+      "mask": [
+        "2",
+        1
+      ],
+      "border": 22,
+      "shadow": 0.35,
+      "threshold": 0.5,
+      "keep_largest": true,
+      "smooth": 8
+    },
+    "_meta": {
+      "title": "Contour sticker"
+    }
+  },
+  "4": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "3",
+        0
+      ],
+      "filename_prefix": "postit_sticker"
+    },
+    "_meta": {
+      "title": "Sticker (PNG transparent)"
+    }
+  },
+  "5": {
+    "class_type": "MaskToImage",
+    "inputs": {
+      "mask": [
+        "2",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Masque (contrôle)"
+    }
+  },
+  "6": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "5",
+        0
+      ],
+      "filename_prefix": "postit_mask"
+    },
+    "_meta": {
+      "title": "Masque"
+    }
+  }
+}
