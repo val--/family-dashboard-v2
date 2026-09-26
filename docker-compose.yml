@@ -29,6 +29,7 @@ services:
       - TMDB_API_KEY=${TMDB_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - RECALBOX_HOST=${RECALBOX_HOST:-}
+      - COMFYUI_URL=${COMFYUI_URL:-}
       - FAMILY_CODE=${FAMILY_CODE:-}
       - FAMILY_MEMBERS=${FAMILY_MEMBERS:-}
       - "SYSTEM_DISKS=${SYSTEM_DISKS:-Système:/;Stockage:/host/mnt/internal_storage;NAS:/host/mnt/synology_movies;NAS 2:/host/mnt/synology_tv_shows_2}"

@@ -9,6 +9,8 @@ import uuid
 from flask import Blueprint, jsonify, request, send_from_directory
 from PIL import Image, ImageOps
 
+import postit_stickers
+
 bp = Blueprint("postits", __name__)
 
 DATA_DIR = os.environ.get("DATA_DIR", "/app/data")
@@ -36,7 +38,7 @@ POST_COOLDOWN = 5  # seconds between two notes from the same device
 # wall, so the kiosk never has to decode more than it shows.
 PHOTO_SIZES = (("", 1200, 82), ("_thumb", 400, 78))  # (file suffix, longest side, JPEG quality)
 PHOTO_FORMATS = {"JPEG", "PNG", "WEBP"}
-PHOTO_NAME = re.compile(r"^[0-9a-f]{32}(_thumb)?\.jpg$")
+PHOTO_NAME = re.compile(r"^[0-9a-f]{32}((_thumb)?\.jpg|_sticker(_thumb)?\.png)$")
 Image.MAX_IMAGE_PIXELS = 50_000_000  # refuse decompression bombs (error above twice this)
 MAX_FAILURES = 5  # wrong family codes allowed per device...
 FAILURE_WINDOW = 300  # ...within this many seconds
@@ -72,7 +74,8 @@ def ensure_db():
                )"""
         )
         columns = {row["name"] for row in conn.execute("PRAGMA table_info(notes)")}
-        for name, kind in (("photo", "TEXT"), ("photo_ratio", "REAL")):
+        for name, kind in (("photo", "TEXT"), ("photo_ratio", "REAL"), ("sticker_status", "TEXT"),
+                           ("sticker_attempts", "INTEGER NOT NULL DEFAULT 0"), ("sticker_claimed", "REAL")):
             if name not in columns:
                 try:
                     conn.execute(f"ALTER TABLE notes ADD COLUMN {name} {kind}")
@@ -86,6 +89,7 @@ def ensure_db():
             except OSError:
                 pass
     _ready = True
+    postit_stickers.start_worker(db, PHOTO_DIR)
 
 
 @bp.before_request
@@ -106,6 +110,8 @@ def note_dict(row):
         "createdAt": row["created_at"],
         "photo": row["photo"],
         "photoRatio": row["photo_ratio"],  # width / height: below 1 = portrait (e.g. 0.56 for 9:16)
+        # die-cut sticker made by ComfyUI after the upload: None (no photo / feature off), pending, done, failed
+        "stickerStatus": row["sticker_status"],
     }
 
 
@@ -148,6 +154,11 @@ def remove_photos(names):
         for suffix, _, _ in PHOTO_SIZES:
             try:
                 os.remove(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"))
+            except OSError:
+                pass
+        for thumb in (False, True):
+            try:
+                os.remove(postit_stickers.sticker_path(PHOTO_DIR, name, thumb))
             except OSError:
                 pass
 
@@ -244,8 +255,8 @@ def create_note():
     try:
         with db() as conn:
             cur = conn.execute(
-                "INSERT INTO notes (author, text, color, sticker, created_at, photo, photo_ratio) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (author, text, color, sticker, int(now), photo, ratio),
+                "INSERT INTO notes (author, text, color, sticker, created_at, photo, photo_ratio, sticker_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (author, text, color, sticker, int(now), photo, ratio, "pending" if photo and postit_stickers.COMFYUI_URL else None),
             )
             row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
     except Exception:
@@ -266,8 +277,10 @@ def get_photo(filename):
         if row:
             day = time.strftime("%Y-%m-%d", time.localtime(row["created_at"]))
             name = f"post-it-{row['author']}-{day}"
-        return send_from_directory(PHOTO_DIR, filename, mimetype="image/jpeg", as_attachment=True, download_name=f"{name}.jpg")
-    response = send_from_directory(PHOTO_DIR, filename, mimetype="image/jpeg")
+        png = filename.endswith(".png")
+        return send_from_directory(PHOTO_DIR, filename, mimetype="image/png" if png else "image/jpeg", as_attachment=True,
+                                   download_name=f"{name}{'-sticker.png' if png else '.jpg'}")
+    response = send_from_directory(PHOTO_DIR, filename, mimetype="image/png" if filename.endswith(".png") else "image/jpeg")
     response.headers["Cache-Control"] = "public, max-age=604800, immutable"  # a file never changes
     return response
 
