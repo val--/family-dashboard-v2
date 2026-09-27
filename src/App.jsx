@@ -13,6 +13,8 @@ import { usePrinter } from './hooks/usePrinter'
 import { useWeather } from './hooks/useWeather'
 import { useIdle } from './hooks/useIdle'
 import { useCalendar } from './hooks/useCalendar'
+import { useSettings } from './hooks/useSettings'
+import Settings from './components/Settings'
 import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
@@ -35,15 +37,18 @@ function useDevicesIndicator() {
 // Sorties widget is hidden for now; flip to true to bring it back
 const SHOW_SORTIES = false
 
-// Screensaver after 5 minutes without touch; ?idle=<seconds> overrides it (handy to preview)
-const IDLE_SECONDS = Number(new URLSearchParams(window.location.search).get('idle')) || 5 * 60
+// Screensaver delay comes from the Settings screen; ?idle=<seconds> overrides it (handy to preview)
+const IDLE_OVERRIDE_SECONDS = Number(new URLSearchParams(window.location.search).get('idle')) || null
 
 function App() {
   const devicesIndicator = useDevicesIndicator()
   const weather = useWeather()
-  const { idle, wake, sleep } = useIdle(IDLE_SECONDS * 1000)
-  const calendar = useCalendar() // for the screensaver's look at today / tomorrow
+  const { settings, update: updateSettings, error: settingsError } = useSettings()
+  const [showSettings, setShowSettings] = useState(false)
+  const idleMs = IDLE_OVERRIDE_SECONDS ? IDLE_OVERRIDE_SECONDS * 1000 : settings.idleMinutes * 60 * 1000 // 0 = never
+  const { idle, wake, sleep } = useIdle(idleMs)
   useAutoReload(idle)
+  const calendar = useCalendar() // for the screensaver's look at today / tomorrow
   const postits = usePostits()
   const stickerViews = useStickerViews()
   const [activeTab, setActiveTab] = useState('')
@@ -73,6 +78,16 @@ function App() {
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              aria-label="Paramètres"
+              className="w-10 h-10 flex items-center justify-center text-white/50 active:text-white"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </button>
             {/* Full reload: picks up new builds and frees browser memory */}
@@ -107,6 +122,15 @@ function App() {
         </WidgetCarousel>
       </div>
 
+      {showSettings && (
+        <Settings
+          settings={settings}
+          onChange={updateSettings}
+          error={settingsError}
+          overridden={Boolean(IDLE_OVERRIDE_SECONDS)}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
       {idle && <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} />}
     </div>
   )

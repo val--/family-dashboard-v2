@@ -24,6 +24,10 @@ from recalbox import bp as recalbox_bp  # noqa: E402
 import trivia  # noqa: E402
 
 app.register_blueprint(recalbox_bp)
+
+from settings import bp as settings_bp  # noqa: E402
+
+app.register_blueprint(settings_bp)
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024  # photo uploads
 
 # -- Printer config --

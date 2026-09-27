@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'touchstart', 'keydown', 'wheel']
 
-// `idle` becomes true after `timeoutMs` without any user activity.
+// `idle` becomes true after `timeoutMs` without any user activity (0 or null: never).
 // While idle, activity is ignored on purpose: only wake() (a tap on the screensaver) ends it,
 // so the wake-up tap can never land on a widget underneath.
 export function useIdle(timeoutMs) {
@@ -17,6 +17,10 @@ export function useIdle(timeoutMs) {
     }
     ACTIVITY_EVENTS.forEach((name) => window.addEventListener(name, onActivity, { passive: true }))
 
+    if (!timeoutMs) {
+      // "never": no timer (the moon button still puts it to sleep)
+      return () => ACTIVITY_EVENTS.forEach((name) => window.removeEventListener(name, onActivity))
+    }
     const timer = setInterval(() => {
       if (!idleRef.current && Date.now() - lastActivity.current >= timeoutMs) {
         idleRef.current = true

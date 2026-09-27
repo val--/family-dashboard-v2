@@ -48,6 +48,7 @@ LINK=()
 [ -d "$BACKUP_DIR/latest/photos" ] && LINK=(--link-dest="$BACKUP_DIR/latest/photos")
 rsync -rlt --delete "${LINK[@]}" "$DATA/photos/" "$BACKUP_DIR/$TODAY/photos/"
 cp "$DB_COPY" "$BACKUP_DIR/$TODAY/postits.db"
+[ -f "$DATA/settings.json" ] && cp "$DATA/settings.json" "$BACKUP_DIR/$TODAY/settings.json"
 ln -sfn "$TODAY" "$BACKUP_DIR/latest"
 
 # 3. Keep the newest $KEEP_DAYS snapshots
