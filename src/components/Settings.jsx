@@ -8,6 +8,20 @@ const IDLE_CHOICES = [
   { value: 0, label: 'Jamais' },
 ]
 
+const POSTIT_SECONDS_CHOICES = [
+  { value: 15, label: '15 s' },
+  { value: 30, label: '30 s' },
+  { value: 60, label: '1 min' },
+  { value: 300, label: '5 min' },
+  { value: 0, label: 'Toujours' },
+]
+
+const POSTIT_RANGE_CHOICES = [
+  { value: 'today', label: "Du jour" },
+  { value: '3days', label: '3 derniers jours' },
+  { value: 'all', label: 'Tous' },
+]
+
 function Choice({ options, value, onChange }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -62,6 +76,27 @@ export default function Settings({ settings, onChange, error, overridden, onClos
             }
           >
             <Choice options={IDLE_CHOICES} value={settings.idleMinutes} onChange={(idleMinutes) => onChange({ idleMinutes })} />
+          </Section>
+          <Section title="Post-it sur l'écran de veille">
+            <div className="text-sm text-white/60">
+              {settings.postitSeconds === 0
+                ? "Toujours : le post-it reste affiché, on change avec les flèches (un nouveau post-it s'affiche quand même)."
+                : "Durée d'affichage de chaque post-it (le dernier posté reste deux fois plus longtemps)."}
+            </div>
+            <div className="mt-2">
+              <Choice options={POSTIT_SECONDS_CHOICES} value={settings.postitSeconds} onChange={(postitSeconds) => onChange({ postitSeconds })} />
+            </div>
+            <div className="mt-4 text-sm text-white/60">Post-it qui défilent</div>
+            <div className="mt-2">
+              <Choice options={POSTIT_RANGE_CHOICES} value={settings.postitRange} onChange={(postitRange) => onChange({ postitRange })} />
+            </div>
+            <div className="mt-2 text-xs text-white/45">
+              {settings.postitRange === 'today'
+                ? "Ceux d'aujourd'hui, sinon ceux d'hier."
+                : settings.postitRange === '3days'
+                  ? "Ceux d'aujourd'hui et des deux jours précédents."
+                  : 'Tous les post-it du mur.'}
+            </div>
           </Section>
           {error && <p className="rounded-xl bg-red-500/15 px-4 py-2 text-sm text-red-300">{error}</p>}
         </div>

@@ -16,6 +16,8 @@ SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 # key -> (default, allowed values)
 SCHEMA = {
     "idleMinutes": (5, [1, 5, 15, 60, 0]),  # screensaver delay; 0 = never
+    "postitSeconds": (30, [15, 30, 60, 300, 0]),  # time per post-it on the screensaver (latest: twice as long); 0 = stays
+    "postitRange": ("today", ["today", "3days", "all"]),  # which post-its go round on the screensaver
 }
 
 _lock = threading.Lock()

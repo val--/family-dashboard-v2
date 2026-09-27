@@ -131,7 +131,7 @@ function App() {
           onClose={() => setShowSettings(false)}
         />
       )}
-      {idle && <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} />}
+      {idle && <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} postitSeconds={settings.postitSeconds} postitRange={settings.postitRange} />}
     </div>
   )
 }

@@ -6,8 +6,6 @@ import Stamp from './postit/Stamp'
 import QrCode from './QrCode'
 import { POSTIT_URL } from './postit/links'
 
-const NOTE_ROTATE_MS = 30 * 1000
-const LATEST_NOTE_MS = 60 * 1000 // the latest posted note stays longer
 const INVITE_AFTER_SECONDS = 2 * 86400 // nothing posted for this long: a big QR code invites to post
 const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this long
 
@@ -56,7 +54,11 @@ export function agendaPreview(events, now = new Date()) {
 
 // Minimal night-stand screen: big clock, date, current weather and one post-it, on pure black.
 // A post-it with a photo gets the stage instead: clock on the left, the note big on the right.
-export default function Screensaver({ weather, events, notes = [], hasNew = false, onWake, onOpenNote, stickerViews }) {
+export default function Screensaver({
+  weather, events, notes = [], hasNew = false, onWake, onOpenNote, stickerViews,
+  postitSeconds = 30, // from the Settings screen: time per post-it (the latest one: twice as long); 0 = stays
+  postitRange = 'today', // 'today' (else yesterday), '3days' or 'all'
+}) {
   const { time, date } = useClock()
   const current = weather?.current
   const [index, setIndex] = useState(0)
@@ -75,16 +77,23 @@ export default function Screensaver({ weather, events, notes = [], hasNew = fals
   const latestId = chronological[0]?.id
   const nowSeconds = Date.now() / 1000
 
-  // Only today's notes go round; if none were posted today, yesterday's; otherwise just the clock.
-  // (Computed on every render: the clock ticks each second, so this follows midnight by itself.)
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const yesterdayStart = new Date(todayStart)
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1) // not "minus 24 h": DST days are 23 or 25 h long
-  const today = chronological.filter((n) => n.createdAt >= todayStart / 1000)
-  const pool = today.length > 0
-    ? today
-    : chronological.filter((n) => n.createdAt >= yesterdayStart / 1000 && n.createdAt < todayStart / 1000)
+  // Which notes go round (Settings): today's (else yesterday's), the last 3 days, or all of them.
+  // Days are calendar days. Computed on every render: the clock ticks each second, so this follows midnight.
+  const dayStart = (daysAgo) => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    d.setDate(d.getDate() - daysAgo) // not "minus 24 h": DST days are 23 or 25 h long
+    return d / 1000
+  }
+  let pool
+  if (postitRange === 'all') {
+    pool = chronological
+  } else if (postitRange === '3days') {
+    pool = chronological.filter((n) => n.createdAt >= dayStart(2))
+  } else {
+    const today = chronological.filter((n) => n.createdAt >= dayStart(0))
+    pool = today.length > 0 ? today : chronological.filter((n) => n.createdAt >= dayStart(1) && n.createdAt < dayStart(0))
+  }
 
   const fresh = hasNew ? pool.filter((n) => nowSeconds - n.createdAt < FRESH_SECONDS) : []
   const rotation = fresh.length > 0 ? fresh : pool
@@ -102,17 +111,17 @@ export default function Screensaver({ weather, events, notes = [], hasNew = fals
   // The latest posted note wears a stamp (only meaningful when there are other notes). It replaces the
   // "nouveau" pill on that note; the other fresh notes keep the pill.
   const isLatest = Boolean(note) && note.id === latestId && chronological.length > 1
-  const duration = isLatest ? LATEST_NOTE_MS : NOTE_ROTATE_MS
+  const duration = postitSeconds * 1000 * (isLatest ? 2 : 1)
 
   // Re-armed whenever the note changes, by itself or by hand: the note you just moved to gets its full time
   useEffect(() => {
-    if (count <= 1) return
+    if (count <= 1 || !postitSeconds) return // 0 = 'always': no automatic change, arrows only
     const timer = setTimeout(() => setIndex((i) => (i + 1) % count), duration) // wraps back to the newest
     return () => clearTimeout(timer)
   }, [count, index, duration])
 
   // Thin bar under the note that empties until the next one (restarted with the timer through its key)
-  const countdown = browsable && (
+  const countdown = browsable && postitSeconds > 0 && (
     <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/15">
       <div
         key={`${note.id}-${index}-${count}`}
