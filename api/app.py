@@ -21,6 +21,7 @@ from postits import bp as postits_bp  # noqa: E402
 app.register_blueprint(postits_bp)
 
 from recalbox import bp as recalbox_bp  # noqa: E402
+import trivia  # noqa: E402
 
 app.register_blueprint(recalbox_bp)
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024  # photo uploads
@@ -414,7 +415,14 @@ def system_status():
 #  Calendar
 # ========================
 
+GOOGLE_TIMEOUT = 10  # seconds, for every connection to Google (token refresh included)
+CALENDAR_CACHE_SECONDS = 5 * 60
+_calendar_cache = {"at": 0.0, "events": None}
+
+
 def get_calendar_service():
+    import google_auth_httplib2
+    import httplib2
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
 
@@ -422,7 +430,34 @@ def get_calendar_service():
         CREDENTIALS_PATH,
         scopes=["https://www.googleapis.com/auth/calendar.readonly"],
     )
-    return build("calendar", "v3", credentials=credentials)
+    # Without an explicit timeout httplib2 can wait forever on a stalled connection, until gunicorn kills
+    # the worker. The authorized http is what the client uses for the token refresh too.
+    http = google_auth_httplib2.AuthorizedHttp(credentials, http=httplib2.Http(timeout=GOOGLE_TIMEOUT))
+    return build("calendar", "v3", http=http, cache_discovery=False)
+
+
+def fetch_calendar_events():
+    service = get_calendar_service()
+    now = datetime.now(timezone.utc)
+    result = service.events().list(
+        calendarId=CALENDAR_ID,
+        timeMin=now.isoformat(),
+        timeMax=(now + timedelta(days=365)).isoformat(),
+        singleEvents=True,
+        orderBy="startTime",
+        maxResults=250,
+    ).execute(num_retries=1)
+
+    events = []
+    for item in result.get("items", []):
+        events.append({
+            "title": item.get("summary", "Sans titre"),
+            "start": item["start"].get("dateTime", item["start"].get("date", "")),
+            "end": item["end"].get("dateTime", item["end"].get("date", "")),
+            "allDay": "date" in item["start"],
+            "location": item.get("location"),
+        })
+    return events
 
 
 @app.route("/api/calendar")
@@ -430,39 +465,20 @@ def calendar_events():
     if not CALENDAR_ID:
         return jsonify({"error": "CALENDAR_ID not configured"}), 500
 
+    # Recent answer: no call to Google at all
+    if _calendar_cache["events"] is not None and time.time() - _calendar_cache["at"] < CALENDAR_CACHE_SECONDS:
+        return jsonify({"events": _calendar_cache["events"]})
+
     try:
-        service = get_calendar_service()
-        now = datetime.now(timezone.utc)
-        time_max = now + timedelta(days=365)
-
-        result = service.events().list(
-            calendarId=CALENDAR_ID,
-            timeMin=now.isoformat(),
-            timeMax=time_max.isoformat(),
-            singleEvents=True,
-            orderBy="startTime",
-            maxResults=250,
-        ).execute()
-
-        events = []
-        for item in result.get("items", []):
-            start = item["start"].get("dateTime", item["start"].get("date", ""))
-            end = item["end"].get("dateTime", item["end"].get("date", ""))
-            is_all_day = "date" in item["start"]
-
-            events.append({
-                "title": item.get("summary", "Sans titre"),
-                "start": start,
-                "end": end,
-                "allDay": is_all_day,
-                "location": item.get("location"),
-            })
-
+        events = fetch_calendar_events()
+        _calendar_cache.update(at=time.time(), events=events)
         return jsonify({"events": events})
-
     except FileNotFoundError:
         return jsonify({"error": "Service account credentials not found"}), 500
     except Exception as e:
+        # Google slow or unreachable: keep showing the last known events rather than an empty agenda
+        if _calendar_cache["events"] is not None:
+            return jsonify({"events": _calendar_cache["events"], "stale": True})
         return jsonify({"error": str(e)}), 500
 
 
@@ -1028,10 +1044,6 @@ def sonarr_status():
 #  Trivia (Gemini)
 # ========================
 
-_trivia_cache = {"movie": None, "text": None, "error_until": 0, "generated_at": 0}
-
-GEMINI_COOLDOWN = 120  # seconds to wait after a failed Gemini call
-TRIVIA_TTL = 30 * 60  # regenerate trivia every 30 minutes even for the same movie
 
 
 @app.route("/api/plex/trivia")
@@ -1074,63 +1086,15 @@ def plex_trivia():
         # The section listing carries Director tags directly — no extra fetch.
         directors = [d.get("tag") for d in last_watched.findall("Director")]
 
-        movie_key = f"{movie_title} ({movie_year})"
-
-        # Return cache if same movie and not expired
-        cache_age = time.time() - _trivia_cache["generated_at"]
-        if _trivia_cache["movie"] == movie_key and _trivia_cache["text"] and cache_age < TRIVIA_TTL:
-            return jsonify({
-                "text": _trivia_cache["text"],
-                "movie": _trivia_cache["movie"],
-            })
-
-        # Rate-limit: don't retry Gemini too soon after an error
-        if time.time() < _trivia_cache["error_until"]:
-            return jsonify({"text": None, "movie": movie_key})
-
-        # Call Gemini API
-        director_hint = f", réalisé par {', '.join(directors)}" if directors else ""
-        prompt = (
-            f"Recherche les \"secrets de tournage\" et \"trivia\" du film \"{movie_title}\" ({movie_year}{director_hint}). "
-            f"Cherche en priorité sur allocine.fr (section secrets de tournage), puis imdb.com (trivia), puis wikipedia. "
-            f"Extrais uniquement des faits sourcés et vérifiables trouvés sur ces sites. "
-            f"Ne génère AUCUNE information de toi-même. Si tu ne trouves rien, réponds juste \"Aucune anecdote trouvée\". "
-            f"Privilégie les vraies anecdotes de coulisses : lieux de tournage insolites, caméos cachés, accidents sur le plateau, "
-            f"entraînements ou régimes hors-norme des acteurs, improvisations, scènes coupées marquantes, clins d'œil cachés. "
-            f"ÉVITE les données purement factuelles comme le budget, le box-office, la durée du film, les dates de sortie ou le résumé du scénario. "
-            f"FORMAT OBLIGATOIRE : une seule ligne, chaque anecdote DOIT être séparée par le caractère ★. "
-            f"Exemple de format attendu : \"Première anecdote ici ★ Deuxième anecdote ici ★ Troisième anecdote ici\" "
-            f"Ton : conversationnel et concis, pas de superlatifs ni d'exclamations. En français. "
-            f"Pas de titre, pas de préambule, pas de numérotation, pas de liens, pas d'URLs, juste du texte. "
-            f"Commence directement par la première anecdote."
-        )
-
-        gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-        body = jsonlib.dumps({
-            "contents": [{"parts": [{"text": prompt}]}],
-            "tools": [{"google_search": {}}],
-        })
-        req = urllib.request.Request(
-            gemini_url,
-            data=body.encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = jsonlib.loads(resp.read())
-
-        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-        # Update cache
-        _trivia_cache["movie"] = movie_key
-        _trivia_cache["text"] = text
-        _trivia_cache["error_until"] = 0
-        _trivia_cache["generated_at"] = time.time()
-
-        return jsonify({"text": text, "movie": movie_key})
+        # Written and fact-checked by Gemini in the background (see trivia.py): this never waits on it
+        return jsonify(trivia.trivia_for({
+            "key": f"{movie_title} ({movie_year})",
+            "title": movie_title,
+            "year": movie_year,
+            "directors": directors,
+        }))
 
     except Exception as e:
-        _trivia_cache["error_until"] = time.time() + GEMINI_COOLDOWN
         return jsonify({"error": str(e)}), 500
 
 
@@ -1177,7 +1141,7 @@ def fetch_nantes_records(date_from, date_to):
             f"&where={where}&order_by=date%20ASC"
         )
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:  # below gunicorn's 30 s
             page = jsonlib.loads(resp.read()).get("results", [])
 
         records.extend(page)

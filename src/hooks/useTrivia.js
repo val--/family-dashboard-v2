@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
-const REFRESH_INTERVAL = 10 * 60 * 1000 // 10 minutes
+const REFRESH_INTERVAL = 3 * 60 * 1000 // cheap: the API only reads its cache (anecdotes are made in the background)
 const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function useTrivia() {

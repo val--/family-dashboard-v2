@@ -14,4 +14,5 @@ COPY *.py ./
 ENV CUPS_SERVER=/var/run/cups/cups.sock
 
 EXPOSE 5100
-CMD ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:5100", "--timeout", "30", "app:app"]
+# Threads: a slow outside call (Google, Gemini, the Recalbox...) no longer blocks the other requests
+CMD ["gunicorn", "--workers", "2", "--threads", "4", "--bind", "0.0.0.0:5100", "--timeout", "30", "app:app"]

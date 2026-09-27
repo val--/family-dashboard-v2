@@ -305,7 +305,7 @@ function MovieCard({ movie, onClick }) {
   )
 }
 
-function TriviaModal({ text, movie, onClose }) {
+function TriviaModal({ text, movie, verified, sources = [], onClose }) {
   const anecdotes = text.split('★').map(s => s.trim()).filter(Boolean)
 
   return createPortal(
@@ -331,6 +331,11 @@ function TriviaModal({ text, movie, onClose }) {
             </div>
           ))}
         </div>
+        {verified?.kept > 0 && (
+          <div className="shrink-0 text-center text-sm text-white/50">
+            ✓ Tirées de {sources.length ? sources.join(' et ') : 'pages de référence'}, chaque détail vérifié deux fois ({verified.kept} gardée{verified.kept > 1 ? 's' : ''} sur {verified.checked})
+          </div>
+        )}
       </div>
     </div>,
     document.body,
@@ -447,7 +452,7 @@ function Plex() {
         <DownloadDetailModal movie={selectedDownload} onClose={() => setSelectedDownload(null)} />
       )}
       {showTrivia && trivia?.text && (
-        <TriviaModal text={trivia.text} movie={trivia.movie} onClose={() => setShowTrivia(false)} />
+        <TriviaModal text={trivia.text} movie={trivia.movie} verified={trivia.verified} sources={trivia.sources} onClose={() => setShowTrivia(false)} />
       )}
       {showSearch && (
         <MovieSearch onClose={() => setShowSearch(false)} />
