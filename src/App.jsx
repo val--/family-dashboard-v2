@@ -15,6 +15,7 @@ import { useIdle } from './hooks/useIdle'
 import { useCalendar } from './hooks/useCalendar'
 import { useSettings } from './hooks/useSettings'
 import Settings from './components/Settings'
+import ErrorBoundary from './components/ErrorBoundary'
 import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
@@ -53,6 +54,7 @@ function App() {
   const stickerViews = useStickerViews()
   const [activeTab, setActiveTab] = useState('')
   const [postitRequest, setPostitRequest] = useState(null)
+  const [reselected, setReselected] = useState(null) // { title } when the active tab is tapped again
 
   function openPostitFromScreensaver(note) {
     wake()
@@ -67,9 +69,13 @@ function App() {
     >
       {/* Header: clock left, weather and system buttons right */}
       <header className="flex items-center justify-between gap-6">
-        <Clock />
+        <ErrorBoundary name="horloge" fallback={null}>
+          <Clock />
+        </ErrorBoundary>
         <div className="flex items-center gap-4">
-          <Weather weather={weather} />
+          <ErrorBoundary name="météo" fallback={null}>
+            <Weather weather={weather} />
+          </ErrorBoundary>
           <div className="flex items-center -mr-2">
             <button
               onClick={sleep}
@@ -112,9 +118,10 @@ function App() {
           indicators={[null, hasNewPostit ? 'sky' : null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
           onActiveChange={setActiveTab}
           goTo={postitRequest}
+          onReselect={(title) => setReselected({ title })}
         >
           <Calendar />
-          <PostIts postits={postits} openRequest={postitRequest} stickerViews={stickerViews} />
+          <PostIts postits={postits} openRequest={postitRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} />
           {SHOW_SORTIES && <Sorties />}
           <Plex />
           <Shows />
@@ -123,6 +130,7 @@ function App() {
       </div>
 
       {showSettings && (
+        <ErrorBoundary name="paramètres" fallback={null}>
         <Settings
           settings={settings}
           onChange={updateSettings}
@@ -130,8 +138,14 @@ function App() {
           overridden={Boolean(IDLE_OVERRIDE_SECONDS)}
           onClose={() => setShowSettings(false)}
         />
+        </ErrorBoundary>
       )}
-      {idle && <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} postitSeconds={settings.postitSeconds} postitRange={settings.postitRange} />}
+      {idle && (
+        // if the screensaver itself fails: a black screen that still wakes up on touch
+        <ErrorBoundary name="écran de veille" fallback={<div onClick={wake} className="visible fixed inset-0 z-[100] bg-black" />}>
+          <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} postitSeconds={settings.postitSeconds} postitRange={settings.postitRange} />
+        </ErrorBoundary>
+      )}
     </div>
   )
 }

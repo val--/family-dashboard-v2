@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, Children } from 'react'
+import ErrorBoundary from './ErrorBoundary'
 
 const plain = (text) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
@@ -9,7 +10,7 @@ function initialTab(titles) {
   return index >= 0 ? index : 0
 }
 
-export default function WidgetCarousel({ children, titles = [], indicators = [], onActiveChange, goTo }) {
+export default function WidgetCarousel({ children, titles = [], indicators = [], onActiveChange, goTo, onReselect }) {
   const [active, setActive] = useState(() => initialTab(titles))
 
   // goTo = { title }: a new object asks the carousel to switch to that tab (e.g. from the screensaver)
@@ -61,7 +62,8 @@ export default function WidgetCarousel({ children, titles = [], indicators = [],
           {titles.map((title, i) => (
             <button
               key={i}
-              onClick={() => setActive(i)}
+              // tapping the tab you're already on: the widget goes back to its start (e.g. first page)
+              onClick={() => (i === active ? onReselect?.(titles[i]) : setActive(i))}
               className={`relative py-1.5 text-lg border-b-2 ${
                 i === active ? 'text-white border-sky-400' : 'text-white/60 border-transparent'
               }`}
@@ -91,7 +93,7 @@ export default function WidgetCarousel({ children, titles = [], indicators = [],
               key={i}
               className={`w-full shrink-0 h-full ${i === active ? '' : '[&_*]:[animation-play-state:paused]'}`}
             >
-              {item}
+              <ErrorBoundary name={titles[i]}>{item}</ErrorBoundary>
             </div>
           ))}
         </div>

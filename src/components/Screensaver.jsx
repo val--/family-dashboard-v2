@@ -60,7 +60,8 @@ export default function Screensaver({
   postitRange = 'today', // 'today' (else yesterday), '3days' or 'all'
 }) {
   const { time, date } = useClock()
-  const current = weather?.current
+  // Weather only when it's complete: a partial answer must not take the screensaver down
+  const current = weather?.current?.main && weather.current.weather?.[0] ? weather.current : null
   const [index, setIndex] = useState(0)
 
   useEffect(() => {

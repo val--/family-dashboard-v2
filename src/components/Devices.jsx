@@ -3,6 +3,7 @@ import { usePrinter } from '../hooks/usePrinter'
 import { useVpn } from '../hooks/useVpn'
 import { useSystem } from '../hooks/useSystem'
 import { useRecalbox } from '../hooks/useRecalbox'
+import ErrorBoundary from './ErrorBoundary'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
@@ -322,12 +323,20 @@ export default function Devices() {
 
   return (
     <div className="h-full overflow-y-auto flex flex-col gap-3">
-      {!vpnLoading && !vpnError && vpn && <VpnCard vpn={vpn} />}
-      {!systemLoading && !systemError && system && <ServerCard system={system} />}
-      {showRecalbox && <RecalboxCard recalbox={recalbox} />}
-      {!printerLoading && !printerError && printer && (
-        <PrinterCard printer={printer} refresh={refresh} />
-      )}
+      <ErrorBoundary name="carte VPN" label="VPN : indisponible pour le moment">
+        {!vpnLoading && !vpnError && vpn && <VpnCard vpn={vpn} />}
+      </ErrorBoundary>
+      <ErrorBoundary name="carte serveur" label="Serveur : indisponible pour le moment">
+        {!systemLoading && !systemError && system && <ServerCard system={system} />}
+      </ErrorBoundary>
+      <ErrorBoundary name="carte Recalbox" label="Recalbox : indisponible pour le moment">
+        {showRecalbox && <RecalboxCard recalbox={recalbox} />}
+      </ErrorBoundary>
+      <ErrorBoundary name="carte imprimante" label="Imprimante : indisponible pour le moment">
+        {!printerLoading && !printerError && printer && (
+          <PrinterCard printer={printer} refresh={refresh} />
+        )}
+      </ErrorBoundary>
     </div>
   )
 }
