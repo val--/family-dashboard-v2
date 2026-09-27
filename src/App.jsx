@@ -12,6 +12,7 @@ import { useVpn } from './hooks/useVpn'
 import { usePrinter } from './hooks/usePrinter'
 import { useWeather } from './hooks/useWeather'
 import { useIdle } from './hooks/useIdle'
+import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
 import Screensaver from './components/Screensaver'
@@ -40,6 +41,7 @@ function App() {
   const devicesIndicator = useDevicesIndicator()
   const weather = useWeather()
   const { idle, wake, sleep } = useIdle(IDLE_SECONDS * 1000)
+  useAutoReload(idle)
   const postits = usePostits()
   const stickerViews = useStickerViews()
   const [activeTab, setActiveTab] = useState('')
