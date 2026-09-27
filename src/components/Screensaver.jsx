@@ -3,9 +3,12 @@ import { useClock } from '../hooks/useClock'
 import PostitNote from './postit/Note'
 import ArrowButton from './ArrowButton'
 import Stamp from './postit/Stamp'
+import QrCode from './QrCode'
+import { POSTIT_URL } from './postit/links'
 
 const NOTE_ROTATE_MS = 30 * 1000
 const LATEST_NOTE_MS = 60 * 1000 // the latest posted note stays longer
+const INVITE_AFTER_SECONDS = 2 * 86400 // nothing posted for this long: a big QR code invites to post
 const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this long
 
 // Minimal night-stand screen: big clock, date, current weather and one post-it, on pure black.
@@ -93,6 +96,11 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
     )
   const withPhoto = Boolean(note?.photo)
 
+  // Nothing new for 2 days (or no post-it at all): instead of the lone clock, a big QR code to the phone page
+  const latestAt = chronological[0]?.createdAt
+  const quietDays = latestAt ? Math.floor((nowSeconds - latestAt) / 86400) : null
+  const invite = pool.length === 0 && (latestAt == null || nowSeconds - latestAt > INVITE_AFTER_SECONDS)
+
   // A tap on the note opens it (the dashboard wakes up on the Post-it tab); anywhere else just wakes
   function openNote(event) {
     if (!onOpenNote) return
@@ -123,7 +131,22 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
       onClick={onWake}
       className="visible fixed inset-0 z-[100] bg-black flex items-center justify-center select-none"
     >
-      {withPhoto ? (
+      {invite ? (
+        <div className="flex items-center justify-center gap-10 px-4">
+          <div className="flex min-w-0 flex-col items-center">
+            <div className="text-[7rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>
+            <div className="mt-3 text-xl capitalize text-white/50">{date}</div>
+            {weatherLine}
+          </div>
+          <div className="flex shrink-0 flex-col items-center gap-3">
+            <QrCode value={POSTIT_URL} className="h-[min(56vh,15rem)] aspect-square rounded-xl" />
+            <div className="max-w-[17rem] text-center font-hand text-2xl font-semibold leading-tight text-white/85">
+              {latestAt == null ? 'Colle le premier post-it !' : `Rien de neuf depuis ${quietDays} jours… Colle une photo !`}
+            </div>
+            <div className="text-sm text-white/45">Scanne avec ton téléphone (Wi‑Fi de la maison)</div>
+          </div>
+        </div>
+      ) : withPhoto ? (
         <div className="flex items-center justify-center gap-8 px-4">
           <div className="flex min-w-0 flex-col items-center">
             <div className="text-[7rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>

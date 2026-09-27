@@ -4,12 +4,11 @@ import PostitNote, { tilt } from './postit/Note'
 import { timeAgo } from './postit/theme'
 import { photoDownloadUrl, photoUrl, stickerDownloadUrl, stickerUrl } from './postit/photos'
 import QrCode from './QrCode'
+import { POSTIT_URL } from './postit/links'
 import ArrowButton from './ArrowButton'
 
 const CELLS_PER_PAGE = 6 // 3 columns x 2 rows, the QR tile takes the first cell of the first page
 
-// Where the phones go. Defaults to this very site, so it works from whatever address the kiosk uses.
-const POSTIT_URL = import.meta.env.VITE_POSTIT_URL || `${window.location.origin}/postit`
 
 function Modal({ onClose, children }) {
   return createPortal(
