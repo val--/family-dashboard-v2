@@ -12,6 +12,7 @@ import { useVpn } from './hooks/useVpn'
 import { usePrinter } from './hooks/usePrinter'
 import { useWeather } from './hooks/useWeather'
 import { useIdle } from './hooks/useIdle'
+import { useCalendar } from './hooks/useCalendar'
 import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
@@ -41,6 +42,7 @@ function App() {
   const devicesIndicator = useDevicesIndicator()
   const weather = useWeather()
   const { idle, wake, sleep } = useIdle(IDLE_SECONDS * 1000)
+  const calendar = useCalendar() // for the screensaver's look at today / tomorrow
   useAutoReload(idle)
   const postits = usePostits()
   const stickerViews = useStickerViews()
@@ -105,7 +107,7 @@ function App() {
         </WidgetCarousel>
       </div>
 
-      {idle && <Screensaver weather={weather} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} />}
+      {idle && <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} />}
     </div>
   )
 }

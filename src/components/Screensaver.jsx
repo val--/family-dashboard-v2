@@ -11,9 +11,52 @@ const LATEST_NOTE_MS = 60 * 1000 // the latest posted note stays longer
 const INVITE_AFTER_SECONDS = 2 * 86400 // nothing posted for this long: a big QR code invites to post
 const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this long
 
+// ---- A discreet look at what's coming: today's remaining events, else tomorrow's, else the day after's
+const MAX_EVENTS = 2
+
+function eventStart(event) {
+  if (event.allDay) {
+    const [y, m, d] = event.start.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  return new Date(event.start)
+}
+
+function eventEnd(event) {
+  if (event.allDay) {
+    const [y, m, d] = event.end.split('-').map(Number) // exclusive: the day after the last one
+    return new Date(y, m - 1, d)
+  }
+  return new Date(event.end)
+}
+
+export function agendaPreview(events, now = new Date()) {
+  if (!events?.length) return null
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+  const dayAfter = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2)
+  const dayAfterEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3)
+  const byStart = [...events].sort((a, b) => eventStart(a) - eventStart(b))
+  const startingOn = (from, to) => byStart.filter((e) => eventStart(e) >= from && eventStart(e) < to)
+  // today: not over yet (ongoing ones and all-day ones included); then the first of the next two days with something
+  const days = [
+    ["Aujourd'hui", byStart.filter((e) => eventStart(e) < tomorrow && eventEnd(e) > now)],
+    ['Demain', startingOn(tomorrow, dayAfter)],
+    ['Après-demain', startingOn(dayAfter, dayAfterEnd)],
+  ]
+  const [label, list] = days.find(([, found]) => found.length) || [null, []]
+  if (!label) return null
+  const items = list.slice(0, MAX_EVENTS).map((e) => {
+    const start = eventStart(e)
+    const timed = !e.allDay && start >= today // an event started on an earlier day shows no time
+    return timed ? `${start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} ${e.title}` : e.title
+  })
+  return { label, items, more: list.length - items.length }
+}
+
 // Minimal night-stand screen: big clock, date, current weather and one post-it, on pure black.
 // A post-it with a photo gets the stage instead: clock on the left, the note big on the right.
-export default function Screensaver({ weather, notes = [], hasNew = false, onWake, onOpenNote, stickerViews }) {
+export default function Screensaver({ weather, events, notes = [], hasNew = false, onWake, onOpenNote, stickerViews }) {
   const { time, date } = useClock()
   const current = weather?.current
   const [index, setIndex] = useState(0)
@@ -108,6 +151,20 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
     onOpenNote(note)
   }
 
+  const agenda = agendaPreview(events)
+  const agendaLine = agenda && (
+    <div className="mt-3 flex max-w-[28rem] items-center gap-2 text-base text-white/50">
+      <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M3 10h18M8 3v4M16 3v4" />
+      </svg>
+      <span className="truncate">
+        <span className="text-white/70">{agenda.label}</span> · {agenda.items.join(' · ')}
+        {agenda.more > 0 && ` · +${agenda.more}`}
+      </span>
+    </div>
+  )
+
   const weatherLine = current && (
     <div className={`flex items-center gap-3 text-white/60 ${withPhoto ? 'mt-4' : 'mt-6'}`}>
       <img
@@ -137,6 +194,7 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
             <div className="text-[7rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>
             <div className="mt-3 text-xl capitalize text-white/50">{date}</div>
             {weatherLine}
+            {agendaLine}
           </div>
           <div className="flex shrink-0 flex-col items-center gap-3">
             <QrCode value={POSTIT_URL} className="h-[min(56vh,15rem)] aspect-square rounded-xl" />
@@ -152,6 +210,7 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
             <div className="text-[7rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>
             <div className="mt-3 text-xl capitalize text-white/50">{date}</div>
             {weatherLine}
+            {agendaLine}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {arrows('prev')}
@@ -171,6 +230,7 @@ export default function Screensaver({ weather, notes = [], hasNew = false, onWak
           <div className="text-[9rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>
           <div className="mt-4 text-2xl capitalize text-white/50">{date}</div>
           {weatherLine}
+          {agendaLine}
           {note && (
             <div className="mt-6 flex items-center gap-1">
               {arrows('prev')}
