@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { useMovieSearch } from '../hooks/useMovieSearch'
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 
 const VirtualKeyboard = lazy(() => import('./VirtualKeyboard'))
 
@@ -53,13 +52,6 @@ function SearchStep({ onSelect }) {
     if (query.trim()) search(query)
   }, [query, search])
 
-  const { isSupported, isListening, start, stop } = useSpeechRecognition({
-    onResult: (text) => {
-      setQuery(text)
-      search(text)
-    },
-  })
-
   return (
     <div className="flex flex-col gap-5 h-full">
       <div className="flex items-center gap-4">
@@ -86,27 +78,6 @@ function SearchStep({ onSelect }) {
             &times;
           </button>
         </div>
-        {isSupported && (
-          <button
-            onClick={isListening ? stop : start}
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border ${
-              isListening
-                ? 'bg-red-500 border-red-400'
-                : 'bg-white/[0.06] border-white/10 hover:border-white/25'
-            }`}
-          >
-            {isListening ? (
-              <span className="relative flex h-4 w-4">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-white" />
-              </span>
-            ) : (
-              <svg className="w-6 h-6 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-              </svg>
-            )}
-          </button>
-        )}
         <button
           onClick={() => { handleSearch(); setShowKeyboard(false) }}
           disabled={loading}

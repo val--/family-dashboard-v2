@@ -1,3 +1,5 @@
+// Not used for now: voice search was removed from the movie search (not supported on the kiosk yet).
+
 import { useState, useRef, useCallback } from 'react'
 
 const SpeechRecognition = typeof window !== 'undefined'
