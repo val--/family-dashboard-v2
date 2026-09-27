@@ -5,6 +5,7 @@ import { useRadarr } from '../hooks/useRadarr'
 import { useTrivia } from '../hooks/useTrivia'
 import MovieSearch from './MovieSearch'
 import Poster from './Poster'
+import QrCode from './QrCode'
 
 const MAX_PREVIEW_MOVIES = 4
 const DOWNLOAD_ROTATE_INTERVAL = 5000
@@ -305,8 +306,12 @@ function MovieCard({ movie, onClick }) {
   )
 }
 
-function TriviaModal({ text, movie, verified, sources = [], onClose }) {
-  const anecdotes = text.split('★').map(s => s.trim()).filter(Boolean)
+function TriviaModal({ text, movie, items = [], onClose }) {
+  // Each anecdote with its source when the API gives them (older data: the plain ★-separated text)
+  const anecdotes = items.length
+    ? items
+    : text.split('★').map((s) => s.trim()).filter(Boolean).map((t) => ({ text: t }))
+  const [qrFor, setQrFor] = useState(null) // the source whose QR code is shown
 
   return createPortal(
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -327,16 +332,33 @@ function TriviaModal({ text, movie, verified, sources = [], onClose }) {
           {anecdotes.map((anecdote, i) => (
             <div key={i} className="flex gap-3">
               <span className="text-amber-400 shrink-0 mt-0.5">★</span>
-              <p className="text-base text-white/70 leading-relaxed">{anecdote}</p>
+              <p className="text-base text-white/70 leading-relaxed">
+                {anecdote.text}
+                {anecdote.url && (
+                  <button
+                    onClick={() => setQrFor(qrFor?.url === anecdote.url ? null : anecdote)}
+                    className="ml-2 whitespace-nowrap text-xs text-white/35 hover:text-white/60"
+                  >
+                    — {anecdote.site} ↗
+                  </button>
+                )}
+              </p>
             </div>
           ))}
         </div>
-        {verified?.kept > 0 && (
-          <div className="shrink-0 text-center text-sm text-white/50">
-            ✓ Tirées de {sources.length ? sources.join(' et ') : 'pages de référence'}, chaque détail vérifié deux fois ({verified.kept} gardée{verified.kept > 1 ? 's' : ''} sur {verified.checked})
-          </div>
-        )}
       </div>
+      {qrFor && (
+        <div
+          onClick={() => setQrFor(null)}
+          className="absolute bottom-4 right-4 flex items-center gap-4 rounded-2xl border border-white/15 bg-neutral-900 p-4 shadow-2xl"
+        >
+          <QrCode value={qrFor.url} className="h-32 w-32 shrink-0 rounded" />
+          <div className="max-w-44 text-white">
+            <div className="text-base leading-tight">Scanne pour lire la source</div>
+            <div className="mt-1 text-sm text-white/60">{qrFor.site}</div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   )
@@ -452,7 +474,7 @@ function Plex() {
         <DownloadDetailModal movie={selectedDownload} onClose={() => setSelectedDownload(null)} />
       )}
       {showTrivia && trivia?.text && (
-        <TriviaModal text={trivia.text} movie={trivia.movie} verified={trivia.verified} sources={trivia.sources} onClose={() => setShowTrivia(false)} />
+        <TriviaModal text={trivia.text} movie={trivia.movie} items={trivia.items} onClose={() => setShowTrivia(false)} />
       )}
       {showSearch && (
         <MovieSearch onClose={() => setShowSearch(false)} />

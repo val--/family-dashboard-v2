@@ -133,13 +133,16 @@ MAX_SOURCE_CHARS = 30000  # all extracts together, to keep the prompts reasonabl
 
 
 def _wikipedia_sections(lang, title):
+    """[(text, url of that section)]"""
     pages = _wiki_api(lang, {"action": "query", "prop": "extracts", "explaintext": 1, "titles": title})
     extract = next(iter(pages["query"]["pages"].values())).get("extract", "")
+    page_url = f"https://{lang}.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}"
     sections = []
     for heading, body in re.findall(r"\n==+ ([^=]+?) ==+\n(.*?)(?=\n==|\Z)", "\n" + extract, re.S):
         body = re.sub(r"\s+", " ", body).strip()
         if USEFUL_SECTION.search(heading) and len(body) > 60:
-            sections.append(body[:2500])
+            anchor = urllib.parse.quote(heading.strip().replace(" ", "_"))
+            sections.append((body[:2500], f"{page_url}#{anchor}"))
     return sections
 
 
@@ -152,21 +155,22 @@ def find_sources(movie):
     claims, links = entity["claims"], entity.get("sitelinks", {})
     sources = []
 
-    def add(prefix, site, text):
+    def add(prefix, site, text, url):
         # a quota per source, so a long AlloCiné page doesn't crowd Wikipedia out
         if sum(x["id"][0] == prefix for x in sources) >= PER_SOURCE_LIMIT[prefix]:
             return
         if len(sources) < MAX_SOURCES and sum(len(x["text"]) for x in sources) + len(text) <= MAX_SOURCE_CHARS:
-            sources.append({"id": f"{prefix}{sum(x['id'][0] == prefix for x in sources) + 1}", "site": site, "text": text})
+            sources.append({"id": f"{prefix}{sum(x['id'][0] == prefix for x in sources) + 1}", "site": site, "text": text, "url": url})
 
     allocine_id = _wikidata_claim(claims, "P1265")
     if allocine_id:
         try:
-            page_html = _get(f"https://www.allocine.fr/film/fichefilm-{allocine_id}/secrets-tournage/").decode("utf-8", "ignore")
+            allocine_url = f"https://www.allocine.fr/film/fichefilm-{allocine_id}/secrets-tournage/"
+            page_html = _get(allocine_url).decode("utf-8", "ignore")
             for block in re.findall(r'<div class="trivia-news[^"]*".*?</div>\s*</div>', page_html, re.S):
                 text = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", block))).strip()
                 if len(text) > 40:
-                    add("A", "Allociné", text)
+                    add("A", "Allociné", text, allocine_url)
         except OSError:
             pass  # no "secrets de tournage" page, or AlloCiné unreachable: Wikipedia still counts
 
@@ -182,8 +186,8 @@ def find_sources(movie):
             continue
         site = "Wikipédia" if lang == "fr" else f"Wikipédia ({LANGUAGE_NAMES.get(lang, lang)})"
         try:
-            for text in _wikipedia_sections(lang, title):
-                add(prefix, site, text)
+            for text, url in _wikipedia_sections(lang, title):
+                add(prefix, site, text, url)
         except OSError:
             pass
     return sources
@@ -276,14 +280,14 @@ def _generate(movie):
                 _save({**base, "retry_after": now + RETRY_AFTER_ERROR, "last_error": str(e)[:200]})
                 return
 
-            kept, sites = [], []
-            for i, (anecdote, src) in enumerate(pairs):
-                if all(run[i] for run in runs) and details_in_source(anecdote, src["text"]):
-                    kept.append(anecdote)
-                    sites.append(src["site"])
-            if kept:
-                _save({**base, "text": " ★ ".join(kept), "sources": sorted(set(sites), key=sites.index),
-                       "checked": len(pairs), "kept": len(kept), "generated_at": now})
+            items = [
+                {"text": anecdote, "site": src["site"], "url": src["url"]}
+                for i, (anecdote, src) in enumerate(pairs)
+                if all(run[i] for run in runs) and details_in_source(anecdote, src["text"])
+            ]
+            if items:
+                _save({**base, "text": " ★ ".join(item["text"] for item in items), "items": items,
+                       "checked": len(pairs), "kept": len(items), "generated_at": now})
             else:
                 _save({**base, "checked": len(pairs), "kept": 0, "no_source": not sources,
                        "retry_after": now + RETRY_AFTER_NOTHING})
@@ -309,7 +313,6 @@ def trivia_for(movie):
         return {
             "text": state["text"],
             "movie": movie["key"],
-            "verified": {"kept": state.get("kept"), "checked": state.get("checked"), "runs": CHECK_RUNS},
-            "sources": state.get("sources", []),
+            "items": state.get("items", []),  # each anecdote with its source site and page
         }
     return {"text": None, "movie": movie["key"]}
