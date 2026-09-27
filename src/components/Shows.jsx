@@ -337,13 +337,18 @@ function RecentCard({ show, onClick }) {
   )
 }
 
-function Shows() {
+function Shows({ backToStart }) {
   const { shows: onDeck } = usePlexOnDeck()
   const { shows: recent, loading, error } = usePlexShows()
   const { data: sonarrData } = useSonarr()
   const [selectedShow, setSelectedShow] = useState(null)
   const [selectedDownload, setSelectedDownload] = useState(null)
   const [page, setPage] = useState(0)
+
+  // The "Séries" tab tapped again while on it: back to the first page
+  useEffect(() => {
+    if (backToStart) setPage(0)
+  }, [backToStart])
 
   // Preload thumbs
   useEffect(() => {
@@ -382,14 +387,25 @@ function Shows() {
         <div className="flex flex-col gap-2 self-stretch" style={{ flex: '0 0 85%' }}>
           <div className="text-sm text-white/40">Derniers épisodes ajoutés sur Plex</div>
           <div className="flex items-center gap-1 flex-1 min-h-0">
-            <button
-              onClick={() => setPage(page - 1)}
-              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-              }`}
-            >
-              &#8249;
-            </button>
+            <div className="flex flex-col items-center gap-3 shrink-0">
+              <button
+                onClick={() => setPage(page - 1)}
+                className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
+                }`}
+              >
+                &#8249;
+              </button>
+              <button
+                onClick={() => setPage(0)}
+                aria-label="Première page"
+                className={`text-2xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
+                }`}
+              >
+                «
+              </button>
+            </div>
             <div className="grid grid-cols-5 gap-4 flex-1 min-h-0">
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />

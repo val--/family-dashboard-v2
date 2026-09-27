@@ -123,8 +123,8 @@ function App() {
           <Calendar />
           <PostIts postits={postits} openRequest={postitRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} />
           {SHOW_SORTIES && <Sorties />}
-          <Plex />
-          <Shows />
+          <Plex backToStart={reselected?.title === 'Films' ? reselected : null} />
+          <Shows backToStart={reselected?.title === 'Séries' ? reselected : null} />
           <Devices />
         </WidgetCarousel>
       </div>

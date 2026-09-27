@@ -395,7 +395,7 @@ const MarqueeBanner = memo(function MarqueeBanner({ text, movie, onClick }) {
   )
 })
 
-function Plex() {
+function Plex({ backToStart }) {
   const { movies, loading, error } = usePlex()
   const { data: radarrData } = useRadarr()
   const { trivia } = useTrivia()
@@ -404,6 +404,11 @@ function Plex() {
   const [showSearch, setShowSearch] = useState(false)
   const [showTrivia, setShowTrivia] = useState(false)
   const [page, setPage] = useState(0)
+
+  // The "Films" tab tapped again while on it: back to the first page
+  useEffect(() => {
+    if (backToStart) setPage(0)
+  }, [backToStart])
 
   // Preload all movie thumbnails on mount
   useEffect(() => {
@@ -445,14 +450,25 @@ function Plex() {
             </button>
           </div>
           <div className="flex items-center gap-1 flex-1 min-h-0">
-            <button
-              onClick={() => setPage(page - 1)}
-              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-              }`}
-            >
-              ‹
-            </button>
+            <div className="flex flex-col items-center gap-3 shrink-0">
+              <button
+                onClick={() => setPage(page - 1)}
+                className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
+                }`}
+              >
+                ‹
+              </button>
+              <button
+                onClick={() => setPage(0)}
+                aria-label="Première page"
+                className={`text-2xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
+                }`}
+              >
+                «
+              </button>
+            </div>
             <div className="grid grid-cols-5 gap-4 flex-1 min-h-0">
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
