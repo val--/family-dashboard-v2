@@ -88,7 +88,7 @@ function QrCell({ onOpen }) {
   )
 }
 
-export default function PostIts({ postits, openRequest, stickerViews }) {
+export default function PostIts({ postits, openRequest, stickerViews, backToStart }) {
   const { notes: apiNotes, config, loading, error } = postits
   // Newest first, in order of posting. The detail view's arrows follow the same order.
   const notes = [...apiNotes].sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
@@ -103,6 +103,11 @@ export default function PostIts({ postits, openRequest, stickerViews }) {
 
   // Asked to show a note (tapped on the screensaver): its detail opens over the wall, and closing
   // it leaves you on the wall
+  // The "Post-it" tab tapped again while on it: back to the first page
+  useEffect(() => {
+    if (backToStart) setPage(0)
+  }, [backToStart])
+
   useEffect(() => {
     if (openRequest?.note) setSelected(openRequest.note)
   }, [openRequest])
@@ -129,7 +134,18 @@ export default function PostIts({ postits, openRequest, stickerViews }) {
     <>
       <div className="h-full flex items-center gap-1">
         {pages > 1 && (
-          <ArrowButton direction="prev" label="Page précédente" enabled={current > 0} onClick={() => setPage(current - 1)} />
+          <div className="flex flex-col items-center gap-3">
+            <ArrowButton direction="prev" label="Page précédente" enabled={current > 0} onClick={() => setPage(current - 1)} />
+            <button
+              onClick={() => setPage(0)}
+              aria-label="Première page"
+              className={`text-2xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
+                current > 0 ? 'text-white/60 hover:text-white hover:bg-white/10 active:bg-white/10' : 'invisible'
+              }`}
+            >
+              «
+            </button>
+          </div>
         )}
         <div className="h-full min-w-0 flex-1 grid grid-cols-3 grid-rows-2 gap-4">
           {visible.map((cell) =>
