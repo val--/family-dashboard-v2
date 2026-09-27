@@ -45,7 +45,7 @@ function PhotoViewer({ name, sticker = false, onClose }) {
               stop(event)
               setShowQr(false)
             }}
-            className="absolute bottom-4 right-4 flex items-center gap-4 rounded-2xl bg-black/85 p-4"
+            className="absolute bottom-4 right-4 flex items-center gap-4 rounded-2xl border border-white/15 bg-neutral-900 p-4 shadow-2xl"
           >
             <QrCode value={sticker ? stickerDownloadUrl(name) : photoDownloadUrl(name)} className="h-40 w-40 shrink-0 rounded" />
             <div className="max-w-44 text-white">
