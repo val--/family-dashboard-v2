@@ -352,6 +352,16 @@ function TriviaModal({ text, movie, items = [], onClose }) {
           onClick={() => setQrFor(null)}
           className="absolute bottom-4 right-4 flex items-center gap-4 rounded-2xl border border-white/15 bg-neutral-900 p-4 shadow-2xl"
         >
+          <button
+            onClick={(event) => {
+              event.stopPropagation()
+              setQrFor(null)
+            }}
+            aria-label="Fermer"
+            className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-neutral-800 text-xl leading-none text-white/80 shadow-lg"
+          >
+            &times;
+          </button>
           <QrCode value={qrFor.url} className="h-32 w-32 shrink-0 rounded" />
           <div className="max-w-44 text-white">
             <div className="text-base leading-tight">Scanne pour lire la source</div>
