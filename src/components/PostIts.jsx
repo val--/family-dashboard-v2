@@ -110,6 +110,10 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
 
   useEffect(() => {
     if (openRequest?.note) setSelected(openRequest.note)
+    if (openRequest?.qr) {
+      setSelected(null)
+      setShowQr(true)
+    }
   }, [openRequest])
 
   const cells = [{ type: 'qr' }, ...notes.map((note) => ({ type: 'note', note }))]

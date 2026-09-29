@@ -60,6 +60,12 @@ function App() {
     wake()
     setPostitRequest({ title: 'Post-it', note })
   }
+
+  // "Ajouter un post-it !" under the screensaver's note: wakes up on the Post-it tab with its big QR code
+  function addPostitFromScreensaver() {
+    wake()
+    setPostitRequest({ title: 'Post-it', qr: true })
+  }
   const hasNewPostit = useUnseenPostits(postits.notes, postits.config !== null, activeTab === 'Post-it' && !idle)
 
   return (
@@ -143,7 +149,7 @@ function App() {
       {idle && (
         // if the screensaver itself fails: a black screen that still wakes up on touch
         <ErrorBoundary name="écran de veille" fallback={<div onClick={wake} className="visible fixed inset-0 z-[100] bg-black" />}>
-          <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} stickerViews={stickerViews} postitSeconds={settings.postitSeconds} postitRange={settings.postitRange} />
+          <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} onAddNote={addPostitFromScreensaver}stickerViews={stickerViews} postitSeconds={settings.postitSeconds} postitRange={settings.postitRange} />
         </ErrorBoundary>
       )}
     </div>

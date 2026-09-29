@@ -52,10 +52,10 @@ export function agendaPreview(events, now = new Date()) {
   return { label, items, more: list.length - items.length }
 }
 
-// Minimal night-stand screen: big clock, date, current weather and one post-it, on pure black.
-// A post-it with a photo gets the stage instead: clock on the left, the note big on the right.
+// Minimal night-stand screen on pure black: clock, date, weather and agenda on the left, the post-it as a
+// big square note on the right (with or without a photo). No post-it to show: the clock alone, centered.
 export default function Screensaver({
-  weather, events, notes = [], hasNew = false, onWake, onOpenNote, stickerViews,
+  weather, events, notes = [], hasNew = false, onWake, onOpenNote, onAddNote, stickerViews,
   postitSeconds = 30, // from the Settings screen: time per post-it (the latest one: twice as long); 0 = stays
   postitRange = 'today', // 'today' (else yesterday), '3days' or 'all'
 }) {
@@ -147,7 +147,7 @@ export default function Screensaver({
         onClick={go(direction === 'prev' ? -1 : 1)}
       />
     )
-  const withPhoto = Boolean(note?.photo)
+  const withNote = Boolean(note)
 
   // Nothing new for 2 days (or no post-it at all): instead of the lone clock, a big QR code to the phone page
   const latestAt = chronological[0]?.createdAt
@@ -163,7 +163,7 @@ export default function Screensaver({
 
   const agenda = agendaPreview(events)
   const agendaLine = agenda && (
-    <div className="mt-3 flex max-w-[28rem] items-center gap-2 text-base text-white/50">
+    <div className={`mt-3 flex ${withNote ? 'max-w-[19rem]' : 'max-w-[28rem]'} items-center gap-2 text-base text-white/50`}>
       <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
         <rect x="3" y="5" width="18" height="16" rx="2" />
         <path d="M3 10h18M8 3v4M16 3v4" />
@@ -176,7 +176,7 @@ export default function Screensaver({
   )
 
   const weatherLine = current && (
-    <div className={`flex items-center gap-3 text-white/60 ${withPhoto ? 'mt-4' : 'mt-6'}`}>
+    <div className={`flex items-center gap-3 text-white/60 ${withNote ? 'mt-4' : 'mt-6'}`}>
       <img
         src={`https://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png`}
         alt=""
@@ -214,7 +214,7 @@ export default function Screensaver({
             <div className="text-sm text-white/45">Scanne avec ton téléphone (Wi‑Fi de la maison)</div>
           </div>
         </div>
-      ) : withPhoto ? (
+      ) : withNote ? (
         <div className="flex items-center justify-center gap-8 px-4">
           <div className="flex min-w-0 flex-col items-center">
             <div className="text-[7rem] leading-none font-extralight tabular-nums text-white/85">{time}</div>
@@ -226,11 +226,30 @@ export default function Screensaver({
             {arrows('prev')}
             <div className="flex flex-col">
               <div onClick={openNote} className={`relative opacity-90 ${onOpenNote ? 'cursor-pointer' : ''}`}>
-                <PostitNote note={note} size="lg" rotate={-1} showDate showSticker={stickerViews?.isSticker(note.id)} className="h-[min(74vh,21rem)] aspect-square" />
-                {isLatest && <Stamp key={note.id} big />}
+                {/* A text-only note makes room at the top for the (one-line) stamp; on a photo the big stamp covers the picture's corner */}
+                <PostitNote
+                  note={note}
+                  size="lg"
+                  rotate={-1}
+                  showDate
+                  showSticker={stickerViews?.isSticker(note.id)}
+                  className={`h-[min(74vh,21rem)] aspect-square ${isLatest && !note.photo ? 'pt-9' : ''}`}
+                />
+                {isLatest && <Stamp key={note.id} big={Boolean(note.photo)} />}
                 {newBadge}
               </div>
               {countdown}
+              {onAddNote && (
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onAddNote()
+                  }}
+                  className="mt-2 self-end px-1 font-hand text-xl font-semibold text-white/60 active:text-white"
+                >
+                  Ajouter un post-it !
+                </button>
+              )}
             </div>
             {arrows('next')}
           </div>
@@ -241,20 +260,6 @@ export default function Screensaver({
           <div className="mt-4 text-2xl capitalize text-white/50">{date}</div>
           {weatherLine}
           {agendaLine}
-          {note && (
-            <div className="mt-6 flex items-center gap-1">
-              {arrows('prev')}
-              <div className="flex w-[26rem] max-w-[80vw] flex-col">
-                <div onClick={openNote} className={`relative opacity-80 ${onOpenNote ? 'cursor-pointer' : ''}`}>
-                  <PostitNote note={note} size="sm" rotate={-1} showDate />
-                  {isLatest && <Stamp key={note.id} />}
-                  {newBadge}
-                </div>
-                {countdown}
-              </div>
-              {arrows('next')}
-            </div>
-          )}
         </div>
       )}
     </div>
