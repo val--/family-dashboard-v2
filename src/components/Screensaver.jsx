@@ -69,7 +69,7 @@ const SHOWCASE_SIZE = 'h-[min(74vh,21rem)] aspect-square' // the right-hand squa
 function MovieCard({ movie, onClick }) {
   return (
     <div onClick={onClick} className={`${SHOWCASE_SIZE} flex flex-col items-center justify-center gap-1.5 opacity-90 ${onClick ? 'cursor-pointer' : ''}`}>
-      <div className="text-xs uppercase tracking-widest text-white/45">Nouveau film</div>
+      <div className="text-xs uppercase tracking-widest text-white/45">Nouveau film disponible</div>
       {movie.thumb ? (
         <img src={movie.thumb} alt="" className="h-[calc(min(74vh,21rem)_-_4.5rem)] aspect-[2/3] rounded-md object-cover" />
       ) : (
