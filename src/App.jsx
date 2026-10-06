@@ -124,7 +124,7 @@ function App() {
           onReselect={(title) => setReselected({ title })}
         >
           <Calendar />
-          <PostIts postits={postits} openRequest={wakeRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} />
+          <PostIts postits={postits} openRequest={wakeRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} active={activeTab === 'Post-it' && !idle} />
           {SHOW_SORTIES && <Sorties />}
           <Plex plex={plex} openRequest={wakeRequest} backToStart={reselected?.title === 'Films' ? reselected : null} />
           <Shows backToStart={reselected?.title === 'Séries' ? reselected : null} />

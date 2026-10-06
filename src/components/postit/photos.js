@@ -18,3 +18,12 @@ export function stickerUrl(name, full = false) {
 export function stickerDownloadUrl(name) {
   return `${stickerUrl(name, true)}?download=1`
 }
+
+// A video note: its 10 s clip (the photo files hold its poster)
+export function videoUrl(name) {
+  return `${API_URL}/api/postits/photos/${name}.mp4`
+}
+
+export function videoDownloadUrl(name) {
+  return `${videoUrl(name)}?download=1`
+}

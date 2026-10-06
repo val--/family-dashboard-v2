@@ -1,6 +1,7 @@
 // Phone photos are 3-8 MB. Shrink them in the browser before sending: the upload over Wi-Fi is quick,
 // and the server still re-encodes them (rotation, metadata, sizes). Falls back to the original file.
 export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+export const MAX_VIDEO_BYTES = 300 * 1024 * 1024 // the original video: the server keeps only 10 light seconds
 
 export async function shrinkImage(file, maxSide = 1600, quality = 0.85) {
   try {

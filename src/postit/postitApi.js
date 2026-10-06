@@ -32,4 +32,36 @@ export function createNote(payload, photo) {
   form.append('photo', photo, photo.name || 'photo.jpg')
   return request('POST', '', form)
 }
+
+// A video goes whole (the server cuts the 10 s from `start`): it can weigh a lot, so the upload reports its
+// progress (0 to 1) — fetch can't, hence XMLHttpRequest
+export function createVideoNote(payload, video, start, onProgress) {
+  const form = new FormData()
+  Object.entries(payload).forEach(([key, value]) => value != null && form.append(key, value))
+  form.append('start', String(start))
+  form.append('video', video, video.name || 'video.mp4')
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', `${API_URL}/api/postits`)
+    xhr.upload.onprogress = (event) => event.lengthComputable && onProgress?.(event.loaded / event.total)
+    xhr.onload = () => {
+      let data = {}
+      try {
+        data = JSON.parse(xhr.responseText)
+      } catch {
+        // not JSON: the generic message below
+      }
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(data)
+      const err = new Error(data.error || (xhr.status === 413 ? 'Vidéo trop lourde (300 Mo maximum)' : 'Une erreur est survenue'))
+      err.status = xhr.status
+      reject(err)
+    }
+    xhr.onerror = () => {
+      const err = new Error("Impossible de joindre la maison. Es-tu bien connecté au Wi‑Fi ?")
+      err.status = 0
+      reject(err)
+    }
+    xhr.send(form)
+  })
+}
 export const deleteNote = (id, auth) => request('DELETE', `/${id}`, auth)

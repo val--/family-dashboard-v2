@@ -3,7 +3,8 @@ import PostitNote from '../components/postit/Note'
 import { Sticker } from '../components/postit/stickers'
 import { NOTE_SWATCHES } from '../components/postit/theme'
 import * as api from './postitApi'
-import { MAX_UPLOAD_BYTES, shrinkImage } from './image'
+import { MAX_UPLOAD_BYTES, MAX_VIDEO_BYTES, shrinkImage } from './image'
+import VideoTrimmer, { CLIP_SECONDS, readVideo } from './VideoTrimmer'
 
 const AUTHOR_KEY = 'postit-author'
 const CODE_KEY = 'postit-code'
@@ -120,14 +121,39 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
   const [photoPreview, setPhotoPreview] = useState(null)
   const [photoRatio, setPhotoRatio] = useState(null)
   const [preparing, setPreparing] = useState(false)
+  // A video instead of a photo: { file, url, duration (null: this phone can't read it), start }
+  const [video, setVideo] = useState(null)
+  const [progress, setProgress] = useState(0)
   const fileInput = useRef(null)
 
   useEffect(() => () => photoPreview && URL.revokeObjectURL(photoPreview), [photoPreview])
+  useEffect(() => () => video?.url && URL.revokeObjectURL(video.url), [video?.url])
 
   function dropPhoto() {
     setPhoto(null)
     setPhotoPreview(null)
     setPhotoRatio(null)
+    setVideo(null)
+  }
+
+  // The post-it's preview shows a still of the video (from where the clip starts)
+  async function pickVideo(file) {
+    if (file.size > MAX_VIDEO_BYTES) {
+      setError('Cette vidéo est trop lourde (300 Mo maximum). Prends-en une plus courte.')
+      return
+    }
+    setPreparing(true)
+    dropPhoto()
+    const url = URL.createObjectURL(file)
+    try {
+      const info = await readVideo(url)
+      setVideo({ file, url, duration: info.duration, start: 0 })
+      setPhotoRatio(info.ratio)
+      if (info.still) setPhotoPreview(URL.createObjectURL(info.still))
+    } catch {
+      setVideo({ file, url, duration: null, start: 0 })
+    }
+    setPreparing(false)
   }
 
   async function pickPhoto(e) {
@@ -135,6 +161,8 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
     e.target.value = '' // lets the same picture be chosen again
     if (!file) return
     setError('')
+    if (file.type.startsWith('video/') || /\.(mp4|mov|webm|3gp|mkv)$/i.test(file.name)) return pickVideo(file)
+    setVideo(null)
     setPreparing(true)
     const ready = await shrinkImage(file)
     setPreparing(false)
@@ -157,7 +185,13 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
     setSending(true)
     setError('')
     try {
-      await api.createNote({ author, text, color, sticker, code }, photo)
+      const payload = { author, text, color, sticker, code }
+      if (video) {
+        setProgress(0)
+        await api.createVideoNote(payload, video.file, video.start, setProgress)
+      } else {
+        await api.createNote(payload, photo)
+      }
       setText('')
       setSticker(null)
       dropPhoto()
@@ -172,7 +206,15 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
     }
   }
 
-  const preview = { id: 0, author, text: text.trim() || 'Ton message apparaîtra ici…', color, sticker, photoRatio }
+  const preview = { id: 0, author, text: text.trim() || 'Ton message apparaîtra ici…', color, sticker, photoRatio, video: Boolean(video) }
+  const hasMedia = Boolean(photo || video)
+  const sendLabel = !sending
+    ? 'Coller sur le mur'
+    : video && progress < 1
+      ? `Envoi de la vidéo… ${Math.round(progress * 100)} %`
+      : video
+        ? 'Préparation de la vidéo…'
+        : 'Envoi…'
 
   return (
     <section>
@@ -190,22 +232,39 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
         {text.length} / {config.maxChars}
       </div>
 
-      <h2 className="mb-2 mt-4 text-sm uppercase tracking-wide text-stone-400">Photo</h2>
-      <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={pickPhoto} className="hidden" />
+      <h2 className="mb-2 mt-4 text-sm uppercase tracking-wide text-stone-400">Photo ou vidéo</h2>
+      <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,video/*" onChange={pickPhoto} className="hidden" />
       <div className="flex gap-3">
         <button
           onClick={() => fileInput.current?.click()}
           disabled={preparing}
           className="flex-1 rounded-xl bg-stone-800 py-3 text-base active:bg-stone-700 disabled:opacity-50"
         >
-          {preparing ? 'Préparation…' : photo ? 'Changer la photo' : 'Ajouter une photo'}
+          {preparing ? 'Préparation…' : hasMedia ? 'Changer' : 'Ajouter une photo ou une vidéo'}
         </button>
-        {photo && (
+        {hasMedia && (
           <button onClick={dropPhoto} className="rounded-xl bg-stone-800 px-4 py-3 text-red-300 active:bg-stone-700">
             Retirer
           </button>
         )}
       </div>
+      {video && video.duration > CLIP_SECONDS + 0.05 && (
+        <div className="mt-4">
+          <VideoTrimmer
+            url={video.url}
+            duration={video.duration}
+            start={video.start}
+            onChange={(start) => setVideo((current) => current && { ...current, start })}
+            onFrame={(still) => setPhotoPreview(URL.createObjectURL(still))}
+          />
+        </div>
+      )}
+      {video && video.duration != null && video.duration <= CLIP_SECONDS + 0.05 && (
+        <p className="mt-2 text-sm text-stone-400">Vidéo de {Math.round(video.duration)} s : elle sera gardée en entier.</p>
+      )}
+      {video && video.duration == null && (
+        <p className="mt-2 text-sm text-stone-400">Aperçu impossible sur ce téléphone : les 10 premières secondes seront gardées.</p>
+      )}
 
       <h2 className="mb-2 mt-5 text-sm uppercase tracking-wide text-stone-400">Couleur</h2>
       <div className="flex gap-3">
@@ -248,7 +307,7 @@ function Composer({ author, config, code, onPosted, onAuthError }) {
         disabled={!text.trim() || sending}
         className="mt-6 w-full rounded-xl bg-sky-400 py-4 text-lg font-semibold text-black disabled:opacity-40"
       >
-        {sending ? 'Envoi…' : 'Coller sur le mur'}
+        {sendLabel}
       </button>
       {done && <p className="mt-3 text-center text-green-400">✓ Post-it collé sur le mur !</p>}
     </section>

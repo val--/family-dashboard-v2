@@ -1,6 +1,6 @@
 import { NOTE_COLORS, shortAgo } from './theme'
 import { Sticker } from './stickers'
-import { photoUrl, stickerUrl } from './photos'
+import { photoUrl, stickerUrl, videoUrl } from './photos'
 
 // A small deterministic tilt so a wall of notes feels hand-placed (static: no animation on the Pi)
 export function tilt(id) {
@@ -90,12 +90,21 @@ function StickerFold({ showingSticker, onToggle, px, color }) {
   )
 }
 
+// The note's picture: its photo, or its video playing muted in a loop (only while `play`: otherwise the
+// video's poster, so a hidden or off-screen note costs the Pi nothing)
+function Media({ src, video, play, className, style, onClick, lazy }) {
+  if (video && play) {
+    return <video src={video} poster={src} muted loop autoPlay playsInline onClick={onClick} style={style} className={className} />
+  }
+  return <img src={src} alt="" loading={lazy ? 'lazy' : undefined} decoding="async" onClick={onClick} style={style} className={className} />
+}
+
 // `showDate` adds the age of the note to the signature (wall and screensaver).
 // `photoSrc` overrides the note's own photo (the phone previews a photo before it is uploaded).
 // `onPhotoClick` makes the photo tappable in the large version (full screen viewer).
 export default function PostitNote({
   note, size = 'md', rotate = 0, className = '', onClick, photoSrc, onPhotoClick, showDate = false,
-  showSticker = false, onToggleSticker,
+  showSticker = false, onToggleSticker, playVideo = true,
 }) {
   const s = SIZES[size]
   const color = NOTE_COLORS[note.color] || NOTE_COLORS.yellow
@@ -103,6 +112,7 @@ export default function PostitNote({
   const hasSticker = !photoSrc && Boolean(note.photo) && note.stickerStatus === 'done'
   const stickerOn = hasSticker && showSticker
   const photo = photoSrc || (note.photo ? (stickerOn ? stickerUrl(note.photo) : photoUrl(note.photo)) : null)
+  const video = !photoSrc && note.video && note.photo ? videoUrl(note.photo) : null
   // A sticker must never be cropped: it sits whole on the note's color
   const fit = stickerOn ? 'object-contain' : 'object-cover'
   const foldPx = hasSticker && onToggleSticker && size !== 'sm' ? FOLD[size] : 0
@@ -122,11 +132,11 @@ export default function PostitNote({
       <div onClick={onClick} style={style} className={`${base} flex flex-col ${lg ? 'gap-2 p-4' : 'gap-1 p-2'}`}>
         {fold}
         <div className={`flex min-h-0 flex-1 ${lg ? 'gap-3' : 'gap-2'}`}>
-          <img
+          <Media
             src={photo}
-            alt=""
-            loading={lg ? undefined : 'lazy'}
-            decoding="async"
+            video={video}
+            play={playVideo}
+            lazy={!lg}
             onClick={onPhotoClick}
             style={{ aspectRatio: Math.max(note.photoRatio, 0.5) }}
             className={`h-full shrink-0 rounded-sm ${fit} ${lg ? 'max-w-[55%]' : 'max-w-[45%]'} ${onPhotoClick ? 'cursor-zoom-in' : ''}`}
@@ -148,9 +158,10 @@ export default function PostitNote({
     return (
       <div onClick={onClick} style={style} className={`${base} flex flex-col gap-2 p-4`}>
         {fold}
-        <img
+        <Media
           src={photo}
-          alt=""
+          video={video}
+          play={playVideo}
           onClick={onPhotoClick}
           className={`min-h-0 w-full flex-1 rounded-sm ${fit} ${onPhotoClick ? 'cursor-zoom-in' : ''}`}
         />
@@ -169,7 +180,7 @@ export default function PostitNote({
     return (
       <div onClick={onClick} style={style} className={`${base} flex flex-col gap-1 p-2`}>
         {fold}
-        <img src={photo} alt="" loading="lazy" decoding="async" className={`min-h-0 w-full flex-1 rounded-sm ${fit}`} />
+        <Media src={photo} video={video} play={playVideo} lazy className={`min-h-0 w-full flex-1 rounded-sm ${fit}`} />
         <div className="flex items-start gap-1">
           <div className={`${TEXT} flex-1 text-base leading-tight line-clamp-2`}>{note.text}</div>
           {note.sticker && <Sticker id={note.sticker} className="w-6 h-6 shrink-0" />}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import PostitNote, { tilt } from './postit/Note'
 import { timeAgo } from './postit/theme'
-import { photoDownloadUrl, photoUrl, stickerDownloadUrl, stickerUrl } from './postit/photos'
+import { photoDownloadUrl, photoUrl, stickerDownloadUrl, stickerUrl, videoDownloadUrl, videoUrl } from './postit/photos'
 import QrCode from './QrCode'
 import { POSTIT_URL } from './postit/links'
 import ArrowButton from './ArrowButton'
@@ -28,16 +28,20 @@ function Modal({ onClose, children }) {
   )
 }
 
-// Full-screen photo. A tap closes it, except on the "Sur mon téléphone" button, which shows a QR code
-// to download the photo on a phone (on the home Wi-Fi).
-function PhotoViewer({ name, sticker = false, onClose }) {
+// Full-screen photo (or video, muted in a loop). A tap closes it, except on the "Sur mon téléphone" button,
+// which shows a QR code to download it on a phone (on the home Wi-Fi).
+function PhotoViewer({ name, sticker = false, video = false, onClose }) {
   const [showQr, setShowQr] = useState(false)
   const stop = (event) => event.stopPropagation()
 
   return (
     <Modal onClose={onClose}>
       <div className="relative flex-1 min-h-0 flex items-center justify-center px-2 pb-3" onClick={onClose}>
-        <img src={sticker ? stickerUrl(name, true) : photoUrl(name, true)} alt="" className="max-h-full max-w-full object-contain" />
+        {video ? (
+          <video src={videoUrl(name)} poster={photoUrl(name, true)} muted loop autoPlay playsInline className="max-h-full max-w-full object-contain" />
+        ) : (
+          <img src={sticker ? stickerUrl(name, true) : photoUrl(name, true)} alt="" className="max-h-full max-w-full object-contain" />
+        )}
 
         {showQr ? (
           <div
@@ -47,9 +51,9 @@ function PhotoViewer({ name, sticker = false, onClose }) {
             }}
             className="absolute bottom-4 right-4 flex items-center gap-4 rounded-2xl border border-white/15 bg-neutral-900 p-4 shadow-2xl"
           >
-            <QrCode value={sticker ? stickerDownloadUrl(name) : photoDownloadUrl(name)} className="h-40 w-40 shrink-0 rounded" />
+            <QrCode value={video ? videoDownloadUrl(name) : sticker ? stickerDownloadUrl(name) : photoDownloadUrl(name)} className="h-40 w-40 shrink-0 rounded" />
             <div className="max-w-44 text-white">
-              <div className="text-lg leading-tight">Scanne pour télécharger {sticker ? 'le sticker' : 'la photo'}</div>
+              <div className="text-lg leading-tight">Scanne pour télécharger {video ? 'la vidéo' : sticker ? 'le sticker' : 'la photo'}</div>
               <div className="mt-1 text-sm text-white/60">Téléphone connecté au Wi‑Fi de la maison</div>
             </div>
           </div>
@@ -88,14 +92,15 @@ function QrCell({ onOpen }) {
   )
 }
 
-export default function PostIts({ postits, openRequest, stickerViews, backToStart }) {
+// `active`: the tab is on screen (and the screensaver isn't): only then do the video notes play
+export default function PostIts({ postits, openRequest, stickerViews, backToStart, active = true }) {
   const { notes: apiNotes, config, loading, error } = postits
   // Newest first, in order of posting. The detail view's arrows follow the same order.
   const notes = [...apiNotes].sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
   const [page, setPage] = useState(0)
   const [selected, setSelected] = useState(null)
   const [showQr, setShowQr] = useState(false)
-  const [viewing, setViewing] = useState(null) // { name, sticker }
+  const [viewing, setViewing] = useState(null) // { name, sticker, video }
   const stickerProps = (note) => ({
     showSticker: stickerViews?.isSticker(note.id),
     onToggleSticker: stickerViews ? () => stickerViews.toggle(note.id) : undefined,
@@ -162,6 +167,7 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
                 rotate={tilt(cell.note.id)}
                 showDate
                 {...stickerProps(cell.note)}
+                playVideo={active}
                 className="min-h-0"
                 onClick={() => setSelected(cell.note)}
               />
@@ -194,8 +200,11 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
                 note={shown}
                 size="lg"
                 rotate={-1}
-                onPhotoClick={() => setViewing({ name: shown.photo, sticker: Boolean(stickerViews?.isSticker(shown.id) && shown.stickerStatus === 'done') })}
+                onPhotoClick={() =>
+                  setViewing({ name: shown.photo, video: shown.video, sticker: Boolean(stickerViews?.isSticker(shown.id) && shown.stickerStatus === 'done') })
+                }
                 {...stickerProps(shown)}
+                playVideo={active && !viewing}
                 className="h-[min(70vh,20rem)] aspect-square shrink-0"
               />
               {canBrowse && (
@@ -210,13 +219,13 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
             <div className="text-sm text-white/60">
               {canBrowse && `${selectedIndex + 1} / ${notes.length} · `}
               {timeAgo(shown.createdAt)}
-              {shown.photo && ' · touche la photo pour l’agrandir'}
+              {shown.photo && (shown.video ? ' · touche la vidéo pour l’agrandir' : ' · touche la photo pour l’agrandir')}
             </div>
           </div>
         </Modal>
       )}
 
-      {viewing && <PhotoViewer name={viewing.name} sticker={viewing.sticker} onClose={() => setViewing(null)} />}
+      {viewing && active && <PhotoViewer name={viewing.name} sticker={viewing.sticker} video={viewing.video} onClose={() => setViewing(null)} />}
 
       {showQr && (
         <Modal onClose={() => setShowQr(false)}>
