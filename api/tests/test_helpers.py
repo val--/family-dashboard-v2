@@ -1,48 +1,10 @@
 import io
 import xml.etree.ElementTree as ET
-from datetime import date
-
-import pytest
 
 import arr
 import plex
 import recalbox
-import sorties
 import trivia
-
-
-# ---- Outings: which weekend, and the agenda's ways of saying "all day"
-
-
-@pytest.mark.parametrize("today, saturday", [
-    (date(2026, 10, 5), date(2026, 10, 10)),  # Monday: the coming weekend
-    (date(2026, 10, 9), date(2026, 10, 10)),  # Friday
-    (date(2026, 10, 10), date(2026, 10, 10)),  # Saturday: this one
-    (date(2026, 10, 11), date(2026, 10, 10)),  # Sunday: still this one
-])
-def test_next_weekend(today, saturday):
-    assert sorties.next_weekend(today) == (saturday, date(saturday.year, saturday.month, saturday.day + 1))
-
-
-@pytest.mark.parametrize("start, end, all_day", [
-    (None, None, True),
-    ("00:00", None, True),
-    ("00:00", "23:59", True),
-    ("00:00", "12:00", False),
-    ("20:30", "22:00", False),
-])
-def test_all_day_events(start, end, all_day):
-    event = sorties.parse_nantes_event({"id_manif": 1, "date": "2026-10-10", "nom": "Concert", "heure_debut": start, "heure_fin": end})
-    assert event["allDay"] is all_day
-    assert event["start"] == (None if all_day else start)
-
-
-def test_postponed_events_and_placeholder_places_are_dropped():
-    assert sorties.parse_nantes_event({"date": "2026-10-10", "reporte": "oui"}) is None
-    event = sorties.parse_nantes_event({"id_manif": 2, "date": "2026-10-10", "lieu": ".", "ville": "Nantes", "adresse": ".",
-                                        "description": "<p>Un <b>très</b> bon\n moment</p>"})
-    assert event["place"] == "Nantes" and event["address"] is None
-    assert event["description"] == "Un très bon moment"
 
 
 # ---- Radarr / Sonarr

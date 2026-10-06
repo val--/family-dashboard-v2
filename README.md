@@ -64,7 +64,6 @@ api        → Flask (gunicorn, port 5100), one module per feature, data in ./da
 | `system.py` | `/api/system` | the host's `/proc` and disks |
 | `printer.py` | `/api/printer`, `/api/printer/test` | the host's CUPS, USB |
 | `recalbox.py` | `/api/recalbox` | a Recalbox console on the LAN (read only) |
-| `sorties.py` | `/api/sorties` | Nantes Métropole open data (the tab is hidden for now) |
 
 `./data` holds everything the API keeps: `postits.db` (SQLite), `photos/` (post-it photos, stickers and
 videos), `settings.json` and `trivia.json`.
@@ -184,6 +183,6 @@ scripts/test.sh front    # only the front
 ```
 
 - `api/tests/`: settings, post-its (family code, throttling, photos, video cut and encoding, downloads),
-  and the pure helpers (weekend outings, trivia check, Recalbox, Plex parsing and cache).
+  and the pure helpers (trivia check, Recalbox, Plex parsing and cache).
 - `src/**/*.test.js(x)`: what the screensaver shows (`src/lib/screensaver.js`), the shared polling
   hook, time helpers, and the post-it note (photo or video).

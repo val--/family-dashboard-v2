@@ -5,7 +5,6 @@ import Calendar from './components/Calendar'
 import PostIts from './components/PostIts'
 import Plex from './components/Plex'
 import Shows from './components/Shows'
-import Sorties from './components/Sorties'
 import Devices from './components/Devices'
 import WidgetCarousel from './components/WidgetCarousel'
 import { useVpn } from './hooks/useVpn'
@@ -35,9 +34,6 @@ function useDevicesIndicator() {
   if (!vpnOk && !printerOk) return 'red'
   return 'orange'
 }
-
-// Sorties widget is hidden for now; flip to true to bring it back
-const SHOW_SORTIES = false
 
 // Screensaver delay comes from the Settings screen; ?idle=<seconds> overrides it (handy to preview)
 const IDLE_OVERRIDE_SECONDS = Number(new URLSearchParams(window.location.search).get('idle')) || null
@@ -117,15 +113,14 @@ function App() {
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
         <WidgetCarousel
-          titles={['Agenda', 'Post-it', ...(SHOW_SORTIES ? ['Sorties'] : []), 'Films', 'Séries', 'Appareils']}
-          indicators={[null, hasNewPostit ? 'sky' : null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
+          titles={['Agenda', 'Post-it', 'Films', 'Séries', 'Appareils']}
+          indicators={[null, hasNewPostit ? 'sky' : null, null, null, devicesIndicator]}
           onActiveChange={setActiveTab}
           goTo={wakeRequest}
           onReselect={(title) => setReselected({ title })}
         >
           <Calendar />
           <PostIts postits={postits} openRequest={wakeRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} active={activeTab === 'Post-it' && !idle} />
-          {SHOW_SORTIES && <Sorties />}
           <Plex plex={plex} openRequest={wakeRequest} backToStart={reselected?.title === 'Films' ? reselected : null} />
           <Shows backToStart={reselected?.title === 'Séries' ? reselected : null} />
           <Devices />
