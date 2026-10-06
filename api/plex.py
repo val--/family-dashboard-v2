@@ -1,0 +1,301 @@
+"""Plex: latest movies (with cast and backdrop), latest shows, on deck, and the last watched movie's trivia."""
+import os
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+
+from flask import Blueprint, jsonify
+
+import trivia
+
+bp = Blueprint("plex", __name__)
+
+# -- Plex config --
+PLEX_URL = os.environ.get("PLEX_URL", "http://localhost:32400")
+PLEX_PUBLIC_URL = os.environ.get("PLEX_PUBLIC_URL", PLEX_URL)
+PLEX_TOKEN = os.environ.get("PLEX_TOKEN", "")
+
+# -- Gemini config --
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+def plex_thumb_url(thumb, width=400, height=600, blur=0):
+    """Resized poster URL through Plex's transcoder (originals are ~2000x3000), blurred by Plex if asked."""
+    if not thumb:
+        return None
+    src = urllib.parse.quote(thumb, safe="")
+    return (
+        f"{PLEX_PUBLIC_URL}/photo/:/transcode?width={width}&height={height}"
+        f"&minSize=1&upscale=0&url={src}{f'&blur={blur}' if blur else ''}&X-Plex-Token={PLEX_TOKEN}"
+    )
+
+
+def parse_plex_episode(item):
+    """Extract episode info from a Plex XML element."""
+    thumb = item.get("grandparentThumb") or item.get("thumb")
+    return {
+        "show": item.get("grandparentTitle"),
+        "season": int(item.get("parentIndex", 0)),
+        "episode": int(item.get("index", 0)),
+        "title": item.get("title"),
+        "addedAt": item.get("addedAt"),
+        "lastViewedAt": item.get("lastViewedAt"),
+        "thumb": plex_thumb_url(thumb),
+        "watched": int(item.get("viewCount", 0)) > 0,
+        "year": item.get("year"),
+        "summary": item.get("summary"),
+        "rating": item.get("audienceRating") or item.get("rating"),
+        "contentRating": item.get("contentRating"),
+        "genres": [g.get("tag") for g in item.findall("Genre")][:4],
+    }
+
+
+def parse_plex_movie(item):
+    """Extract movie info from a Plex XML element."""
+    thumb = item.get("thumb")
+    duration_ms = item.get("duration")
+    duration_min = round(int(duration_ms) / 60000) if duration_ms else None
+
+    genres = [g.get("tag") for g in item.findall("Genre")]
+    directors = [d.get("tag") for d in item.findall("Director")]
+    roles = [r.get("tag") for r in item.findall("Role")]
+
+    return {
+        "key": item.get("ratingKey"),
+        "title": item.get("title"),
+        "year": item.get("year"),
+        "summary": item.get("summary"),
+        "rating": item.get("audienceRating"),
+        "contentRating": item.get("contentRating"),
+        "duration": duration_min,
+        "genres": genres[:4],
+        "directors": directors[:2],
+        "actors": roles[:5],
+        "addedAt": item.get("addedAt"),
+        "lastViewedAt": item.get("lastViewedAt"),
+        "thumb": plex_thumb_url(thumb),
+        # backdrop for the screensaver: small and softly blurred by Plex (no costly CSS filter on the Pi)
+        "art": plex_thumb_url(item.get("art"), 640, 360, blur=8),
+        "watched": int(item.get("viewCount", 0)) > 0,
+    }
+
+
+CAST_FOR_LATEST = 8  # the screensaver shows the latest movies with their cast (its MAX_MOVIES)
+CAST_SIZE = 4
+_cast_cache = {}  # ratingKey -> cast; a movie's cast doesn't change
+
+
+def plex_movie_cast(key):
+    """Main actors with their photo (resized by Plex), from the movie's full metadata: the library
+    listing only has their names. None when Plex can't answer (tried again next time)."""
+    if key in _cast_cache:
+        return _cast_cache[key]
+
+    try:
+        url = f"{PLEX_URL}/library/metadata/{key}?X-Plex-Token={PLEX_TOKEN}"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            video = ET.parse(resp).getroot().find("Video")
+    except Exception:
+        return None
+    if video is None:
+        return None
+    cast = [
+        {"name": role.get("tag"), "role": role.get("role"), "thumb": plex_thumb_url(role.get("thumb"), 96, 96)}
+        for role in video.findall("Role")[:CAST_SIZE]
+    ]
+    _cast_cache[key] = cast
+    return cast
+
+
+@bp.route("/api/plex/recent")
+def plex_recent():
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        section_key = find_plex_section(ET, "movie")
+        if not section_key:
+            return jsonify({"movies": []})
+
+        url = f"{PLEX_URL}/library/sections/{section_key}/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        movies = []
+        for item in tree.getroot():
+            if item.get("type") != "movie":
+                continue
+            movie = parse_plex_movie(item)
+            if len(movies) < CAST_FOR_LATEST and movie["key"]:
+                movie["cast"] = plex_movie_cast(movie["key"])
+            movies.append(movie)
+            if len(movies) >= 20:
+                break
+
+        return jsonify({"movies": movies})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def find_plex_section(et_module, section_type):
+    """Find the Plex library section key for a given type (e.g. 'show', 'movie')."""
+    url = f"{PLEX_URL}/library/sections?X-Plex-Token={PLEX_TOKEN}"
+    req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        tree = et_module.parse(resp)
+    for directory in tree.getroot():
+        if directory.get("type") == section_type:
+            return directory.get("key")
+    return None
+
+
+@bp.route("/api/plex/ondeck")
+def plex_ondeck():
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        url = f"{PLEX_URL}/library/onDeck?X-Plex-Token={PLEX_TOKEN}"
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        shows = []
+        season_cache = {}
+
+        for item in tree.getroot():
+            if item.get("type") != "episode":
+                continue
+
+            thumb = item.get("grandparentThumb") or item.get("thumb")
+            parent_key = item.get("parentRatingKey")
+            season_num = int(item.get("parentIndex", 0))
+
+            # Get season leaf counts (cached)
+            watched = 0
+            total = None
+            if parent_key:
+                if parent_key not in season_cache:
+                    try:
+                        s_url = f"{PLEX_URL}/library/metadata/{parent_key}?X-Plex-Token={PLEX_TOKEN}"
+                        s_req = urllib.request.Request(s_url, headers={"Accept": "application/xml"})
+                        with urllib.request.urlopen(s_req, timeout=5) as s_resp:
+                            s_tree = ET.parse(s_resp)
+                        s_el = s_tree.getroot().find(".//Directory")
+                        if s_el is None:
+                            s_el = s_tree.getroot()
+                        season_cache[parent_key] = {
+                            "leafCount": int(s_el.get("leafCount", 0)),
+                            "viewedLeafCount": int(s_el.get("viewedLeafCount", 0)),
+                        }
+                    except Exception:
+                        season_cache[parent_key] = {}
+
+                meta = season_cache[parent_key]
+                watched = meta.get("viewedLeafCount", 0)
+                total = meta.get("leafCount") or None
+
+            shows.append({
+                "show": item.get("grandparentTitle"),
+                "season": season_num,
+                "watched": watched,
+                "total": total,
+                "thumb": plex_thumb_url(thumb),
+                "nextEpisode": item.get("title"),
+                "nextIndex": int(item.get("index", 0)),
+            })
+
+        return jsonify({"shows": shows})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/plex/shows")
+def plex_shows():
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        section_key = find_plex_section(ET, "show")
+        if not section_key:
+            return jsonify({"shows": []})
+
+        url = f"{PLEX_URL}/library/sections/{section_key}/recentlyAdded?X-Plex-Token={PLEX_TOKEN}&X-Plex-Container-Size=50"
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        # Group episodes by show, keep the most recent episode per show
+        shows = {}
+        for item in tree.getroot():
+            if item.get("type") != "episode":
+                continue
+            ep = parse_plex_episode(item)
+            show_name = ep["show"]
+            if show_name not in shows:
+                shows[show_name] = ep
+                shows[show_name]["episodes"] = 1
+            else:
+                shows[show_name]["episodes"] += 1
+                # Keep the most recent addedAt
+                if int(ep["addedAt"] or 0) > int(shows[show_name]["addedAt"] or 0):
+                    episodes_count = shows[show_name]["episodes"]
+                    shows[show_name] = ep
+                    shows[show_name]["episodes"] = episodes_count
+
+        # Sort by addedAt desc
+        result = sorted(shows.values(), key=lambda s: int(s.get("addedAt") or 0), reverse=True)
+        return jsonify({"shows": result[:20]})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/plex/trivia")
+def plex_trivia():
+    if not GEMINI_API_KEY:
+        return jsonify({"error": "GEMINI_API_KEY not configured"}), 500
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+
+    try:
+        # Find the last watched movie from the Films library, sorted by
+        # lastViewedAt. This is the item-level "watched" date, so it also
+        # covers movies marked as watched (or played without a scrobbled
+        # session) — which never appear in /status/sessions/history/all.
+        section_key = find_plex_section(ET, "movie")
+        if section_key is None:
+            return jsonify({"text": None, "movie": None})
+
+        url = (
+            f"{PLEX_URL}/library/sections/{section_key}/all"
+            f"?X-Plex-Token={PLEX_TOKEN}&type=1&sort=lastViewedAt:desc"
+            f"&viewCount%3E=1&X-Plex-Container-Size=1"
+        )
+        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            tree = ET.parse(resp)
+
+        # Container-Size is best-effort on this endpoint, so take the first
+        # movie entry (already sorted most-recently-viewed first).
+        last_watched = tree.getroot().find("Video")
+        if last_watched is None:
+            return jsonify({"text": None, "movie": None})
+
+        movie_title = last_watched.get("title")
+        movie_year = last_watched.get("year", "")
+        # The section listing carries Director tags directly — no extra fetch.
+        directors = [d.get("tag") for d in last_watched.findall("Director")]
+
+        # Written and fact-checked by Gemini in the background (see trivia.py): this never waits on it
+        return jsonify(trivia.trivia_for({
+            "key": f"{movie_title} ({movie_year})",
+            "title": movie_title,
+            "year": movie_year,
+            "directors": directors,
+        }))
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
