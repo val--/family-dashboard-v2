@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useCalendar } from '../hooks/useCalendar'
+import FullScreen from './FullScreen'
+import { eventLastDay, eventStart } from '../lib/events'
 
 const NEAR_DAYS = 21 // events closer than this get a full card
 const MAX_NEAR = 4
@@ -9,24 +10,6 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
-
-// All-day events come as "YYYY-MM-DD": build a local date, not a UTC one
-function eventStart(event) {
-  if (event.allDay) {
-    const [y, m, d] = event.start.split('-').map(Number)
-    return new Date(y, m - 1, d)
-  }
-  return new Date(event.start)
-}
-
-// Google's all-day end date is exclusive: the last day is the day before
-function eventLastDay(event) {
-  if (event.allDay) {
-    const [y, m, d] = event.end.split('-').map(Number)
-    return new Date(y, m - 1, d - 1)
-  }
-  return startOfDay(new Date(event.end))
 }
 
 function daysUntil(event, now) {
@@ -118,25 +101,6 @@ function LaterRow({ event, now, onSelect }) {
   )
 }
 
-function ModalShell({ title, onClose, children }) {
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-between pl-6 pr-2 pt-2">
-        <div className="text-sm uppercase tracking-wider text-white/60">{title}</div>
-        <button
-          onClick={onClose}
-          aria-label="Fermer"
-          className="text-white/70 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
-      {children}
-    </div>,
-    document.body,
-  )
-}
-
 function EventDetailModal({ event, now, onClose }) {
   const start = eventStart(event)
   const lastDay = eventLastDay(event)
@@ -158,7 +122,7 @@ function EventDetailModal({ event, now, onClose }) {
   }
 
   return (
-    <ModalShell title="Agenda" onClose={onClose}>
+    <FullScreen title="Agenda" onClose={onClose}>
       <div className="flex-1 overflow-y-auto flex items-center justify-center gap-6 px-8 pb-8">
         <DateTile date={start} soon={daysUntil(event, now) <= 1} />
         <div className="flex flex-col gap-2 max-w-xl">
@@ -171,13 +135,13 @@ function EventDetailModal({ event, now, onClose }) {
           </div>
         </div>
       </div>
-    </ModalShell>
+    </FullScreen>
   )
 }
 
 function AgendaModal({ events, now, onClose, onSelect }) {
   return (
-    <ModalShell title="Agenda" onClose={onClose}>
+    <FullScreen title="Agenda" onClose={onClose}>
       <div className="flex-1 overflow-y-auto px-4 pb-4 flex flex-col gap-3">
         {groupByDay(events).map(({ day, items }) => (
           <div key={day.getTime()} className="rounded-2xl bg-white/10 px-4 py-3 flex flex-col gap-2">
@@ -200,7 +164,7 @@ function AgendaModal({ events, now, onClose, onSelect }) {
           </div>
         ))}
       </div>
-    </ModalShell>
+    </FullScreen>
   )
 }
 

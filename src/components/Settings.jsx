@@ -1,4 +1,4 @@
-import { createPortal } from 'react-dom'
+import FullScreen from './FullScreen'
 
 const IDLE_CHOICES = [
   { value: 1, label: '1 min' },
@@ -61,18 +61,8 @@ function Section({ title, hint, children }) {
 
 // Full-screen Settings, opened from the gear in the header. More sections will come.
 export default function Settings({ settings, onChange, error, overridden, onClose }) {
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <div className="flex items-center justify-between pl-6 pr-2 pt-2">
-        <h1 className="text-2xl font-light text-white">Paramètres</h1>
-        <button
-          onClick={onClose}
-          aria-label="Fermer"
-          className="flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 hover:text-white"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen title="Paramètres" heading onClose={onClose}>
       <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2">
         <div className="mx-auto flex max-w-2xl flex-col gap-4">
           <Section
@@ -119,7 +109,6 @@ export default function Settings({ settings, onChange, error, overridden, onClos
           {error && <p className="rounded-xl bg-red-500/15 px-4 py-2 text-sm text-red-300">{error}</p>}
         </div>
       </div>
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }

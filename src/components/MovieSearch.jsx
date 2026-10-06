@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { createPortal } from 'react-dom'
 import { useMovieSearch } from '../hooks/useMovieSearch'
 import { API_URL } from '../api'
+import FullScreen from './FullScreen'
 
 const VirtualKeyboard = lazy(() => import('./VirtualKeyboard'))
 
@@ -293,19 +293,8 @@ export default function MovieSearch({ onClose }) {
     addMovie(selected.tmdbId, qualityProfileId)
   }
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-between p-4">
-        <div className="text-lg uppercase tracking-wider text-white/40">
-          {stepTitle}
-        </div>
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen title={stepTitle} onClose={onClose}>
       <div className="flex-1 overflow-hidden px-4 pb-4">
         {step === STEPS.SEARCH && (
           <SearchStep
@@ -326,7 +315,6 @@ export default function MovieSearch({ onClose }) {
           <AddStep movie={selected} status={addStatus} onClose={onClose} />
         )}
       </div>
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }

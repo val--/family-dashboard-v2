@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useSorties } from '../hooks/useSorties'
+import FullScreen from './FullScreen'
 
 function formatDay(dateStr) {
   const date = new Date(`${dateStr}T12:00:00`)
@@ -64,16 +64,8 @@ function EventModal({ event, onClose }) {
     (tag, i, all) => all.indexOf(tag) === i
   )
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen onClose={onClose}>
       <div className="flex-1 flex items-start justify-center gap-8 px-8 pb-8 overflow-y-auto">
         {event.image && (
           <img
@@ -131,8 +123,7 @@ function EventModal({ event, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body
+    </FullScreen>
   )
 }
 

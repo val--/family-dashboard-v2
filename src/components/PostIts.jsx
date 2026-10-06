@@ -1,32 +1,14 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import PostitNote, { tilt } from './postit/Note'
 import { timeAgo } from './postit/theme'
 import { photoDownloadUrl, photoUrl, stickerDownloadUrl, stickerUrl, videoDownloadUrl, videoUrl } from './postit/photos'
 import QrCode from './QrCode'
 import { POSTIT_URL } from './postit/links'
-import ArrowButton from './ArrowButton'
+import ArrowButton, { BackArrows } from './ArrowButton'
+import FullScreen from './FullScreen'
 
 const CELLS_PER_PAGE = 6 // 3 columns x 2 rows, the QR tile takes the first cell of the first page
 
-
-function Modal({ onClose, children }) {
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end pr-2 pt-2">
-        <button
-          onClick={onClose}
-          aria-label="Fermer"
-          className="text-white/70 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
-      {children}
-    </div>,
-    document.body,
-  )
-}
 
 // Full-screen photo (or video, muted in a loop). A tap closes it, except on the "Sur mon téléphone" button,
 // which shows a QR code to download it on a phone (on the home Wi-Fi).
@@ -35,7 +17,7 @@ function PhotoViewer({ name, sticker = false, video = false, onClose }) {
   const stop = (event) => event.stopPropagation()
 
   return (
-    <Modal onClose={onClose}>
+    <FullScreen onClose={onClose}>
       <div className="relative flex-1 min-h-0 flex items-center justify-center px-2 pb-3" onClick={onClose}>
         {video ? (
           <video src={videoUrl(name)} poster={photoUrl(name, true)} muted loop autoPlay playsInline className="max-h-full max-w-full object-contain" />
@@ -73,7 +55,7 @@ function PhotoViewer({ name, sticker = false, video = false, onClose }) {
           </button>
         )}
       </div>
-    </Modal>
+    </FullScreen>
   )
 }
 
@@ -143,18 +125,7 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
     <>
       <div className="h-full flex items-center gap-1">
         {pages > 1 && (
-          <div className="flex flex-col items-center gap-3">
-            <ArrowButton direction="prev" label="Page précédente" enabled={current > 0} onClick={() => setPage(current - 1)} />
-            <button
-              onClick={() => setPage(0)}
-              aria-label="Première page"
-              className={`text-2xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                current > 0 ? 'text-white/60 hover:text-white hover:bg-white/10 active:bg-white/10' : 'invisible'
-              }`}
-            >
-              «
-            </button>
-          </div>
+          <BackArrows page={current} onPage={setPage} />
         )}
         <div className="h-full min-w-0 flex-1 grid grid-cols-3 grid-rows-2 gap-4">
           {visible.map((cell) =>
@@ -190,7 +161,7 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
       </div>
 
       {selected && (
-        <Modal onClose={() => setSelected(null)}>
+        <FullScreen onClose={() => setSelected(null)}>
           <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-y-auto px-4 pb-8">
             <div className="flex items-center gap-2">
               {canBrowse && (
@@ -222,13 +193,13 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
               {shown.photo && (shown.video ? ' · touche la vidéo pour l’agrandir' : ' · touche la photo pour l’agrandir')}
             </div>
           </div>
-        </Modal>
+        </FullScreen>
       )}
 
       {viewing && active && <PhotoViewer name={viewing.name} sticker={viewing.sticker} video={viewing.video} onClose={() => setViewing(null)} />}
 
       {showQr && (
-        <Modal onClose={() => setShowQr(false)}>
+        <FullScreen onClose={() => setShowQr(false)}>
           <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
             <QrCode value={POSTIT_URL} className="h-[min(70vh,20rem)] aspect-square shrink-0 rounded-lg" />
             <div className="max-w-xs">
@@ -241,7 +212,7 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
               <p className="mt-4 text-sm text-white/50 break-all">{POSTIT_URL}</p>
             </div>
           </div>
-        </Modal>
+        </FullScreen>
       )}
     </>
   )

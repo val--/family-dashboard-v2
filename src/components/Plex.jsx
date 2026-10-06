@@ -1,10 +1,11 @@
 import { memo, useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import { useRadarr } from '../hooks/useRadarr'
 import { useTrivia } from '../hooks/useTrivia'
 import MovieSearch from './MovieSearch'
 import Poster from './Poster'
 import QrCode from './QrCode'
+import FullScreen from './FullScreen'
+import ArrowButton, { BackArrows } from './ArrowButton'
 
 const MAX_PREVIEW_MOVIES = 4
 const DOWNLOAD_ROTATE_INTERVAL = 5000
@@ -90,16 +91,8 @@ function WaitingSlide({ movie, isActive }) {
 function DownloadDetailModal({ movie, onClose }) {
   const isDownloading = movie.type === 'downloading'
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen onClose={onClose}>
       <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
         <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
           {movie.poster ? (
@@ -157,8 +150,7 @@ function DownloadDetailModal({ movie, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }
 
@@ -208,16 +200,8 @@ function StatusCard({ downloads, missing, onSelect }) {
 }
 
 function MovieDetailModal({ movie, onClose }) {
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-2xl leading-none"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen onClose={onClose}>
       <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
         <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
           {movie.thumb ? (
@@ -274,8 +258,7 @@ function MovieDetailModal({ movie, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }
 
@@ -312,16 +295,8 @@ function TriviaModal({ text, movie, items = [], onClose }) {
     : text.split('★').map((s) => s.trim()).filter(Boolean).map((t) => ({ text: t }))
   const [qrFor, setQrFor] = useState(null) // the source whose QR code is shown
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen onClose={onClose}>
       <div className="flex-1 flex flex-col items-center px-8 pb-8 max-w-2xl mx-auto gap-6 overflow-y-auto">
         <div className="text-center shrink-0 pt-4">
           <h2 className="text-2xl font-light text-white">{movie}</h2>
@@ -368,8 +343,7 @@ function TriviaModal({ text, movie, items = [], onClose }) {
           </div>
         </div>
       )}
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }
 
@@ -455,25 +429,7 @@ function Plex({ plex, backToStart, openRequest }) {
             </button>
           </div>
           <div className="flex items-center gap-1 flex-1 min-h-0">
-            <div className="flex flex-col items-center gap-3 shrink-0">
-              <button
-                onClick={() => setPage(page - 1)}
-                className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-                }`}
-              >
-                ‹
-              </button>
-              <button
-                onClick={() => setPage(0)}
-                aria-label="Première page"
-                className={`text-2xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-                }`}
-              >
-                «
-              </button>
-            </div>
+            <BackArrows page={page} onPage={setPage} />
             <div className="grid grid-cols-5 gap-4 flex-1 min-h-0">
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
@@ -482,14 +438,7 @@ function Plex({ plex, backToStart, openRequest }) {
                 <MovieCard key={`${page}-${i}`} movie={movie} onClick={() => setSelectedMovie(movie)} />
               ))}
             </div>
-            <button
-              onClick={() => setPage(page + 1)}
-              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-              }`}
-            >
-              ›
-            </button>
+            <ArrowButton direction="next" label="Page suivante" enabled={page < totalPages - 1} onClick={() => setPage(page + 1)} />
           </div>
         </div>
         <div className="w-full overflow-hidden" style={{ flex: '0 0 15%' }}>

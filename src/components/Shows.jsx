@@ -1,25 +1,18 @@
 import { memo, useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import { usePlexShows } from '../hooks/usePlexShows'
 import { usePlexOnDeck } from '../hooks/usePlexOnDeck'
 import { useSonarr } from '../hooks/useSonarr'
 import Poster from './Poster'
+import FullScreen from './FullScreen'
+import ArrowButton, { BackArrows } from './ArrowButton'
 
 const MAX_RECENT = 4
 const ONDECK_ROTATE_INTERVAL = 5000
 const DOWNLOAD_ROTATE_INTERVAL = 5000
 
 function ShowDetailModal({ show, onClose }) {
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-2xl leading-none"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen onClose={onClose}>
       <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
         <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
           {show.thumb ? (
@@ -71,24 +64,15 @@ function ShowDetailModal({ show, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }
 
 function DownloadDetailModal({ item, onClose }) {
   const isDownloading = item.type === 'downloading'
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex items-center justify-end p-4">
-        <button
-          onClick={onClose}
-          className="text-white/40 hover:text-white text-3xl leading-none w-12 h-12 flex items-center justify-center"
-        >
-          &times;
-        </button>
-      </div>
+  return (
+    <FullScreen onClose={onClose}>
       <div className="flex-1 flex items-center justify-center gap-8 px-8 pb-8">
         <div className="h-full max-h-[70vh] aspect-[2/3] shrink-0">
           {item.poster ? (
@@ -151,8 +135,7 @@ function DownloadDetailModal({ item, onClose }) {
           )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </FullScreen>
   )
 }
 
@@ -387,25 +370,7 @@ function Shows({ backToStart }) {
         <div className="flex flex-col gap-2 self-stretch" style={{ flex: '0 0 85%' }}>
           <div className="text-sm text-white/40">Derniers épisodes ajoutés sur Plex</div>
           <div className="flex items-center gap-1 flex-1 min-h-0">
-            <div className="flex flex-col items-center gap-3 shrink-0">
-              <button
-                onClick={() => setPage(page - 1)}
-                className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-                }`}
-              >
-                &#8249;
-              </button>
-              <button
-                onClick={() => setPage(0)}
-                aria-label="Première page"
-                className={`text-2xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                  page > 0 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-                }`}
-              >
-                «
-              </button>
-            </div>
+            <BackArrows page={page} onPage={setPage} />
             <div className="grid grid-cols-5 gap-4 flex-1 min-h-0">
               {hasStatus && page === 0 && (
                 <StatusCard downloads={downloads} missing={missing} onSelect={setSelectedDownload} />
@@ -417,14 +382,7 @@ function Shows({ backToStart }) {
                 <RecentCard key={`${page}-${i}`} show={show} onClick={() => setSelectedShow(show)} />
               ))}
             </div>
-            <button
-              onClick={() => setPage(page + 1)}
-              className={`text-3xl shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                page < totalPages - 1 ? 'text-white/60 hover:text-white hover:bg-white/10' : 'invisible'
-              }`}
-            >
-              &#8250;
-            </button>
+            <ArrowButton direction="next" label="Page suivante" enabled={page < totalPages - 1} onClick={() => setPage(page + 1)} />
           </div>
         </div>
         <div className="w-full flex items-center justify-center" style={{ flex: '0 0 15%' }}>

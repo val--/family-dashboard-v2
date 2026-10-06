@@ -1,3 +1,5 @@
+import { eventEnd, eventStart } from './events'
+
 // What the screensaver shows, as plain functions (no React): which notes and movies go round, in which
 // order, and the one-line look at the agenda. Tested in screensaver.test.js.
 
@@ -6,22 +8,6 @@ export const MAX_MOVIES = 8 // a big batch added to Plex at once must not make t
 
 // ---- A discreet look at what's coming: today's remaining events, else tomorrow's, else the day after's
 const MAX_EVENTS = 2
-
-function eventStart(event) {
-  if (event.allDay) {
-    const [y, m, d] = event.start.split('-').map(Number)
-    return new Date(y, m - 1, d)
-  }
-  return new Date(event.start)
-}
-
-function eventEnd(event) {
-  if (event.allDay) {
-    const [y, m, d] = event.end.split('-').map(Number) // exclusive: the day after the last one
-    return new Date(y, m - 1, d)
-  }
-  return new Date(event.end)
-}
 
 export function agendaPreview(events, now = new Date()) {
   if (!events?.length) return null
