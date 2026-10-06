@@ -53,6 +53,13 @@ CLIP_SECONDS = 10
 VIDEO_SIDE = 854
 ENCODE_TIMEOUT = 180
 _encoding = threading.Semaphore(1)  # one ffmpeg at a time per gunicorn worker
+
+# Files no note refers to any more (a crash between saving a file and saving its note, a sticker finished
+# after its note was deleted...) are removed now and then. A young file may belong to an upload in progress.
+ORPHAN_MIN_AGE = 3600
+CLEANUP_FIRST_DELAY = 10 * 60  # after the API starts
+CLEANUP_EVERY = 24 * 3600
+_cleanup_started = False
 Image.MAX_IMAGE_PIXELS = 50_000_000  # refuse decompression bombs (error above twice this)
 MAX_FAILURES = 5  # wrong family codes allowed per device...
 FAILURE_WINDOW = 300  # ...within this many seconds
@@ -105,6 +112,7 @@ def ensure_db():
                 pass
     _ready = True
     postit_stickers.start_worker(db, PHOTO_DIR)
+    _start_cleanup()
 
 
 @bp.before_request
@@ -248,6 +256,55 @@ def remove_photos(names):
                 os.remove(postit_stickers.sticker_path(PHOTO_DIR, name, thumb))
             except OSError:
                 pass
+
+
+def remove_orphan_files(now=None):
+    """Delete the photo/video/sticker files of PHOTO_DIR that no note refers to, once older than
+    ORPHAN_MIN_AGE. Returns the file names removed."""
+    now = now or time.time()
+    try:
+        files = [f for f in os.listdir(PHOTO_DIR) if PHOTO_NAME.match(f)]
+    except OSError:
+        return []
+    with db() as conn:
+        names = {row["photo"] for row in conn.execute("SELECT photo FROM notes WHERE photo IS NOT NULL")}
+    if files and not names:
+        # Files but no note with one: more likely a database replaced or emptied by mistake than a board
+        # where every photo was deleted (deleting a note removes its files). Never wipe the photos for that.
+        print(f"post-its: {len(files)} files but no note refers to any, cleanup skipped (check postits.db)", flush=True)
+        return []
+    removed = []
+    for name in files:
+        if name[:32] in names:
+            continue
+        path = os.path.join(PHOTO_DIR, name)
+        try:
+            if now - os.path.getmtime(path) < ORPHAN_MIN_AGE:
+                continue
+            os.remove(path)
+            removed.append(name)
+        except OSError:
+            pass  # already gone (the other gunicorn worker cleans up too)
+    if removed:
+        print(f"post-its: removed {len(removed)} orphan file(s): {', '.join(sorted(removed))}", flush=True)
+    return removed
+
+
+def _cleanup_loop():
+    time.sleep(CLEANUP_FIRST_DELAY)
+    while True:
+        try:
+            remove_orphan_files()
+        except Exception as e:  # a locked database for a moment: next time
+            print(f"post-its: orphan cleanup failed: {e}", flush=True)
+        time.sleep(CLEANUP_EVERY)
+
+
+def _start_cleanup():
+    global _cleanup_started
+    if not _cleanup_started:
+        _cleanup_started = True
+        threading.Thread(target=_cleanup_loop, daemon=True, name="postit-cleanup").start()
 
 
 def error(message, status=400):

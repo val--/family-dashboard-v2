@@ -209,3 +209,42 @@ def test_a_video_above_the_limit_is_refused(client, monkeypatch):
     monkeypatch.setattr(postits, "MAX_VIDEO_BYTES", 10_000)
     res = upload(client, "video", io.BytesIO(os.urandom(2 * 1024 * 1024)), "clip.mp4")
     assert res.status_code == 413
+
+
+# ---- Orphan files
+
+
+def put_file(name, age_seconds):
+    os.makedirs(postits.PHOTO_DIR, exist_ok=True)
+    path = stored(name)
+    with open(path, "wb") as f:
+        f.write(b"x")
+    old = os.path.getmtime(path) - age_seconds
+    os.utime(path, (old, old))
+    return path
+
+
+def test_orphan_files_are_removed_but_never_a_note_s_or_a_recent_one(client):
+    kept = upload(client, "photo", jpeg(800, 600), "photo.jpg").get_json()["photo"]
+    for suffix in (".jpg", "_thumb.jpg"):  # the note's own files, made old: still kept
+        os.utime(stored(f"{kept}{suffix}"), (1, 1))
+    orphan = "a" * 32
+    put_file(f"{orphan}.jpg", 2 * 3600)
+    put_file(f"{orphan}_sticker_thumb.png", 2 * 3600)
+    put_file(f"{'b' * 32}.mp4", 60)  # an upload in progress
+    put_file("notes.txt", 2 * 3600)  # not one of ours: left alone
+
+    assert sorted(postits.remove_orphan_files()) == [f"{orphan}.jpg", f"{orphan}_sticker_thumb.png"]
+    assert os.path.exists(stored(f"{kept}.jpg")) and os.path.exists(stored(f"{kept}_thumb.jpg"))
+    assert os.path.exists(stored(f"{'b' * 32}.mp4")) and os.path.exists(stored("notes.txt"))
+    for name in (f"{'b' * 32}.mp4", "notes.txt"):
+        os.remove(stored(name))
+
+
+def test_cleanup_never_wipes_the_photos_when_no_note_refers_to_any(client):
+    path = put_file(f"{'c' * 32}.jpg", 2 * 3600)
+    with postits.db() as conn:
+        conn.execute("DELETE FROM notes")
+    assert postits.remove_orphan_files() == []
+    assert os.path.exists(path)
+    os.remove(path)

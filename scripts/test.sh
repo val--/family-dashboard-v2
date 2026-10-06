@@ -14,7 +14,7 @@ if [[ "$what" == all || "$what" == api ]]; then
   echo "== API (pytest)"
   docker compose build -q api
   docker run --rm -v "$PWD/api:/src:ro" --entrypoint sh family-dashboard-v2-api -c \
-    'cp -r /src /tmp/api && cd /tmp/api && pip install -q --disable-pip-version-check -r requirements-dev.txt >/dev/null && python -m pytest -q -p no:cacheprovider tests' \
+    'cp -r /src /tmp/api && cd /tmp/api && pip install -q --disable-pip-version-check --root-user-action=ignore -r requirements-dev.txt >/dev/null && python -m pytest -q -p no:cacheprovider tests' \
     || status=1
 fi
 
