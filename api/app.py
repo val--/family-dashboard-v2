@@ -549,6 +549,35 @@ def parse_plex_movie(item):
     }
 
 
+CAST_FOR_LATEST = 8  # the screensaver shows the latest movies with their cast (its MAX_MOVIES)
+CAST_SIZE = 4
+_cast_cache = {}  # ratingKey -> cast; a movie's cast doesn't change
+
+
+def plex_movie_cast(key):
+    """Main actors with their photo (resized by Plex), from the movie's full metadata: the library
+    listing only has their names. None when Plex can't answer (tried again next time)."""
+    if key in _cast_cache:
+        return _cast_cache[key]
+    import urllib.request
+    import xml.etree.ElementTree as ET
+
+    try:
+        url = f"{PLEX_URL}/library/metadata/{key}?X-Plex-Token={PLEX_TOKEN}"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            video = ET.parse(resp).getroot().find("Video")
+    except Exception:
+        return None
+    if video is None:
+        return None
+    cast = [
+        {"name": role.get("tag"), "role": role.get("role"), "thumb": plex_thumb_url(role.get("thumb"), 96, 96)}
+        for role in video.findall("Role")[:CAST_SIZE]
+    ]
+    _cast_cache[key] = cast
+    return cast
+
+
 @app.route("/api/plex/recent")
 def plex_recent():
     if not PLEX_TOKEN:
@@ -571,7 +600,10 @@ def plex_recent():
         for item in tree.getroot():
             if item.get("type") != "movie":
                 continue
-            movies.append(parse_plex_movie(item))
+            movie = parse_plex_movie(item)
+            if len(movies) < CAST_FOR_LATEST and movie["key"]:
+                movie["cast"] = plex_movie_cast(movie["key"])
+            movies.append(movie)
             if len(movies) >= 20:
                 break
 
