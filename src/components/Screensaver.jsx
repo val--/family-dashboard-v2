@@ -6,62 +6,9 @@ import Stamp from './postit/Stamp'
 import QrCode from './QrCode'
 import { POSTIT_URL } from './postit/links'
 import { shortAgo } from './postit/theme'
+import { agendaPreview, screensaverItems } from '../lib/screensaver'
 
 const INVITE_AFTER_SECONDS = 2 * 86400 // nothing posted for this long: a big QR code invites to post
-const FRESH_SECONDS = 5 * 60 // a note that just arrived is shown first for this long
-const MAX_MOVIES = 8 // a big batch added to Plex at once must not make the rotation endless
-
-// ---- A discreet look at what's coming: today's remaining events, else tomorrow's, else the day after's
-const MAX_EVENTS = 2
-
-function eventStart(event) {
-  if (event.allDay) {
-    const [y, m, d] = event.start.split('-').map(Number)
-    return new Date(y, m - 1, d)
-  }
-  return new Date(event.start)
-}
-
-function eventEnd(event) {
-  if (event.allDay) {
-    const [y, m, d] = event.end.split('-').map(Number) // exclusive: the day after the last one
-    return new Date(y, m - 1, d)
-  }
-  return new Date(event.end)
-}
-
-export function agendaPreview(events, now = new Date()) {
-  if (!events?.length) return null
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
-  const dayAfter = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2)
-  const dayAfterEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3)
-  const byStart = [...events].sort((a, b) => eventStart(a) - eventStart(b))
-  const startingOn = (from, to) => byStart.filter((e) => eventStart(e) >= from && eventStart(e) < to)
-  // today: not over yet (ongoing ones and all-day ones included); then the first of the next two days with something
-  const days = [
-    ["Aujourd'hui", byStart.filter((e) => eventStart(e) < tomorrow && eventEnd(e) > now)],
-    ['Demain', startingOn(tomorrow, dayAfter)],
-    ['Après-demain', startingOn(dayAfter, dayAfterEnd)],
-  ]
-  const [label, list] = days.find(([, found]) => found.length) || [null, []]
-  if (!label) return null
-  const items = list.slice(0, MAX_EVENTS).map((e) => {
-    const start = eventStart(e)
-    const timed = !e.allDay && start >= today // an event started on an earlier day shows no time
-    return timed ? `${start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} ${e.title}` : e.title
-  })
-  return { label, items, more: list.length - items.length }
-}
-
-// The latest movies added to Plex, newest first: the ones added in the last `days` days (0 = none)
-export function recentMovies(movies, days, nowSeconds = Date.now() / 1000) {
-  if (!days || !movies?.length) return []
-  return movies
-    .filter((m) => m.addedAt && nowSeconds - Number(m.addedAt) < days * 86400)
-    .sort((a, b) => Number(b.addedAt) - Number(a.addedAt))
-    .slice(0, MAX_MOVIES)
-}
 
 const SHOWCASE_SIZE = 'h-[min(74vh,21rem)] aspect-square' // a note: the right-hand square
 // The stage on the right is taller than a note: a movie card uses the whole height (bigger poster and title),
@@ -144,7 +91,7 @@ export default function Screensaver({
   postitRange = 'today', // 'today' (else yesterday), '3days' or 'all'
   movieDays = 3, // movies added this many days ago at most; 0 = no movies
 }) {
-  const { time, date } = useClock()
+  const { now, time, date } = useClock() // ticks every second
   // Weather only when it's complete: a partial answer must not take the screensaver down
   const current = weather?.current?.main && weather.current.weather?.[0] ? weather.current : null
   const [index, setIndex] = useState(0)
@@ -154,40 +101,10 @@ export default function Screensaver({
     return () => window.removeEventListener('keydown', onWake)
   }, [onWake])
 
-  // Newest first (sorted here too, so the screensaver never depends on the API order): "the latest posted" is then
-  // simply the first one, and the arrows walk back in time from there.
-  const chronological = [...notes].sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
+  // Follows the clock (every second), so the fresh window and midnight come by themselves
+  const nowSeconds = now / 1000
+  const { chronological, fresh, rotation } = screensaverItems({ notes, movies, hasNew, postitRange, movieDays, now })
   const latestId = chronological[0]?.id
-  const nowSeconds = Date.now() / 1000
-
-  // Which notes go round (Settings): today's (else yesterday's), the last 3 days, or all of them.
-  // Days are calendar days. Computed on every render: the clock ticks each second, so this follows midnight.
-  const dayStart = (daysAgo) => {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    d.setDate(d.getDate() - daysAgo) // not "minus 24 h": DST days are 23 or 25 h long
-    return d / 1000
-  }
-  let pool
-  if (postitRange === 'all') {
-    pool = chronological
-  } else if (postitRange === '3days') {
-    pool = chronological.filter((n) => n.createdAt >= dayStart(2))
-  } else {
-    const today = chronological.filter((n) => n.createdAt >= dayStart(0))
-    pool = today.length > 0 ? today : chronological.filter((n) => n.createdAt >= dayStart(1) && n.createdAt < dayStart(0))
-  }
-  const newMovies = recentMovies(movies, movieDays, nowSeconds)
-
-  // Fresh = arrived in the last few minutes and not looked at yet (hasNew: nobody opened the Post-it
-  // tab since). While there are some, only they are shown, newest first; then the normal rotation:
-  // the post-its, then the new movies. This component re-renders every second (clock), so the window closes by itself.
-  const fresh = hasNew ? pool.filter((n) => nowSeconds - n.createdAt < FRESH_SECONDS) : []
-  const asNote = (note) => ({ id: `note-${note.id}`, note })
-  const rotation =
-    fresh.length > 0
-      ? fresh.map(asNote)
-      : [...pool.map(asNote), ...newMovies.map((movie) => ({ id: `movie-${movie.key ?? movie.title}`, movie }))]
   const rotationKey = rotation.map((item) => item.id).join(',')
 
   useEffect(() => {

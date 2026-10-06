@@ -26,5 +26,5 @@ export function useClock() {
     month: 'long',
   })
 
-  return { time, date, shortDate }
+  return { now, time, date, shortDate }
 }

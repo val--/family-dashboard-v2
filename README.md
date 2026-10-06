@@ -79,3 +79,18 @@ Once done, deploy to production:
 ```sh
 docker compose up -d --build dashboard
 ```
+
+### Tests
+
+Everything runs in Docker (nothing to install), on a throwaway data folder with a fake family:
+
+```sh
+scripts/test.sh          # API (pytest, in the API image: same Python and ffmpeg) + front (Vitest)
+scripts/test.sh api      # only the API
+scripts/test.sh front    # only the front
+```
+
+- `api/tests/`: settings, post-its (family code, throttling, photos, video cut and encoding, downloads),
+  and the pure helpers (weekend outings, trivia check, Recalbox, Plex parsing and cache).
+- `src/**/*.test.js(x)`: what the screensaver shows (`src/lib/screensaver.js`), the shared polling
+  hook, time helpers, and the post-it note (photo or video).

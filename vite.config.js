@@ -14,4 +14,8 @@ export default defineConfig({
       },
     },
   },
+  // `npm test` (or scripts/test.sh): in a fake browser, the API never called (fetch is mocked)
+  test: {
+    environment: 'jsdom',
+  },
 })

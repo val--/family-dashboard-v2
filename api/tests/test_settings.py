@@ -1,0 +1,39 @@
+import json
+
+import settings
+
+
+def test_defaults_when_nothing_is_stored(client):
+    assert client.get("/api/settings").get_json() == {key: default for key, (default, _) in settings.SCHEMA.items()}
+
+
+def test_a_valid_change_is_stored_and_kept(client):
+    res = client.put("/api/settings", json={"idleMinutes": 15, "postitRange": "all"})
+    assert res.status_code == 200
+    assert res.get_json()["idleMinutes"] == 15
+    again = client.get("/api/settings").get_json()
+    assert again["idleMinutes"] == 15 and again["postitRange"] == "all"
+    assert again["movieDays"] == 3  # untouched keys keep their default
+
+
+def test_values_outside_the_allowed_list_are_refused(client):
+    assert client.put("/api/settings", json={"idleMinutes": 7}).status_code == 400
+    assert client.put("/api/settings", json={"movieDays": "3"}).status_code == 400
+    assert client.get("/api/settings").get_json()["idleMinutes"] == 5
+
+
+def test_booleans_are_not_taken_for_numbers(client):
+    # True == 1 in Python: without the explicit check it would pass as "1 minute"
+    assert client.put("/api/settings", json={"idleMinutes": True}).status_code == 400
+
+
+def test_unknown_keys_are_refused(client):
+    assert client.put("/api/settings", json={"theme": "dark"}).status_code == 400
+
+
+def test_a_hand_edited_file_with_bad_values_falls_back_to_defaults():
+    with open(settings.SETTINGS_FILE, "w") as f:
+        json.dump({"idleMinutes": 42, "postitSeconds": 60}, f)
+    loaded = settings.load()
+    assert loaded["idleMinutes"] == 5  # not allowed: default
+    assert loaded["postitSeconds"] == 60  # allowed: kept
