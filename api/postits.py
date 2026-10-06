@@ -1,8 +1,12 @@
 """Family post-it board: notes written from phones on the LAN, shown on the kiosk."""
 import hmac
+import json
 import os
 import re
 import sqlite3
+import subprocess
+import tempfile
+import threading
 import time
 import uuid
 
@@ -38,7 +42,17 @@ POST_COOLDOWN = 5  # seconds between two notes from the same device
 # wall, so the kiosk never has to decode more than it shows.
 PHOTO_SIZES = (("", 1200, 82), ("_thumb", 400, 78))  # (file suffix, longest side, JPEG quality)
 PHOTO_FORMATS = {"JPEG", "PNG", "WEBP"}
-PHOTO_NAME = re.compile(r"^[0-9a-f]{32}((_thumb)?\.jpg|_sticker(_thumb)?\.png)$")
+PHOTO_NAME = re.compile(r"^[0-9a-f]{32}((_thumb)?\.jpg|_sticker(_thumb)?\.png|\.mp4)$")
+MAX_PHOTO_BYTES = 12 * 1024 * 1024
+
+# Short videos: the phone sends the original (any length) and where the 10 s to keep start; ffmpeg cuts
+# them and makes a light file for the Pi (854 px at most, H.264, sound kept as AAC), plus a still image
+# stored like a photo (same names), so everything that shows photos shows the video's poster.
+MAX_VIDEO_BYTES = 300 * 1024 * 1024
+CLIP_SECONDS = 10
+VIDEO_SIDE = 854
+ENCODE_TIMEOUT = 180
+_encoding = threading.Semaphore(1)  # one ffmpeg at a time per gunicorn worker
 Image.MAX_IMAGE_PIXELS = 50_000_000  # refuse decompression bombs (error above twice this)
 MAX_FAILURES = 5  # wrong family codes allowed per device...
 FAILURE_WINDOW = 300  # ...within this many seconds
@@ -75,7 +89,8 @@ def ensure_db():
         )
         columns = {row["name"] for row in conn.execute("PRAGMA table_info(notes)")}
         for name, kind in (("photo", "TEXT"), ("photo_ratio", "REAL"), ("sticker_status", "TEXT"),
-                           ("sticker_attempts", "INTEGER NOT NULL DEFAULT 0"), ("sticker_claimed", "REAL")):
+                           ("sticker_attempts", "INTEGER NOT NULL DEFAULT 0"), ("sticker_claimed", "REAL"),
+                           ("video", "INTEGER NOT NULL DEFAULT 0")):
             if name not in columns:
                 try:
                     conn.execute(f"ALTER TABLE notes ADD COLUMN {name} {kind}")
@@ -110,6 +125,7 @@ def note_dict(row):
         "createdAt": row["created_at"],
         "photo": row["photo"],
         "photoRatio": row["photo_ratio"],  # width / height: below 1 = portrait (e.g. 0.56 for 9:16)
+        "video": bool(row["video"]),  # `photo` is then the video's poster, and <photo>.mp4 the 10 s clip
         # die-cut sticker made by ComfyUI after the upload: None (no photo / feature off), pending, done, failed
         "stickerStatus": row["sticker_status"],
     }
@@ -133,6 +149,11 @@ def save_photo(file_storage):
         raise PhotoError("Photo illisible (JPEG, PNG ou WebP)") from None
 
     image = ImageOps.exif_transpose(image)
+    return store_image(image)
+
+
+def store_image(image, name=None):
+    """Save an image in the two photo sizes (flattened on white, RGB). Returns (name, width / height)."""
     if image.mode in ("RGBA", "LA") or "transparency" in image.info:
         flat = Image.new("RGB", image.size, (255, 255, 255))
         flat.paste(image.convert("RGBA"), mask=image.convert("RGBA").split()[3])
@@ -141,12 +162,74 @@ def save_photo(file_storage):
 
     os.makedirs(PHOTO_DIR, exist_ok=True)
     ratio = round(image.width / image.height, 4)
-    name = uuid.uuid4().hex
+    name = name or uuid.uuid4().hex
     for suffix, side, quality in PHOTO_SIZES:
         version = image.copy()
         version.thumbnail((side, side), Image.LANCZOS)
         version.save(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"), "JPEG", quality=quality, optimize=True, progressive=True)
     return name, ratio
+
+
+def _probe_duration(path):
+    """Duration in seconds of a media file, None when ffprobe can't tell."""
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", path],
+            capture_output=True, text=True, timeout=30, check=True,
+        ).stdout
+        return float(json.loads(out)["format"]["duration"])
+    except (subprocess.SubprocessError, OSError, KeyError, ValueError):
+        return None
+
+
+def save_video(file_storage, start):
+    """Cut CLIP_SECONDS from `start` out of an uploaded video and re-encode them light (rotated upright, no
+    metadata such as GPS). Its first frame becomes the note's photo. Returns (name, width / height)."""
+    os.makedirs(PHOTO_DIR, exist_ok=True)
+    name = uuid.uuid4().hex
+    clip = os.path.join(PHOTO_DIR, f"{name}.mp4")
+    with tempfile.TemporaryDirectory() as tmp:
+        source = os.path.join(tmp, "source")
+        file_storage.save(source)
+        duration = _probe_duration(source)
+        if duration is None:
+            raise PhotoError("Vidéo illisible")
+        start = min(max(0.0, start), max(0.0, duration - CLIP_SECONDS))
+        poster = os.path.join(tmp, "poster.png")
+        encode = [
+            "nice", "-n", "10", "ffmpeg", "-nostdin", "-v", "error", "-y",
+            "-ss", f"{start:.3f}", "-i", source, "-t", str(CLIP_SECONDS),
+            "-map", "0:v:0", "-map", "0:a:0?",  # the sound is kept (the kiosk plays muted, for now)
+            "-vf", f"scale={VIDEO_SIDE}:{VIDEO_SIDE}:force_original_aspect_ratio=decrease:force_divisible_by=2,format=yuv420p",
+            "-fpsmax", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-profile:v", "main",
+            "-maxrate", "1500k", "-bufsize", "3000k",
+            "-c:a", "aac", "-b:a", "96k", "-ac", "2",
+            "-map_metadata", "-1", "-map_chapters", "-1", "-movflags", "+faststart", clip,
+        ]
+        try:
+            with _encoding:
+                subprocess.run(encode, capture_output=True, timeout=ENCODE_TIMEOUT, check=True)
+                subprocess.run(
+                    ["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", clip, "-frames:v", "1", poster],
+                    capture_output=True, timeout=30, check=True,
+                )
+            with Image.open(poster) as image:
+                image.load()
+                _, ratio = store_image(image, name)
+        except (subprocess.SubprocessError, OSError) as e:
+            remove_photos([name])
+            if isinstance(e, subprocess.TimeoutExpired):
+                raise PhotoError("La vidéo a mis trop de temps à être préparée") from None
+            raise PhotoError("Vidéo illisible ou format non pris en charge") from None
+    return name, ratio
+
+
+def _upload_size(file_storage):
+    stream = file_storage.stream
+    stream.seek(0, os.SEEK_END)
+    size = stream.tell()
+    stream.seek(0)
+    return size
 
 
 def remove_photos(names):
@@ -156,6 +239,10 @@ def remove_photos(names):
                 os.remove(os.path.join(PHOTO_DIR, f"{name}{suffix}.jpg"))
             except OSError:
                 pass
+        try:
+            os.remove(os.path.join(PHOTO_DIR, f"{name}.mp4"))
+        except OSError:
+            pass
         for thumb in (False, True):
             try:
                 os.remove(postit_stickers.sticker_path(PHOTO_DIR, name, thumb))
@@ -211,11 +298,12 @@ def verify_code():
 
 @bp.route("/api/postits", methods=["POST"])
 def create_note():
-    # JSON for a text-only note, multipart/form-data when a photo comes along
+    # JSON for a text-only note, multipart/form-data when a photo or a video comes along
+    request.max_content_length = MAX_VIDEO_BYTES + 1024 * 1024  # videos: more than the app-wide photo limit
     if request.is_json:
-        payload, upload = request.get_json(silent=True) or {}, None
+        payload, upload, video = request.get_json(silent=True) or {}, None, None
     else:
-        payload, upload = request.form.to_dict(), request.files.get("photo")
+        payload, upload, video = request.form.to_dict(), request.files.get("photo"), request.files.get("video")
     bad = check_code(payload)
     if bad:
         return bad
@@ -245,18 +333,30 @@ def create_note():
         return error("Doucement, un post-it à la fois", 429)
     _last_post[ip] = now
 
-    photo, ratio = None, None
-    if upload and upload.filename:
-        try:
+    photo, ratio, is_video = None, None, False
+    try:
+        if video and video.filename:
+            try:
+                start = float(payload.get("start") or 0)
+            except ValueError:
+                start = 0.0
+            photo, ratio = save_video(video, start)
+            is_video = True
+        elif upload and upload.filename:
+            if _upload_size(upload) > MAX_PHOTO_BYTES:
+                return error("Photo trop lourde (12 Mo maximum)", 413)
             photo, ratio = save_photo(upload)
-        except PhotoError as e:
-            return error(str(e))
+    except PhotoError as e:
+        return error(str(e))
 
     try:
         with db() as conn:
             cur = conn.execute(
-                "INSERT INTO notes (author, text, color, sticker, created_at, photo, photo_ratio, sticker_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (author, text, color, sticker, int(now), photo, ratio, "pending" if photo and postit_stickers.COMFYUI_URL else None),
+                "INSERT INTO notes (author, text, color, sticker, created_at, photo, photo_ratio, video, sticker_status) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (author, text, color, sticker, int(now), photo, ratio, int(is_video),
+                 # die-cut stickers are for photos only
+                 "pending" if photo and not is_video and postit_stickers.COMFYUI_URL else None),
             )
             row = conn.execute("SELECT * FROM notes WHERE id = ?", (cur.lastrowid,)).fetchone()
     except Exception:
@@ -277,17 +377,22 @@ def get_photo(filename):
         if row:
             day = time.strftime("%Y-%m-%d", time.localtime(row["created_at"]))
             name = f"post-it-{row['author']}-{day}"
-        png = filename.endswith(".png")
-        return send_from_directory(PHOTO_DIR, filename, mimetype="image/png" if png else "image/jpeg", as_attachment=True,
-                                   download_name=f"{name}{'-sticker.png' if png else '.jpg'}")
-    response = send_from_directory(PHOTO_DIR, filename, mimetype="image/png" if filename.endswith(".png") else "image/jpeg")
+        suffix = "-sticker.png" if filename.endswith(".png") else ".mp4" if filename.endswith(".mp4") else ".jpg"
+        return send_from_directory(PHOTO_DIR, filename, mimetype=_mimetype(filename), as_attachment=True,
+                                   download_name=f"{name}{suffix}")
+    # (Range requests are handled: the kiosk's <video> can read the clip by pieces)
+    response = send_from_directory(PHOTO_DIR, filename, mimetype=_mimetype(filename))
     response.headers["Cache-Control"] = "public, max-age=604800, immutable"  # a file never changes
     return response
 
 
+def _mimetype(filename):
+    return "image/png" if filename.endswith(".png") else "video/mp4" if filename.endswith(".mp4") else "image/jpeg"
+
+
 @bp.app_errorhandler(413)
 def too_large(_):
-    return error("Fichier trop volumineux (12 Mo maximum)", 413)
+    return error("Fichier trop volumineux (12 Mo pour une photo, 300 Mo pour une vidéo)", 413)
 
 
 def _own_note(conn, note_id, payload):
