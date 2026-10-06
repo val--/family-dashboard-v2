@@ -1,5 +1,6 @@
 """Plex: latest movies (with cast and backdrop), latest shows, on deck, and the last watched movie's trivia."""
 import os
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -112,7 +113,7 @@ def plex_recent():
         return jsonify({"error": "PLEX_TOKEN not configured"}), 500
 
     try:
-        section_key = find_plex_section(ET, "movie")
+        section_key = find_plex_section("movie")
         if not section_key:
             return jsonify({"movies": []})
 
@@ -138,14 +139,23 @@ def plex_recent():
         return jsonify({"error": str(e)}), 500
 
 
-def find_plex_section(et_module, section_type):
-    """Find the Plex library section key for a given type (e.g. 'show', 'movie')."""
+SECTION_CACHE_SECONDS = 3600  # libraries are almost never added or removed
+_section_cache = {}  # type -> (time, key); found keys only
+
+
+def find_plex_section(section_type):
+    """The Plex library section key for a given type (e.g. 'show', 'movie'). Remembered for an hour:
+    every movie/show/trivia call used to fetch the list of libraries again first."""
+    cached = _section_cache.get(section_type)
+    if cached and time.time() - cached[0] < SECTION_CACHE_SECONDS:
+        return cached[1]
     url = f"{PLEX_URL}/library/sections?X-Plex-Token={PLEX_TOKEN}"
     req = urllib.request.Request(url, headers={"Accept": "application/xml"})
     with urllib.request.urlopen(req, timeout=10) as resp:
-        tree = et_module.parse(resp)
+        tree = ET.parse(resp)
     for directory in tree.getroot():
         if directory.get("type") == section_type:
+            _section_cache[section_type] = (time.time(), directory.get("key"))
             return directory.get("key")
     return None
 
@@ -218,7 +228,7 @@ def plex_shows():
         return jsonify({"error": "PLEX_TOKEN not configured"}), 500
 
     try:
-        section_key = find_plex_section(ET, "show")
+        section_key = find_plex_section("show")
         if not section_key:
             return jsonify({"shows": []})
 
@@ -265,7 +275,7 @@ def plex_trivia():
         # lastViewedAt. This is the item-level "watched" date, so it also
         # covers movies marked as watched (or played without a scrobbled
         # session) — which never appear in /status/sessions/history/all.
-        section_key = find_plex_section(ET, "movie")
+        section_key = find_plex_section("movie")
         if section_key is None:
             return jsonify({"text": None, "movie": None})
 
