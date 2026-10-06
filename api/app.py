@@ -490,14 +490,14 @@ def calendar_events():
 #  Plex
 # ========================
 
-def plex_thumb_url(thumb, width=400, height=600):
-    """Resized poster URL through Plex's transcoder (originals are ~2000x3000)."""
+def plex_thumb_url(thumb, width=400, height=600, blur=0):
+    """Resized poster URL through Plex's transcoder (originals are ~2000x3000), blurred by Plex if asked."""
     if not thumb:
         return None
     src = urllib.parse.quote(thumb, safe="")
     return (
         f"{PLEX_PUBLIC_URL}/photo/:/transcode?width={width}&height={height}"
-        f"&minSize=1&upscale=0&url={src}&X-Plex-Token={PLEX_TOKEN}"
+        f"&minSize=1&upscale=0&url={src}{f'&blur={blur}' if blur else ''}&X-Plex-Token={PLEX_TOKEN}"
     )
 
 
@@ -545,6 +545,8 @@ def parse_plex_movie(item):
         "addedAt": item.get("addedAt"),
         "lastViewedAt": item.get("lastViewedAt"),
         "thumb": plex_thumb_url(thumb),
+        # backdrop for the screensaver: small and softly blurred by Plex (no costly CSS filter on the Pi)
+        "art": plex_thumb_url(item.get("art"), 640, 360, blur=8),
         "watched": int(item.get("viewCount", 0)) > 0,
     }
 
