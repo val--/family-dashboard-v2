@@ -1,33 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { usePolling } from './usePolling'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const REFRESH_INTERVAL = 3 * 60 * 1000 // cheap: the API only reads its cache (anecdotes are made in the background)
-const DEMO = import.meta.env.VITE_DEMO === 'true'
+const selectTrivia = (json) => (json.text ? json : undefined) // nothing yet for this movie: keep what we have
 
 export function useTrivia() {
-  const [trivia, setTrivia] = useState(null)
-  const [loading, setLoading] = useState(!DEMO)
-
-  const fetchTrivia = useCallback(async () => {
-    if (DEMO) return
-    try {
-      const res = await fetch(`${API_URL}/api/plex/trivia`)
-      if (res.ok) {
-        const json = await res.json()
-        if (json.text) setTrivia(json)
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchTrivia()
-    const interval = setInterval(fetchTrivia, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [fetchTrivia])
-
+  const { data: trivia, loading } = usePolling('/api/plex/trivia', REFRESH_INTERVAL, { select: selectTrivia, tolerant: true })
   return { trivia, loading }
 }

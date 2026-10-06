@@ -1,35 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
 import { mockPrinter } from '../mocks'
+import { usePolling } from './usePolling'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const REFRESH_INTERVAL = 60 * 1000 // 1 minute
-const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 export function usePrinter() {
-  const [data, setData] = useState(DEMO ? mockPrinter : null)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(!DEMO)
-
-  const fetchStatus = useCallback(async () => {
-    if (DEMO) return
-    try {
-      const res = await fetch(`${API_URL}/api/printer`)
-      if (!res.ok) throw new Error('Printer API request failed')
-      const json = await res.json()
-      setData(json)
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchStatus()
-    const interval = setInterval(fetchStatus, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [fetchStatus])
-
-  return { data, loading, error, refresh: fetchStatus }
+  return usePolling('/api/printer', REFRESH_INTERVAL, { demo: mockPrinter })
 }

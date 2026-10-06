@@ -1,36 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { mockPostits } from '../mocks'
+import { usePolling } from './usePolling'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const REFRESH_INTERVAL = 30 * 1000 // 30 seconds: a new note shows up quickly
-const DEMO = import.meta.env.VITE_DEMO === 'true'
 const SEEN_KEY = 'postits-last-seen'
 
 export function usePostits() {
-  const [data, setData] = useState(DEMO ? mockPostits : null)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(!DEMO)
-
-  const fetchNotes = useCallback(async () => {
-    if (DEMO) return
-    try {
-      const res = await fetch(`${API_URL}/api/postits`)
-      if (!res.ok) throw new Error('Post-it API request failed')
-      setData(await res.json())
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchNotes()
-    const interval = setInterval(fetchNotes, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [fetchNotes])
-
+  const { data, loading, error } = usePolling('/api/postits', REFRESH_INTERVAL, { demo: mockPostits })
   return { notes: data?.notes ?? [], config: data?.config ?? null, loading, error }
 }
 

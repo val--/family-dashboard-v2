@@ -4,8 +4,7 @@ import { useVpn } from '../hooks/useVpn'
 import { useSystem } from '../hooks/useSystem'
 import { useRecalbox } from '../hooks/useRecalbox'
 import ErrorBoundary from './ErrorBoundary'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
+import { API_URL } from '../api'
 
 const PRINTER_STATUS = {
   idle: 'Prête',

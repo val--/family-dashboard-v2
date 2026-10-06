@@ -1,35 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
 import { mockVpn } from '../mocks'
+import { usePolling } from './usePolling'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const REFRESH_INTERVAL = 60 * 1000 // 1 minute
-const DEMO = import.meta.env.VITE_DEMO === 'true'
 
+// A broken tunnel comes as { healthy: false, error } with a 200: it is data for the card, not a failure
 export function useVpn() {
-  const [data, setData] = useState(DEMO ? mockVpn : null)
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(!DEMO)
-
-  const fetchStatus = useCallback(async () => {
-    if (DEMO) return
-    try {
-      const res = await fetch(`${API_URL}/api/vpn`)
-      if (!res.ok) throw new Error('VPN API request failed')
-      const json = await res.json()
-      setData(json)
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchStatus()
-    const interval = setInterval(fetchStatus, REFRESH_INTERVAL)
-    return () => clearInterval(interval)
-  }, [fetchStatus])
-
+  const { data, loading, error } = usePolling('/api/vpn', REFRESH_INTERVAL, { demo: mockVpn })
   return { data, loading, error }
 }

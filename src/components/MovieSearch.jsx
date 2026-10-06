@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { useMovieSearch } from '../hooks/useMovieSearch'
+import { API_URL } from '../api'
 
 const VirtualKeyboard = lazy(() => import('./VirtualKeyboard'))
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 
 function StreamingProviders({ tmdbId }) {
   const [providers, setProviders] = useState(null)
