@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100'
 const REFRESH_INTERVAL = 5 * 60 * 1000 // in case they were changed from another screen
-const DEFAULTS = { idleMinutes: 5, postitSeconds: 30, postitRange: 'today' }
+const DEFAULTS = { idleMinutes: 5, postitSeconds: 30, postitRange: 'today', movieDays: 3 }
 
 // Dashboard settings, stored by the API (data/settings.json)
 export function useSettings() {

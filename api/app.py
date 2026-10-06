@@ -532,6 +532,7 @@ def parse_plex_movie(item):
     roles = [r.get("tag") for r in item.findall("Role")]
 
     return {
+        "key": item.get("ratingKey"),
         "title": item.get("title"),
         "year": item.get("year"),
         "summary": item.get("summary"),

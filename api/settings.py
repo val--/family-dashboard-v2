@@ -18,6 +18,7 @@ SCHEMA = {
     "idleMinutes": (5, [1, 5, 15, 60, 0]),  # screensaver delay; 0 = never
     "postitSeconds": (30, [15, 30, 60, 300, 0]),  # time per post-it on the screensaver (latest: twice as long); 0 = stays
     "postitRange": ("today", ["today", "3days", "all"]),  # which post-its go round on the screensaver
+    "movieDays": (3, [1, 3, 7, 14, 0]),  # movies added to Plex this recently go round on the screensaver too; 0 = none
 }
 
 _lock = threading.Lock()

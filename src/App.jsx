@@ -19,6 +19,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
+import { usePlex } from './hooks/usePlex'
 import Screensaver from './components/Screensaver'
 
 function useDevicesIndicator() {
@@ -52,19 +53,15 @@ function App() {
   const calendar = useCalendar() // for the screensaver's look at today / tomorrow
   const postits = usePostits()
   const stickerViews = useStickerViews()
+  const plex = usePlex() // the Films tab and the screensaver's latest movies
   const [activeTab, setActiveTab] = useState('')
-  const [postitRequest, setPostitRequest] = useState(null)
+  // From the screensaver: { title } = the tab to wake up on, plus what to open there (note, qr or movie)
+  const [wakeRequest, setWakeRequest] = useState(null)
   const [reselected, setReselected] = useState(null) // { title } when the active tab is tapped again
 
-  function openPostitFromScreensaver(note) {
+  function wakeOn(request) {
     wake()
-    setPostitRequest({ title: 'Post-it', note })
-  }
-
-  // "Ajouter un post-it !" under the screensaver's note: wakes up on the Post-it tab with its big QR code
-  function addPostitFromScreensaver() {
-    wake()
-    setPostitRequest({ title: 'Post-it', qr: true })
+    setWakeRequest(request)
   }
   const hasNewPostit = useUnseenPostits(postits.notes, postits.config !== null, activeTab === 'Post-it' && !idle)
 
@@ -123,13 +120,13 @@ function App() {
           titles={['Agenda', 'Post-it', ...(SHOW_SORTIES ? ['Sorties'] : []), 'Films', 'Séries', 'Appareils']}
           indicators={[null, hasNewPostit ? 'sky' : null, ...(SHOW_SORTIES ? [null] : []), null, null, devicesIndicator]}
           onActiveChange={setActiveTab}
-          goTo={postitRequest}
+          goTo={wakeRequest}
           onReselect={(title) => setReselected({ title })}
         >
           <Calendar />
-          <PostIts postits={postits} openRequest={postitRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} />
+          <PostIts postits={postits} openRequest={wakeRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} />
           {SHOW_SORTIES && <Sorties />}
-          <Plex backToStart={reselected?.title === 'Films' ? reselected : null} />
+          <Plex plex={plex} openRequest={wakeRequest} backToStart={reselected?.title === 'Films' ? reselected : null} />
           <Shows backToStart={reselected?.title === 'Séries' ? reselected : null} />
           <Devices />
         </WidgetCarousel>
@@ -149,7 +146,21 @@ function App() {
       {idle && (
         // if the screensaver itself fails: a black screen that still wakes up on touch
         <ErrorBoundary name="écran de veille" fallback={<div onClick={wake} className="visible fixed inset-0 z-[100] bg-black" />}>
-          <Screensaver weather={weather} events={calendar.events} notes={postits.notes} hasNew={hasNewPostit} onWake={wake} onOpenNote={openPostitFromScreensaver} onAddNote={addPostitFromScreensaver}stickerViews={stickerViews} postitSeconds={settings.postitSeconds} postitRange={settings.postitRange} />
+          <Screensaver
+            weather={weather}
+            events={calendar.events}
+            notes={postits.notes}
+            movies={plex.movies}
+            hasNew={hasNewPostit}
+            onWake={wake}
+            onOpenNote={(note) => wakeOn({ title: 'Post-it', note })}
+            onAddNote={() => wakeOn({ title: 'Post-it', qr: true })}
+            onOpenMovie={(movie) => wakeOn({ title: 'Films', movie })}
+            stickerViews={stickerViews}
+            postitSeconds={settings.postitSeconds}
+            postitRange={settings.postitRange}
+            movieDays={settings.movieDays}
+          />
         </ErrorBoundary>
       )}
     </div>

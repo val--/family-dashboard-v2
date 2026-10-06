@@ -22,6 +22,14 @@ const POSTIT_RANGE_CHOICES = [
   { value: 'all', label: 'Tous' },
 ]
 
+const MOVIE_DAYS_CHOICES = [
+  { value: 1, label: '24 h' },
+  { value: 3, label: '3 jours' },
+  { value: 7, label: '7 jours' },
+  { value: 14, label: '14 jours' },
+  { value: 0, label: 'Non' },
+]
+
 function Choice({ options, value, onChange }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -97,6 +105,16 @@ export default function Settings({ settings, onChange, error, overridden, onClos
                   ? "Ceux d'aujourd'hui et des deux jours précédents."
                   : 'Tous les post-it du mur.'}
             </div>
+          </Section>
+          <Section
+            title="Nouveaux films sur l'écran de veille"
+            hint={
+              settings.movieDays === 0
+                ? "Les films ajoutés sur Plex ne sont pas montrés sur l'écran de veille."
+                : 'Les films ajoutés sur Plex depuis ce délai défilent après les post-it (même durée par affiche).'
+            }
+          >
+            <Choice options={MOVIE_DAYS_CHOICES} value={settings.movieDays} onChange={(movieDays) => onChange({ movieDays })} />
           </Section>
           {error && <p className="rounded-xl bg-red-500/15 px-4 py-2 text-sm text-red-300">{error}</p>}
         </div>

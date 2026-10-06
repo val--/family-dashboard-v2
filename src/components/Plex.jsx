@@ -1,6 +1,5 @@
 import { memo, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { usePlex } from '../hooks/usePlex'
 import { useRadarr } from '../hooks/useRadarr'
 import { useTrivia } from '../hooks/useTrivia'
 import MovieSearch from './MovieSearch'
@@ -395,8 +394,9 @@ const MarqueeBanner = memo(function MarqueeBanner({ text, movie, onClick }) {
   )
 })
 
-function Plex({ backToStart }) {
-  const { movies, loading, error } = usePlex()
+// `plex` comes from App (usePlex), shared with the screensaver; openRequest = { movie } opens that movie's details
+function Plex({ plex, backToStart, openRequest }) {
+  const { movies, loading, error } = plex
   const { data: radarrData } = useRadarr()
   const { trivia } = useTrivia()
   const [selectedMovie, setSelectedMovie] = useState(null)
@@ -409,6 +409,11 @@ function Plex({ backToStart }) {
   useEffect(() => {
     if (backToStart) setPage(0)
   }, [backToStart])
+
+  // A movie tapped on the screensaver: its details open over the tab
+  useEffect(() => {
+    if (openRequest?.movie) setSelectedMovie(openRequest.movie)
+  }, [openRequest])
 
   // Preload all movie thumbnails on mount
   useEffect(() => {
