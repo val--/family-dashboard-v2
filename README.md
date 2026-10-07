@@ -33,7 +33,7 @@ about today's or tomorrow's events on the left. On the right, a small notificati
   "Dans l'épisode précédent" / "Il y a N épisodes" reminder of where the story was left, written by Gemini
   from Plex's summaries of the last episodes watched (and checked like the trivia);
 - then the last movie watched (for a few days after), with its anecdotes (the Films tab's ones), scrolling
-  slowly when they don't fit;
+  slowly in a loop (like end credits) when they don't fit;
 - story-like segments under it show where you are; tap one to jump to it;
 - with nothing to show and no post-it for two days, a big QR code invites the family to post.
 

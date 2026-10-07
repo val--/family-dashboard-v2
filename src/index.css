@@ -66,11 +66,12 @@
   min-width: 40% !important;
 }
 
-/* AutoScroll: still at the top, slow scroll down, still at the bottom, and back (alternate) */
+/* AutoScroll: rolls up continuously like end credits; the content is followed by its copy, so going
+   back to 0 after one copy shows the same picture (a seamless loop) */
 @keyframes autoscroll {
-  0%, 12% { transform: translateY(0); }
-  88%, 100% { transform: translateY(var(--scroll-distance)); }
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--scroll-distance)); }
 }
 .animate-autoscroll {
-  animation: autoscroll linear infinite alternate;
+  animation: autoscroll linear infinite;
 }
