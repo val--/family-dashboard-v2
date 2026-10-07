@@ -117,7 +117,11 @@ def test_new_episodes_only_for_started_shows_and_without_spoilers(client, monkey
     }
 
     def fake_xml(path):
-        return recently_added if "recentlyAdded" in path else shows[path.rsplit("/", 1)[-1]]
+        if "recentlyAdded" in path:
+            return recently_added
+        if path.endswith("/allLeaves"):  # the show's episodes: none watched before the new ones here
+            return ET.Element("MediaContainer")
+        return shows[path.rsplit("/", 1)[-1]]
 
     monkeypatch.setattr(plex, "_plex_xml", fake_xml)
     monkeypatch.setattr(plex, "find_plex_section", lambda kind: "2")

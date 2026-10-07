@@ -2,10 +2,13 @@ import { shortAgo } from './postit/theme'
 
 // A new episode of a show the family has started, in the same frame as a new movie. No spoiler: the
 // picture is the show's poster, and the episode's own summary only shows once it was watched (the API
-// doesn't even send it before); the show's summary stands in for it.
+// doesn't even send it before). Until then, a reminder of where the story was left: the last episode
+// watched before it, "Dans l'épisode précédent" or "Il y a N épisodes", with Gemini's short recap (Plex's
+// summary of that episode until it is written).
 export default function NewEpisodeCard({ episode, onClick }) {
   const others = episode.count - 1
-  const summary = episode.watched ? episode.summary : episode.showSummary
+  const before = !episode.watched && episode.previously
+  const summary = episode.watched ? episode.summary : before ? before.recap || before.summary : episode.showSummary
   return (
     <div onClick={onClick} className={`h-full w-[min(74vh,21rem)] flex flex-col overflow-hidden opacity-90 ${onClick ? 'cursor-pointer' : ''}`}>
       <div className="text-[0.7rem] uppercase leading-none tracking-widest text-white/45">Nouvel épisode disponible</div>
@@ -29,7 +32,13 @@ export default function NewEpisodeCard({ episode, onClick }) {
           )}
         </div>
       </div>
-      {summary && <p className="mt-2 line-clamp-6 text-[0.82rem] leading-[1.1rem] text-white/65">{summary}</p>}
+      {before && (
+        <div className="mt-2 text-xs uppercase tracking-wider text-white/45">
+          {before.distance === 1 ? "Dans l'épisode précédent" : `Il y a ${before.distance} épisodes`}
+          <span className="normal-case tracking-normal"> · S{before.season}E{before.episode}</span>
+        </div>
+      )}
+      {summary && <p className={`${before ? 'mt-1' : 'mt-2'} line-clamp-5 text-[0.82rem] leading-[1.1rem] text-white/65`}>{summary}</p>}
     </div>
   )
 }

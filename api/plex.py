@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 
 from flask import Blueprint, jsonify
 
+import recaps
 import trivia
 
 bp = Blueprint("plex", __name__)
@@ -246,11 +247,51 @@ def plex_show(key):
     return show
 
 
+_episodes_cache = {}  # show ratingKey -> (time, its episodes in story order)
+
+
+def plex_show_episodes(key):
+    """Every episode of a show, in story order (season, then number), kept 10 minutes."""
+    cached = _episodes_cache.get(key)
+    if cached and time.time() - cached[0] < SHOW_CACHE_SECONDS:
+        return cached[1]
+    episodes = sorted(_plex_xml(f"/library/metadata/{key}/allLeaves"),
+                      key=lambda e: (int(e.get("parentIndex") or 0), int(e.get("index") or 0)))
+    _episodes_cache[key] = (time.time(), episodes)
+    return episodes
+
+
+def _episode_info(e):
+    return {"season": int(e.get("parentIndex") or 0), "episode": int(e.get("index") or 0),
+            "title": e.get("title"), "summary": e.get("summary")}
+
+
+def previously(show_key, show_title, new_key):
+    """Where the family left the show before the new episode `new_key`: the last episode watched before it,
+    how many episodes back it is (1 = just before), its Plex summary and the short recap (None until
+    Gemini wrote it). None when nothing was watched before it."""
+    episodes = plex_show_episodes(show_key)
+    position = next((i for i, e in enumerate(episodes) if e.get("ratingKey") == new_key), None)
+    if position is None:
+        return None
+    watched = [i for i in range(position) if int(episodes[i].get("viewCount") or 0) > 0]
+    if not watched:
+        return None
+    last = episodes[watched[-1]]
+    context = [_episode_info(episodes[i]) for i in watched[-3:]]  # the recap's material: the last 3 watched
+    return {
+        **_episode_info(last),
+        "distance": position - watched[-1],
+        "recap": recaps.recap_for(last.get("ratingKey"), show_title, context),
+    }
+
+
 @bp.route("/api/plex/new-episodes")
 def plex_new_episodes():
     """The latest episode added per show in the last two weeks, for the shows the family has started
-    (at least one episode watched). No spoiler: an episode's own summary only comes when it was watched
-    (the show's summary otherwise), and the picture is the show's poster, never a still of the episode."""
+    (at least one episode watched). No spoiler: an episode's own summary only comes when it was watched,
+    and the picture is the show's poster, never a still of the episode. Otherwise `previously` reminds
+    where the story was left (the last episode watched before it, see previously())."""
     if not PLEX_TOKEN:
         return jsonify({"error": "PLEX_TOKEN not configured"}), 500
     try:
@@ -285,6 +326,7 @@ def plex_new_episodes():
                 "thumb": plex_thumb_url(latest.get("grandparentThumb")),
                 "art": plex_thumb_url(latest.get("grandparentArt"), 640, 360, blur=8),
                 "addedTimes": [int(e.get("addedAt") or 0) for e in items],  # every new episode of the show
+                "previously": None if watched else previously(show_key, latest.get("grandparentTitle"), latest.get("ratingKey")),
             })
         episodes.sort(key=lambda e: e["addedAt"], reverse=True)
         return jsonify({"episodes": episodes})

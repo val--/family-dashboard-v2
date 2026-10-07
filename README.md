@@ -29,7 +29,9 @@ about today's or tomorrow's events on the left. On the right, a small notificati
 - then the movies just added to Plex: poster, summary, main actors with their photos, over a dimmed
   backdrop of the movie;
 - then the latest episode added of each show the family has started (at least one episode watched), with
-  no spoiler: the show's poster and summary, the episode's own summary only once it was watched;
+  no spoiler: the show's poster, the episode's own summary only once it was watched; until then a short
+  "Dans l'épisode précédent" / "Il y a N épisodes" reminder of where the story was left, written by Gemini
+  from Plex's summaries of the last episodes watched (and checked like the trivia);
 - story-like segments under it show where you are; tap one to jump to it;
 - with nothing to show and no post-it for two days, a big QR code invites the family to post.
 
@@ -62,6 +64,7 @@ api        → Flask (gunicorn, port 5100), one module per feature, data in ./da
 | `agenda.py` | `/api/calendar` | Google Calendar (service account), cached 5 min |
 | `plex.py` | `/api/plex/recent`, `/shows`, `/ondeck`, `/new-episodes`, `/trivia` | Plex (posters, cast photos and backdrops resized by Plex itself) |
 | `trivia.py` | (used by `/api/plex/trivia`) | Gemini, with sources fetched from Allociné and Wikipedia |
+| `recaps.py` | (used by `/api/plex/new-episodes`) | Gemini, from Plex's own episode summaries |
 | `hue.py` | `/api/hue`, `/api/hue/lights/<id>`, `/groups/<id>`, `/scenes/<id>/recall` | the Philips Hue bridge (local API v2): switch, dim, recall a scene, nothing else |
 | `arr.py` | `/api/radarr/*`, `/api/sonarr/status`, `/api/tmdb/streaming/<id>` | Radarr, Sonarr, TMDb |
 | `postits.py` | `/api/postits*` | SQLite + photo/video files; ffmpeg for videos |
@@ -73,7 +76,7 @@ api        → Flask (gunicorn, port 5100), one module per feature, data in ./da
 | `recalbox.py` | `/api/recalbox` | a Recalbox console on the LAN (read only) |
 
 `./data` holds everything the API keeps: `postits.db` (SQLite), `photos/` (post-it photos, stickers and
-videos), `settings.json` and `trivia.json`.
+videos), `settings.json`, `trivia.json` and `recaps.json`.
 
 **The API has no login**: it is meant for the home LAN only. The post-it board asks for a family code once
 per phone, which keeps a guest's phone out, not an attacker. Don't expose ports 3000 and 5100 to the
