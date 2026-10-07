@@ -17,36 +17,36 @@ export default function LightShortcuts({ hue, sceneIds }) {
   }
 
   return (
-    <div className="mt-4 flex items-start justify-center gap-2">
+    <div className="mt-9 flex items-start justify-center gap-1">
       {scenes.map((scene) => (
         <button
           key={scene.id}
           onClick={tap(scene.id, () => hue.recallScene(scene.id))}
           aria-label={`Scénario ${scene.name} (${scene.room})`}
-          className="flex w-14 flex-col items-center gap-1 opacity-50 transition-opacity active:opacity-100"
+          className="flex w-[3.75rem] flex-col items-center gap-1.5 opacity-50 transition-opacity active:opacity-100"
         >
           <span
-            className={`block h-7 w-7 rounded-full ${scene.active ? 'ring-1 ring-white ring-offset-2 ring-offset-black' : ''} ${
+            className={`block h-10 w-10 rounded-full ${scene.active ? 'ring-1 ring-white ring-offset-2 ring-offset-black' : ''} ${
               pending === scene.id ? 'animate-pulse' : ''
             }`}
             style={{ background: sceneSwatch(scene.colors) }}
           />
-          <span className="w-full truncate text-center text-[11px] leading-tight text-white/80">{scene.name}</span>
+          <span className="w-full truncate text-center text-xs leading-tight text-white/80">{scene.name}</span>
         </button>
       ))}
       {hue.home && (
         <button
           onClick={tap('home', () => hue.setRoom(hue.home.group, { on: false }))}
           aria-label="Tout éteindre"
-          className={`flex w-14 flex-col items-center gap-1 transition-opacity active:opacity-100 ${hue.home.on ? 'opacity-50' : 'opacity-25'}`}
+          className={`flex w-[3.75rem] flex-col items-center gap-1.5 transition-opacity active:opacity-100 ${hue.home.on ? 'opacity-50' : 'opacity-25'}`}
         >
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full border border-white/60 ${pending === 'home' ? 'animate-pulse' : ''}`}>
-            <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <span className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 ${pending === 'home' ? 'animate-pulse' : ''}`}>
+            <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3Z" />
               <path d="M3 3l18 18" />
             </svg>
           </span>
-          <span className="w-full truncate text-center text-[11px] leading-tight text-white/80">Éteindre</span>
+          <span className="w-full truncate text-center text-xs leading-tight text-white/80">Éteindre</span>
         </button>
       )}
     </div>
