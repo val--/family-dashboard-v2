@@ -38,7 +38,7 @@ export default function NewEpisodeCard({ episode, onClick }) {
           <span className="normal-case tracking-normal"> · S{before.season}E{before.episode}</span>
         </div>
       )}
-      {summary && <p className={`${before ? 'mt-1' : 'mt-2'} line-clamp-5 text-[0.82rem] leading-[1.1rem] text-white/65`}>{summary}</p>}
+      {summary && <p className={`${before ? 'mt-1' : 'mt-2'} line-clamp-6 text-[0.82rem] leading-[1.1rem] text-white/65`}>{summary}</p>}
     </div>
   )
 }

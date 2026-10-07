@@ -15,21 +15,30 @@ import trivia  # the Gemini call, the models and the code check are shared
 
 DATA_DIR = os.environ.get("DATA_DIR", "/app/data")
 STATE_FILE = os.path.join(DATA_DIR, "recaps.json")
-MAX_CHARS = 200  # it must fit under the episode on the screensaver
+MAX_CHARS = 250  # it must fit under the episode on the screensaver
+VERSION = 4  # recaps written with an older prompt are written again
 RETRY_AFTER = 6 * 3600
 MAX_ATTEMPTS = 3
 
 _lock = threading.Lock()
 _running = set()
 
-PROMPT = """Tu écris le petit rappel « précédemment dans {show} » affiché sur l'écran de veille d'une famille qui va reprendre la série.
+PROMPT = """Tu écris le petit rappel « précédemment dans {show} » affiché sur l'écran de veille d'une famille qui va reprendre la série, peut-être après des mois sans l'avoir regardée : elle ne se souvient plus ni des personnages ni de l'intrigue.
 
-Voici les résumés officiels des derniers épisodes qu'elle a vus, dans l'ordre (le dernier compte le plus) :
+Présentation de la série :
+{show_summary}
+
+Personnages (nom complet du personnage, entre parenthèses l'acteur) :
+{characters}
+
+Résumés officiels des épisodes qu'elle a vus dans la saison en cours, dans l'ordre (le dernier est celui où elle s'est arrêtée) :
 {episodes}
 
-Écris en français, au passé composé, en une ou deux phrases et {max_chars} caractères au maximum, où en était l'histoire à la fin du dernier épisode.
+Écris en français, en deux phrases et {max_chars} caractères au maximum :
+1. qui sont les personnages principaux, chacun désigné par son rôle (par exemple « la sœur de l'héroïne », « le chef du clan rival », « le nouveau shérif »), et quel est l'enjeu de l'histoire ; pour situer quelqu'un, sers-toi de son nom complet (même nom de famille = même famille), sans lui inventer un rôle qui n'est pas dans les textes ;
+2. où en était l'histoire à la fin du dernier épisode vu, au passé composé.
 Règles :
-- n'utilise que les informations de ces résumés : n'invente rien, ne parle d'aucun autre épisode, ne suppose rien sur la suite ;
+- n'utilise que les informations de la présentation et de ces résumés : n'invente rien, ne suppose rien sur la suite ;
 - pas de titre, pas de guillemets, pas de « Dans l'épisode précédent » (c'est déjà affiché au-dessus).
 Réponds uniquement par le rappel."""
 
@@ -58,24 +67,27 @@ def _clean(text):
     return text[:1].upper() + text[1:]
 
 
-def write_recap(show, episodes):
-    """One recap from `episodes` ([{season, episode, title, summary}], oldest first). Raises ValueError when
-    Gemini's answer is empty, too long, or names something the summaries don't."""
+def write_recap(show, episodes, show_summary="", characters=()):
+    """One recap from the show's own presentation and `episodes` ([{season, episode, title, summary}],
+    oldest first). Raises ValueError when Gemini's answer is empty, too long, or names something the
+    presentation and the summaries don't."""
     lines = "\n".join(f"- S{e['season']}E{e['episode']} « {e.get('title') or ''} » : {e['summary']}" for e in episodes)
-    text = _clean(trivia._gemini(PROMPT.format(show=show, episodes=lines, max_chars=MAX_CHARS), trivia.WRITE_MODEL))
+    cast = "\n".join(f"- {name} ({actor})" for name, actor in characters) or "(inconnus)"
+    prompt = PROMPT.format(show=show, show_summary=show_summary or "(aucune)", characters=cast, episodes=lines, max_chars=MAX_CHARS)
+    text = _clean(trivia._gemini(prompt, trivia.WRITE_MODEL))
     if not text:
         raise ValueError("empty answer")
     if len(text) > MAX_CHARS + 30:
         raise ValueError(f"too long ({len(text)} characters)")
-    source = f"{show}\n{lines}"
+    source = f"{show}\n{show_summary}\n{cast}\n{lines}"
     if not trivia.details_in_source(text, source):
         raise ValueError("a name or a number is not in the summaries")
     return text
 
 
-def _generate(key, show, episodes):
+def _generate(key, show, episodes, show_summary, characters):
     try:
-        entry = {"text": write_recap(show, episodes), "at": int(time.time())}
+        entry = {"text": write_recap(show, episodes, show_summary, characters), "at": int(time.time()), "version": VERSION}
     except Exception as e:  # Gemini down or slow, or an answer that failed the check: Plex's summary meanwhile
         entry = {"failedAt": int(time.time()), "error": str(e)[:200]}
     with _lock:
@@ -86,7 +98,7 @@ def _generate(key, show, episodes):
         _running.discard(key)
 
 
-def recap_for(key, show, episodes):
+def recap_for(key, show, episodes, show_summary="", characters=()):
     """The recap of the episode `key` (the last one watched) if it is ready, else None. When missing, it is
     written in the background, so the screensaver never waits for Gemini."""
     episodes = [e for e in episodes if e.get("summary")]
@@ -94,12 +106,14 @@ def recap_for(key, show, episodes):
         return None
     with _lock:
         entry = _load().get(key, {})
-        if entry.get("text"):
+        if entry.get("text") and entry.get("version") == VERSION:
             return entry["text"]
+        if entry.get("text"):
+            entry = {}  # an older prompt's recap: written again
         if not trivia.GEMINI_API_KEY or key in _running:
             return None
         if entry.get("attempts", 0) >= MAX_ATTEMPTS or time.time() - entry.get("failedAt", 0) < RETRY_AFTER:
             return None
         _running.add(key)
-    threading.Thread(target=_generate, args=(key, show, episodes), daemon=True, name="recap").start()
+    threading.Thread(target=_generate, args=(key, show, episodes, show_summary, list(characters)), daemon=True, name="recap").start()
     return None

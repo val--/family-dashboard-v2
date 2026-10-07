@@ -20,6 +20,18 @@ def gemini(monkeypatch):
     return answer
 
 
+def test_the_show_presentation_counts_as_a_source(gemini):
+    gemini["text"] = "Harry, le fixer des Harrigan, protège la famille ; Richie a préparé la guerre."
+    assert recaps.write_recap("MobLand", LAST, "Harry, fixer de la famille Harrigan, protège le clan.").startswith("Harry")
+
+
+def test_full_character_names_count_as_a_source(gemini):
+    gemini["text"] = "Maeve Harrigan a tout déballé à Richie."
+    assert recaps.write_recap("MobLand", LAST, "", [("Maeve Harrigan", "Helen Mirren")]).startswith("Maeve")
+    with pytest.raises(ValueError):
+        recaps.write_recap("MobLand", LAST, "", [])  # without the cast, "Maeve Harrigan" comes from nowhere
+
+
 def test_a_recap_built_from_the_summaries_is_kept(gemini):
     gemini["text"] = "« Dans l'épisode précédent : Richie a préparé la guerre contre Harry. »"
     assert recaps.write_recap("MobLand", LAST) == "Richie a préparé la guerre contre Harry."
@@ -66,7 +78,8 @@ def episodes_xml(*watched_flags):
 def test_where_the_story_was_left(monkeypatch, flags, new_key, last, distance):
     monkeypatch.setattr(plex, "_plex_xml", lambda path: episodes_xml(*flags))
     monkeypatch.setattr(plex, "_episodes_cache", {})
-    monkeypatch.setattr(recaps, "recap_for", lambda key, show, context: f"recap of {key} from {len(context)}")
+    monkeypatch.setattr(recaps, "recap_for", lambda key, show, context, show_summary="", characters=(): f"recap of {key} from {len(context)}")
+    monkeypatch.setattr(plex, "plex_show", lambda key: ET.fromstring('<Directory summary="Une série."/>'))
     before = plex.previously("show", "Série", new_key)
     assert (before["season"], before["episode"]) == last and before["distance"] == distance
     assert before["recap"].startswith(f"recap of e{flags.index(False)}")

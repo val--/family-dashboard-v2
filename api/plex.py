@@ -278,11 +278,20 @@ def previously(show_key, show_title, new_key):
     if not watched:
         return None
     last = episodes[watched[-1]]
-    context = [_episode_info(episodes[i]) for i in watched[-3:]]  # the recap's material: the last 3 watched
+    # The recap's material: the watched episodes of the season where the family stopped (10 at most), and
+    # the show's own presentation (who is who, what is at stake)
+    season = last.get("parentIndex")
+    context = [_episode_info(episodes[i]) for i in watched if episodes[i].get("parentIndex") == season][-10:]
+    show = plex_show(show_key)
     return {
         **_episode_info(last),
         "distance": position - watched[-1],
-        "recap": recaps.recap_for(last.get("ratingKey"), show_title, context),
+        "recap": recaps.recap_for(
+            last.get("ratingKey"), show_title, context,
+            show.get("summary") if show is not None else "",
+            # full character names tell who belongs to which family
+            [(r.get("role"), r.get("tag")) for r in show.findall("Role") if r.get("role")][:12] if show is not None else [],
+        ),
     }
 
 
