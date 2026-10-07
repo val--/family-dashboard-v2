@@ -121,8 +121,9 @@ def scene_colors(scene, limit=5):
 # ---- What the kiosk shows
 
 
-def build_state(rooms, devices, lights, grouped_lights, scenes):
-    """Rooms (most lights first), each with its lights and its scenes, from the bridge's resources."""
+def build_state(rooms, devices, lights, grouped_lights, scenes, homes=()):
+    """Rooms (most lights first), each with its lights and its scenes, from the bridge's resources; and the
+    whole home's group (every light of the bridge), for "Tout éteindre"."""
     light_by_id = {light["id"]: light for light in lights}
     group_by_id = {group["id"]: group for group in grouped_lights}
     device_lights = {
@@ -163,14 +164,16 @@ def build_state(rooms, devices, lights, grouped_lights, scenes):
             ),
         })
     out.sort(key=lambda room: (-len(room["lights"]), room["name"].lower()))
-    return {"rooms": out}
+    home_group = next((s["rid"] for home in homes for s in home.get("services", []) if s.get("rtype") == "grouped_light"), None)
+    home = {"group": home_group, "on": bool(group_by_id.get(home_group, {}).get("on", {}).get("on"))} if home_group else None
+    return {"rooms": out, "home": home}
 
 
 def current_state():
     with _cache_lock:
         if _cache["state"] is not None and time.time() - _cache["at"] < CACHE_SECONDS:
             return _cache["state"]
-    state = build_state(*(_call("GET", name) for name in ("room", "device", "light", "grouped_light", "scene")))
+    state = build_state(*(_call("GET", name) for name in ("room", "device", "light", "grouped_light", "scene", "bridge_home")))
     with _cache_lock:
         _cache.update(at=time.time(), state=state)
     return state

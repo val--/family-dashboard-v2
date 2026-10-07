@@ -25,5 +25,6 @@ export function useHue() {
   const setRoom = useCallback((groupId, changes) => after(send('PUT', `/api/hue/groups/${groupId}`, changes)), [after])
   const recallScene = useCallback((id) => after(send('POST', `/api/hue/scenes/${id}/recall`)), [after])
 
-  return { rooms: data?.rooms ?? null, loading, error, setLight, setRoom, recallScene }
+  // home: the whole home's group (every light of the bridge), for "Tout éteindre"
+  return { rooms: data?.rooms ?? null, home: data?.home ?? null, loading, error, setLight, setRoom, recallScene }
 }

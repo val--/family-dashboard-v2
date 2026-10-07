@@ -7,6 +7,7 @@ import QrCode from './QrCode'
 import { POSTIT_URL } from './postit/links'
 import { agendaPreview, screensaverItems } from '../lib/screensaver'
 import NewMovieCard from './NewMovieCard'
+import LightShortcuts from './LightShortcuts'
 
 const INVITE_AFTER_SECONDS = 2 * 86400 // nothing posted for this long: a big QR code invites to post
 
@@ -23,6 +24,8 @@ export default function Screensaver({
   postitSeconds = 30, // from the Settings screen: time per item (the latest post-it: twice as long); 0 = stays
   postitRange = 'today', // 'today' (else yesterday), '3days' or 'all'
   movieDays = 3, // movies added this many days ago at most; 0 = no movies
+  hue, // Hue rooms and actions (useHue), for the light shortcuts chosen in Settings
+  lightShortcuts = [],
 }) {
   const { now, time, date } = useClock() // ticks every second
   // Weather only when it's complete: a partial answer must not take the screensaver down
@@ -139,6 +142,8 @@ export default function Screensaver({
     </div>
   )
 
+  const lightLine = <LightShortcuts hue={hue} sceneIds={lightShortcuts} />
+
   const weatherLine = current && (
     <div className={`flex items-center gap-3 text-white/60 ${showcase ? 'mt-4' : 'mt-6'}`}>
       <img
@@ -169,6 +174,7 @@ export default function Screensaver({
             <div className="mt-3 text-xl capitalize text-white/50">{date}</div>
             {weatherLine}
             {agendaLine}
+            {lightLine}
           </div>
           <div className="flex shrink-0 flex-col items-center gap-3">
             <QrCode value={POSTIT_URL} className="h-[min(56vh,15rem)] aspect-square rounded-xl" />
@@ -194,6 +200,7 @@ export default function Screensaver({
             <div className="mt-3 text-xl capitalize text-white/50">{date}</div>
             {weatherLine}
             {agendaLine}
+            {lightLine}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {arrows('prev')}
@@ -242,6 +249,7 @@ export default function Screensaver({
           <div className="mt-4 text-2xl capitalize text-white/50">{date}</div>
           {weatherLine}
           {agendaLine}
+          {lightLine}
         </div>
       )}
     </div>

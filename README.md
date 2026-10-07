@@ -31,10 +31,13 @@ about today's or tomorrow's events on the left. On the right, a small notificati
 - story-like segments under it show where you are; tap one to jump to it;
 - with nothing to show and no post-it for two days, a big QR code invites the family to post.
 
+Under the agenda line, up to 3 light scenes chosen in Settings and "Éteindre" (every light of the home)
+sit dimmed; a tap recalls the scene without waking the screen.
+
 A tap on a note or a movie wakes the dashboard on it; a tap anywhere else just wakes it.
 
-**Settings** (gear button): screensaver delay, time per item, which post-its go round, and how recent a
-movie must be to be shown. They are stored by the API, so every screen shares them.
+**Settings** (gear button): screensaver delay, time per item, which post-its go round, how recent a
+movie must be to be shown, and the screensaver's light shortcuts. They are stored by the API, so every screen shares them.
 
 **Kiosk care**: the page reloads itself every night at 04:00 (Chromium slowly piles up memory on a Pi) and
 after a new deployment once the screen is asleep; each widget fails on its own ("Indisponible pour le

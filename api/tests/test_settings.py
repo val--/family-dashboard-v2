@@ -37,3 +37,16 @@ def test_a_hand_edited_file_with_bad_values_falls_back_to_defaults():
     loaded = settings.load()
     assert loaded["idleMinutes"] == 5  # not allowed: default
     assert loaded["postitSeconds"] == 60  # allowed: kept
+
+
+SCENE_A = "00000001-0000-4000-8000-000000000000"
+SCENE_B = "00000002-0000-4000-8000-000000000000"
+
+
+def test_light_shortcuts_are_up_to_three_different_scene_ids(client):
+    assert client.put("/api/settings", json={"lightShortcuts": [SCENE_A, SCENE_B]}).status_code == 200
+    assert client.get("/api/settings").get_json()["lightShortcuts"] == [SCENE_A, SCENE_B]
+    assert client.put("/api/settings", json={"lightShortcuts": []}).status_code == 200
+    for bad in ([SCENE_A] * 2, [SCENE_A, SCENE_B, "00000003-0000-4000-8000-000000000000", "00000004-0000-4000-8000-000000000000"],
+                ["../../etc"], SCENE_A, [1]):
+        assert client.put("/api/settings", json={"lightShortcuts": bad}).status_code == 400

@@ -20,6 +20,7 @@ import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
 import { usePlex } from './hooks/usePlex'
+import { useHue } from './hooks/useHue'
 import Screensaver from './components/Screensaver'
 
 function useDevicesIndicator() {
@@ -51,6 +52,7 @@ function App() {
   const postits = usePostits()
   const stickerViews = useStickerViews()
   const plex = usePlex() // the Films tab and the screensaver's latest movies
+  const hue = useHue() // the Lumières tab, the screensaver's shortcuts and their settings
   const [activeTab, setActiveTab] = useState('')
   // From the screensaver: { title } = the tab to wake up on, plus what to open there (note, qr or movie)
   const [wakeRequest, setWakeRequest] = useState(null)
@@ -122,7 +124,7 @@ function App() {
         >
           <Calendar />
           <PostIts postits={postits} openRequest={wakeRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} active={activeTab === 'Post-it' && !idle} />
-          <Lights />
+          <Lights hue={hue} />
           <Plex plex={plex} openRequest={wakeRequest} backToStart={reselected?.title === 'Films' ? reselected : null} />
           <Shows backToStart={reselected?.title === 'Séries' ? reselected : null} />
           <Devices />
@@ -133,6 +135,7 @@ function App() {
         <ErrorBoundary name="paramètres" fallback={null}>
         <Settings
           settings={settings}
+          hue={hue}
           onChange={updateSettings}
           error={settingsError}
           overridden={Boolean(IDLE_OVERRIDE_SECONDS)}
@@ -157,6 +160,8 @@ function App() {
             postitSeconds={settings.postitSeconds}
             postitRange={settings.postitRange}
             movieDays={settings.movieDays}
+            hue={hue}
+            lightShortcuts={settings.lightShortcuts}
           />
         </ErrorBoundary>
       )}

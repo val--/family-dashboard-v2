@@ -2,7 +2,7 @@ import pytest
 
 import hue
 
-ROOM, GROUP, DEVICE, LIGHT, SCENE = (f"{n:08d}-0000-4000-8000-000000000000" for n in range(1, 6))
+ROOM, GROUP, DEVICE, LIGHT, SCENE, HOME = (f"{n:08d}-0000-4000-8000-000000000000" for n in range(1, 7))
 
 BRIDGE = {
     "room": [{"id": ROOM, "metadata": {"name": "Salon"}, "children": [{"rid": DEVICE, "rtype": "device"}],
@@ -10,7 +10,9 @@ BRIDGE = {
     "device": [{"id": DEVICE, "services": [{"rid": LIGHT, "rtype": "light"}, {"rid": "x", "rtype": "zigbee_connectivity"}]}],
     "light": [{"id": LIGHT, "metadata": {"name": "Lampadaire"}, "on": {"on": True}, "dimming": {"brightness": 49.4},
                "color": {"xy": {"x": 0.5, "y": 0.41}}, "color_temperature": {"mirek": 366, "mirek_valid": True}}],
-    "grouped_light": [{"id": GROUP, "on": {"on": True}, "dimming": {"brightness": 49.4}}],
+    "grouped_light": [{"id": GROUP, "on": {"on": True}, "dimming": {"brightness": 49.4}},
+                      {"id": HOME, "on": {"on": True}}],
+    "bridge_home": [{"id": "home", "services": [{"rid": HOME, "rtype": "grouped_light"}]}],
     "scene": [
         {"id": SCENE, "group": {"rid": ROOM}, "metadata": {"name": "Détente"}, "status": {"active": "static"},
          "palette": {"color": [], "color_temperature": [{"color_temperature": {"mirek": 447}}]}},
@@ -51,10 +53,16 @@ def test_rooms_come_with_their_lights_and_scenes(client, bridge):
     assert len(salon["scenes"][0]["colors"]) == 2
 
 
+def test_the_whole_home_group_is_given_for_switching_everything_off(client, bridge):
+    assert client.get("/api/hue").get_json()["home"] == {"group": HOME, "on": True}
+    assert client.put(f"/api/hue/groups/{HOME}", json={"on": False}).status_code == 200
+    assert ("PUT", f"grouped_light/{HOME}", {"on": {"on": False}}) in bridge
+
+
 def test_the_bridge_is_read_once_for_a_burst_of_calls(client, bridge):
     client.get("/api/hue")
     client.get("/api/hue")
-    assert sum(1 for method, *_ in bridge if method == "GET") == 5  # room, device, light, grouped_light, scene
+    assert sum(1 for method, *_ in bridge if method == "GET") == 6  # room, device, light, grouped_light, scene, bridge_home
 
 
 def test_switching_a_light_and_a_room(client, bridge):

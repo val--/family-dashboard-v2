@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useHue } from '../hooks/useHue'
+import { sceneSwatch } from '../lib/hue'
 
 const ROOM_KEY = 'hue-room'
 
@@ -17,11 +17,6 @@ function saveRoom(id) {
   } catch {
     // private mode: the first room next time
   }
-}
-
-// A scene's palette as a round swatch: its colors in a soft diagonal blend
-function swatch(colors) {
-  return colors.length > 1 ? `linear-gradient(135deg, ${colors.join(', ')})` : colors[0]
 }
 
 function Switch({ on, pending, onClick, label }) {
@@ -42,7 +37,7 @@ function SceneButton({ scene, pending, onClick }) {
     <button onClick={onClick} className="flex min-w-0 flex-col items-center gap-1.5 rounded-xl px-1 py-1 active:bg-white/10">
       <span
         className={`relative block h-11 w-11 shrink-0 rounded-full ${scene.active ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : ''}`}
-        style={{ background: swatch(scene.colors) }}
+        style={{ background: sceneSwatch(scene.colors) }}
       >
         {pending && <span className="absolute inset-0 animate-pulse rounded-full bg-black/40" />}
       </span>
@@ -55,8 +50,9 @@ function SceneButton({ scene, pending, onClick }) {
 
 // The "Lumières" tab: pick a room, switch it or dim it, recall one of its scenes in a tap, or switch its
 // lights one by one. What a tap changes shows at once; the bridge is read again right after to confirm.
-export default function Lights() {
-  const { rooms, loading, setLight, setRoom, recallScene } = useHue()
+// `hue` comes from App (useHue), shared with the screensaver's shortcuts and the settings
+export default function Lights({ hue }) {
+  const { rooms, loading, setLight, setRoom, recallScene } = hue
   const [roomId, setRoomId] = useState(loadRoom)
   const [pending, setPending] = useState({}) // id -> what the screen shows until the bridge confirms
   const [failure, setFailure] = useState(null)
