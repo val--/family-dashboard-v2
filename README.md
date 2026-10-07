@@ -1,8 +1,8 @@
 # Family Dashboard v2
 
 A family dashboard for a small touchscreen (a 7-inch, 800×480 display on a Raspberry Pi), served by a home
-server. It shows the family agenda, a post-it board the family writes to from their phones, what's new on
-Plex, the state of the devices at home, and turns into a quiet night-stand screen when nobody touches it.
+server. It shows the family agenda, a post-it board the family writes to from their phones, the lights, what's
+new on Plex, the state of the devices at home, and turns into a quiet night-stand screen when nobody touches it.
 
 Built with React, Vite and Tailwind CSS (front) and Flask (API), both run with Docker. The interface is in
 French.
@@ -17,6 +17,7 @@ French.
 |---|---|
 | Agenda | Upcoming events of a shared Google Calendar: the next weeks as cards, later ones as a list, details on tap. |
 | Post-it | The family's notes, newest first. Each has a text, a color, an optional sticker, and a photo or a 10-second video. Tap one for the full view (arrows to browse, photo/video full screen with a QR code to download it). A QR code opens the phone page to write one (and delete your own). |
+| Lumières | Philips Hue: pick a room, switch it on or off and dim it, recall one of its scenes in a tap (shown as round swatches of their colors, the active one circled), or switch its lights one by one. |
 | Films | Movies recently added to Plex, Radarr downloads and missing movies, "Je cherche un film" (search, add to Radarr, French titles and streaming availability from TMDb), and fact-checked anecdotes about the last movie watched. |
 | Séries | Shows in progress ("on deck") and recently added episodes on Plex, Sonarr downloads. |
 | Appareils | VPN (gluetun: public IP and its location), the server (CPU, RAM, temperature, network, disks), a Recalbox console, and the printer (with a test page). |
@@ -56,6 +57,7 @@ api        → Flask (gunicorn, port 5100), one module per feature, data in ./da
 | `agenda.py` | `/api/calendar` | Google Calendar (service account), cached 5 min |
 | `plex.py` | `/api/plex/recent`, `/shows`, `/ondeck`, `/trivia` | Plex (posters, cast photos and backdrops resized by Plex itself) |
 | `trivia.py` | (used by `/api/plex/trivia`) | Gemini, with sources fetched from Allociné and Wikipedia |
+| `hue.py` | `/api/hue`, `/api/hue/lights/<id>`, `/groups/<id>`, `/scenes/<id>/recall` | the Philips Hue bridge (local API v2): switch, dim, recall a scene, nothing else |
 | `arr.py` | `/api/radarr/*`, `/api/sonarr/status`, `/api/tmdb/streaming/<id>` | Radarr, Sonarr, TMDb |
 | `postits.py` | `/api/postits*` | SQLite + photo/video files; ffmpeg for videos |
 | `postit_stickers.py` | (background worker) | ComfyUI, for the die-cut sticker version of each photo |
@@ -101,6 +103,7 @@ cp .env.example .env
 | `FAMILY_CODE` | — | 4-digit code asked once per phone (empty: no code) |
 | `COMFYUI_URL` | — | ComfyUI address, to make die-cut stickers from post-it photos (off when empty) |
 | `RECALBOX_HOST` | — | Recalbox IP or host name (card hidden when empty) |
+| `HUE_BRIDGE_IP` / `HUE_APP_KEY` | — | Philips Hue bridge address and application key (the Lumières tab) |
 | `SYSTEM_DISKS` | see `docker-compose.yml` | Disks of the server card, as `Label:path;Label:path` (paths seen from the container; the host's `/mnt` is `/host/mnt`) |
 | `SYSTEM_NET_INTERFACE` | `enp7s0` | Network interface whose traffic the server card shows |
 
@@ -183,6 +186,6 @@ scripts/test.sh front    # only the front
 ```
 
 - `api/tests/`: settings, post-its (family code, throttling, photos, video cut and encoding, downloads),
-  and the pure helpers (trivia check, Recalbox, Plex parsing and cache).
+  Hue (rooms and scenes from a fake bridge, value checks), and the pure helpers (trivia check, Recalbox, Plex parsing and cache).
 - `src/**/*.test.js(x)`: what the screensaver shows (`src/lib/screensaver.js`), the shared polling
   hook, time helpers, and the post-it note (photo or video).

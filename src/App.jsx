@@ -6,6 +6,7 @@ import PostIts from './components/PostIts'
 import Plex from './components/Plex'
 import Shows from './components/Shows'
 import Devices from './components/Devices'
+import Lights from './components/Lights'
 import WidgetCarousel from './components/WidgetCarousel'
 import { useVpn } from './hooks/useVpn'
 import { usePrinter } from './hooks/usePrinter'
@@ -113,14 +114,15 @@ function App() {
       {/* Swipeable widgets */}
       <div className="flex-1 overflow-hidden pt-4">
         <WidgetCarousel
-          titles={['Agenda', 'Post-it', 'Films', 'Séries', 'Appareils']}
-          indicators={[null, hasNewPostit ? 'sky' : null, null, null, devicesIndicator]}
+          titles={['Agenda', 'Post-it', 'Lumières', 'Films', 'Séries', 'Appareils']}
+          indicators={[null, hasNewPostit ? 'sky' : null, null, null, null, devicesIndicator]}
           onActiveChange={setActiveTab}
           goTo={wakeRequest}
           onReselect={(title) => setReselected({ title })}
         >
           <Calendar />
           <PostIts postits={postits} openRequest={wakeRequest} stickerViews={stickerViews} backToStart={reselected?.title === 'Post-it' ? reselected : null} active={activeTab === 'Post-it' && !idle} />
+          <Lights />
           <Plex plex={plex} openRequest={wakeRequest} backToStart={reselected?.title === 'Films' ? reselected : null} />
           <Shows backToStart={reselected?.title === 'Séries' ? reselected : null} />
           <Devices />

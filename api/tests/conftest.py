@@ -13,7 +13,7 @@ os.environ.update(
     PLEX_PUBLIC_URL="http://plex.example:32400",
     PLEX_TOKEN="test-token",
 )
-for name in ("COMFYUI_URL", "RECALBOX_HOST", "GEMINI_API_KEY", "CALENDAR_ID"):
+for name in ("COMFYUI_URL", "RECALBOX_HOST", "GEMINI_API_KEY", "CALENDAR_ID", "HUE_BRIDGE_IP", "HUE_APP_KEY"):
     os.environ.pop(name, None)  # background workers and outside calls stay off
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -4,6 +4,7 @@ from flask_cors import CORS
 
 import agenda
 import arr
+import hue
 import plex
 import postits
 import printer
@@ -16,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024  # photo uploads (post-its allow videos on their own route)
 
-for module in (agenda, arr, plex, postits, printer, recalbox, settings, system, vpn):
+for module in (agenda, arr, hue, plex, postits, printer, recalbox, settings, system, vpn):
     app.register_blueprint(module.bp)
 
 
