@@ -60,9 +60,9 @@ function Section({ title, hint, children }) {
   )
 }
 
-const MAX_LIGHT_SHORTCUTS = 3
+const MAX_LIGHT_SHORTCUTS = 4
 
-// The Hue scenes of every room, to pick up to 3 for the screensaver (in the order they are picked)
+// The Hue scenes of every room, to pick up to 4 for the screensaver (in the order they are picked)
 function LightShortcutsChoice({ rooms, value, onChange }) {
   const full = value.length >= MAX_LIGHT_SHORTCUTS
   const toggle = (id) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id])
@@ -146,7 +146,7 @@ export default function Settings({ settings, hue, onChange, error, overridden, o
           </Section>
           <Section
             title="Raccourcis lumières sur l'écran de veille"
-            hint={`Jusqu'à ${MAX_LIGHT_SHORTCUTS} scénarios, affichés discrètement avec « Tout éteindre » ; un toucher les active sans réveiller l'écran.`}
+            hint={`Jusqu'à ${MAX_LIGHT_SHORTCUTS} scénarios, affichés discrètement avec « Éteindre » (toute la maison) ; un toucher les active sans réveiller l'écran.`}
           >
             {hue?.rooms ? (
               <LightShortcutsChoice

@@ -31,7 +31,7 @@ about today's or tomorrow's events on the left. On the right, a small notificati
 - story-like segments under it show where you are; tap one to jump to it;
 - with nothing to show and no post-it for two days, a big QR code invites the family to post.
 
-Under the agenda line, up to 3 light scenes chosen in Settings and "Éteindre" (every light of the home)
+Under the agenda line, up to 4 light scenes chosen in Settings and "Éteindre" (every light of the home)
 sit dimmed; a tap recalls the scene without waking the screen.
 
 A tap on a note or a movie wakes the dashboard on it; a tap anywhere else just wakes it.

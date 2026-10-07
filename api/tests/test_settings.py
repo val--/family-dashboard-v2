@@ -43,10 +43,12 @@ SCENE_A = "00000001-0000-4000-8000-000000000000"
 SCENE_B = "00000002-0000-4000-8000-000000000000"
 
 
-def test_light_shortcuts_are_up_to_three_different_scene_ids(client):
+def test_light_shortcuts_are_up_to_four_different_scene_ids(client):
     assert client.put("/api/settings", json={"lightShortcuts": [SCENE_A, SCENE_B]}).status_code == 200
     assert client.get("/api/settings").get_json()["lightShortcuts"] == [SCENE_A, SCENE_B]
     assert client.put("/api/settings", json={"lightShortcuts": []}).status_code == 200
-    for bad in ([SCENE_A] * 2, [SCENE_A, SCENE_B, "00000003-0000-4000-8000-000000000000", "00000004-0000-4000-8000-000000000000"],
+    four = [f"0000000{n}-0000-4000-8000-000000000000" for n in range(1, 5)]
+    assert client.put("/api/settings", json={"lightShortcuts": four}).status_code == 200
+    for bad in ([SCENE_A] * 2, four + ["00000005-0000-4000-8000-000000000000"],
                 ["../../etc"], SCENE_A, [1]):
         assert client.put("/api/settings", json={"lightShortcuts": bad}).status_code == 400

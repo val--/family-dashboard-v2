@@ -15,11 +15,11 @@ DATA_DIR = os.environ.get("DATA_DIR", "/app/data")
 SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 
 HUE_ID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-MAX_LIGHT_SHORTCUTS = 3
+MAX_LIGHT_SHORTCUTS = 4
 
 
 def _light_shortcuts(value):
-    """Up to 3 Hue scene ids, all different (the screensaver's light shortcuts, in this order)."""
+    """Up to 4 Hue scene ids, all different (the screensaver's light shortcuts, in this order)."""
     return (isinstance(value, list) and len(value) <= MAX_LIGHT_SHORTCUTS and len(set(value)) == len(value)
             and all(isinstance(v, str) and HUE_ID.match(v) for v in value))
 

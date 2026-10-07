@@ -17,13 +17,13 @@ export default function LightShortcuts({ hue, sceneIds }) {
   }
 
   return (
-    <div className="mt-4 flex items-start justify-center gap-3">
+    <div className="mt-4 flex items-start justify-center gap-2">
       {scenes.map((scene) => (
         <button
           key={scene.id}
           onClick={tap(scene.id, () => hue.recallScene(scene.id))}
           aria-label={`Scénario ${scene.name} (${scene.room})`}
-          className="flex w-16 flex-col items-center gap-1 opacity-50 transition-opacity active:opacity-100"
+          className="flex w-14 flex-col items-center gap-1 opacity-50 transition-opacity active:opacity-100"
         >
           <span
             className={`block h-7 w-7 rounded-full ${scene.active ? 'ring-1 ring-white ring-offset-2 ring-offset-black' : ''} ${
@@ -38,7 +38,7 @@ export default function LightShortcuts({ hue, sceneIds }) {
         <button
           onClick={tap('home', () => hue.setRoom(hue.home.group, { on: false }))}
           aria-label="Tout éteindre"
-          className={`flex w-16 flex-col items-center gap-1 transition-opacity active:opacity-100 ${hue.home.on ? 'opacity-50' : 'opacity-25'}`}
+          className={`flex w-14 flex-col items-center gap-1 transition-opacity active:opacity-100 ${hue.home.on ? 'opacity-50' : 'opacity-25'}`}
         >
           <span className={`flex h-7 w-7 items-center justify-center rounded-full border border-white/60 ${pending === 'home' ? 'animate-pulse' : ''}`}>
             <svg className="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
