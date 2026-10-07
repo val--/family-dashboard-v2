@@ -65,3 +65,12 @@
 .hg-theme-dark .hg-button[data-skbtn="{space}"] {
   min-width: 40% !important;
 }
+
+/* AutoScroll: still at the top, slow scroll down, still at the bottom, and back (alternate) */
+@keyframes autoscroll {
+  0%, 12% { transform: translateY(0); }
+  88%, 100% { transform: translateY(var(--scroll-distance)); }
+}
+.animate-autoscroll {
+  animation: autoscroll linear infinite alternate;
+}
