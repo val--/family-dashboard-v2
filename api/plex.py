@@ -384,49 +384,56 @@ def plex_shows():
         return jsonify({"error": str(e)}), 500
 
 
+def last_watched_movie():
+    """The movie watched last (the Films library sorted by lastViewedAt: the item's own "watched" date,
+    so it also covers movies marked as watched or played without a scrobbled session, which never appear
+    in /status/sessions/history/all). None when no movie was watched."""
+    section_key = find_plex_section("movie")
+    if section_key is None:
+        return None
+    # Container-Size is best-effort on this endpoint: take the first movie (most recently viewed)
+    root = _plex_xml(f"/library/sections/{section_key}/all?type=1&sort=lastViewedAt:desc&viewCount%3E=1&X-Plex-Container-Size=1")
+    return root.find("Video")
+
+
+def _trivia_movie(video):
+    title, year = video.get("title"), video.get("year", "")
+    # The section listing carries Director tags directly: no extra fetch
+    return {"key": f"{title} ({year})", "title": title, "year": year, "directors": [d.get("tag") for d in video.findall("Director")]}
+
+
 @bp.route("/api/plex/trivia")
 def plex_trivia():
     if not GEMINI_API_KEY:
         return jsonify({"error": "GEMINI_API_KEY not configured"}), 500
     if not PLEX_TOKEN:
         return jsonify({"error": "PLEX_TOKEN not configured"}), 500
-
     try:
-        # Find the last watched movie from the Films library, sorted by
-        # lastViewedAt. This is the item-level "watched" date, so it also
-        # covers movies marked as watched (or played without a scrobbled
-        # session) — which never appear in /status/sessions/history/all.
-        section_key = find_plex_section("movie")
-        if section_key is None:
+        video = last_watched_movie()
+        if video is None:
             return jsonify({"text": None, "movie": None})
-
-        url = (
-            f"{PLEX_URL}/library/sections/{section_key}/all"
-            f"?X-Plex-Token={PLEX_TOKEN}&type=1&sort=lastViewedAt:desc"
-            f"&viewCount%3E=1&X-Plex-Container-Size=1"
-        )
-        req = urllib.request.Request(url, headers={"Accept": "application/xml"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            tree = ET.parse(resp)
-
-        # Container-Size is best-effort on this endpoint, so take the first
-        # movie entry (already sorted most-recently-viewed first).
-        last_watched = tree.getroot().find("Video")
-        if last_watched is None:
-            return jsonify({"text": None, "movie": None})
-
-        movie_title = last_watched.get("title")
-        movie_year = last_watched.get("year", "")
-        # The section listing carries Director tags directly — no extra fetch.
-        directors = [d.get("tag") for d in last_watched.findall("Director")]
-
         # Written and fact-checked by Gemini in the background (see trivia.py): this never waits on it
-        return jsonify(trivia.trivia_for({
-            "key": f"{movie_title} ({movie_year})",
-            "title": movie_title,
-            "year": movie_year,
-            "directors": directors,
-        }))
+        return jsonify(trivia.trivia_for(_trivia_movie(video)))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
+
+@bp.route("/api/plex/last-watched")
+def plex_last_watched():
+    """The last movie watched, for the screensaver, with its anecdotes when they are ready (the same ones
+    as the Films tab: written and checked in the background, see trivia.py)."""
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+    try:
+        video = last_watched_movie()
+        if video is None:
+            return jsonify({"movie": None})
+        movie = parse_plex_movie(video)
+        movie["lastViewedAt"] = int(video.get("lastViewedAt") or 0)
+        facts = trivia.trivia_for(_trivia_movie(video)) if GEMINI_API_KEY else {}
+        movie["anecdotes"] = [item["text"] for item in facts.get("items") or []] or (
+            [t.strip() for t in (facts.get("text") or "").split("★") if t.strip()]  # older data: one ★-separated text
+        )
+        return jsonify({"movie": movie})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

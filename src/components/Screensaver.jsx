@@ -8,6 +8,7 @@ import { POSTIT_URL } from './postit/links'
 import { agendaPreview, screensaverItems } from '../lib/screensaver'
 import NewMovieCard from './NewMovieCard'
 import NewEpisodeCard from './NewEpisodeCard'
+import LastWatchedCard from './LastWatchedCard'
 import LightShortcuts from './LightShortcuts'
 
 const INVITE_AFTER_SECONDS = 2 * 86400 // nothing posted for this long: a big QR code invites to post
@@ -21,12 +22,14 @@ const STAGE_HEIGHT = 'h-[min(84vh,25rem)]'
 // small notification center going round: the recent post-its (big square notes), then the movies just added
 // to Plex (poster and name). Nothing to show: the clock alone, centered, or the QR code inviting to post.
 export default function Screensaver({
-  weather, events, notes = [], movies = [], episodes = [], hasNew = false, onWake, onOpenNote, onAddNote, onOpenMovie, onOpenEpisode,
+  weather, events, notes = [], movies = [], episodes = [], watchedMovie = null, hasNew = false, onWake, onOpenNote, onAddNote, onOpenMovie,
+  onOpenEpisode, onOpenWatched,
   stickerViews,
   postitSeconds = 30, // from the Settings screen: time per item (the latest post-it: twice as long); 0 = stays
   postitRange = 'today', // 'today' (else yesterday), '3days' or 'all'
   movieDays = 3, // movies added this many days ago at most; 0 = no movies
   episodeDays = 3, // the same for the new episodes of started shows
+  watchedDays = 3, // the last movie watched, this many days after it was watched; 0 = never
   hue, // Hue rooms and actions (useHue), for the light shortcuts chosen in Settings
   lightShortcuts = [],
 }) {
@@ -42,7 +45,7 @@ export default function Screensaver({
 
   // Follows the clock (every second), so the fresh window and midnight come by themselves
   const nowSeconds = now / 1000
-  const { chronological, fresh, rotation } = screensaverItems({ notes, movies, episodes, hasNew, postitRange, movieDays, episodeDays, now })
+  const { chronological, fresh, rotation } = screensaverItems({ notes, movies, episodes, watchedMovie, hasNew, postitRange, movieDays, episodeDays, watchedDays, now })
   const latestId = chronological[0]?.id
   const rotationKey = rotation.map((item) => item.id).join(',')
 
@@ -56,7 +59,8 @@ export default function Screensaver({
   const note = item?.note ?? null
   const movie = item?.movie ?? null
   const episode = item?.episode ?? null
-  const backdrop = (movie ?? episode)?.art // a movie's scene, or the show's
+  const watched = item?.watched ?? null
+  const backdrop = (movie ?? episode ?? watched)?.art // a movie's scene, or the show's
   const browsable = count > 1
 
   // The latest posted note wears a stamp (only meaningful when there are other notes). It replaces the
@@ -228,6 +232,8 @@ export default function Screensaver({
               ) : (
                 episode ? (
                   <NewEpisodeCard episode={episode} onClick={opener(onOpenEpisode, episode)} />
+                ) : watched ? (
+                  <LastWatchedCard movie={watched} onClick={opener(onOpenWatched, watched)} />
                 ) : (
                   <NewMovieCard movie={movie} onClick={opener(onOpenMovie, movie)} />
                 )

@@ -54,6 +54,12 @@ export function recentEpisodes(episodes, days, nowSeconds = Date.now() / 1000) {
     .slice(0, MAX_MOVIES)
 }
 
+// The last movie watched, when it was watched in the last `days` days (0 = never), else null
+export function lastWatched(movie, days, nowSeconds = Date.now() / 1000) {
+  if (!days || !movie?.lastViewedAt) return null
+  return nowSeconds - movie.lastViewedAt < days * 86400 ? movie : null
+}
+
 // Notes that go round (Settings): today's (else yesterday's), the last 3 days, or all of them.
 // Days are calendar days, not "minus 24 h": DST days are 23 or 25 h long.
 export function notePool(chronological, range, now = new Date()) {
@@ -69,11 +75,13 @@ export function notePool(chronological, range, now = new Date()) {
   return today.length > 0 ? today : chronological.filter((n) => n.createdAt >= dayStart(1) && n.createdAt < dayStart(0))
 }
 
-// The rotation: the notes of the pool, newest first, then the new movies, then the new episodes. Fresh notes (arrived in the last
+// The rotation: the notes of the pool, newest first, then the new movies, the new episodes, and the last
+// movie watched. Fresh notes (arrived in the last
 // few minutes and not looked at yet: hasNew) go round alone while there are some.
-// Returns { chronological (all notes, newest first), fresh, rotation: [{ id, note } | { id, movie } | { id, episode }] }.
+// Returns { chronological (all notes, newest first), fresh, rotation: [{ id, note } | { id, movie } | { id, episode } | { id, watched }] }.
 export function screensaverItems({
-  notes = [], movies = [], episodes = [], hasNew = false, postitRange = 'today', movieDays = 3, episodeDays = 3, now = new Date(),
+  notes = [], movies = [], episodes = [], watchedMovie = null, hasNew = false, postitRange = 'today', movieDays = 3, episodeDays = 3,
+  watchedDays = 3, now = new Date(),
 }) {
   // sorted here, so the screensaver never depends on the API order: "the latest posted" is the first one
   const chronological = [...notes].sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
@@ -88,6 +96,7 @@ export function screensaverItems({
           ...pool.map(asNote),
           ...recentMovies(movies, movieDays, nowSeconds).map((movie) => ({ id: `movie-${movie.key ?? movie.title}`, movie })),
           ...recentEpisodes(episodes, episodeDays, nowSeconds).map((episode) => ({ id: `episode-${episode.key}`, episode })),
+          ...[lastWatched(watchedMovie, watchedDays, nowSeconds)].filter(Boolean).map((watched) => ({ id: `watched-${watched.key}`, watched })),
         ]
   return { chronological, fresh, rotation }
 }

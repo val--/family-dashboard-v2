@@ -145,6 +145,16 @@ export default function Settings({ settings, hue, onChange, error, overridden, o
             <Choice options={MOVIE_DAYS_CHOICES} value={settings.movieDays} onChange={(movieDays) => onChange({ movieDays })} />
           </Section>
           <Section
+            title="Dernier film vu sur l'écran de veille"
+            hint={
+              settings.watchedDays === 0
+                ? "Le dernier film vu n'est pas montré sur l'écran de veille."
+                : 'Affiché avec ses anecdotes pendant ce délai après avoir été vu.'
+            }
+          >
+            <Choice options={MOVIE_DAYS_CHOICES} value={settings.watchedDays} onChange={(watchedDays) => onChange({ watchedDays })} />
+          </Section>
+          <Section
             title="Nouveaux épisodes sur l'écran de veille"
             hint={
               settings.episodeDays === 0

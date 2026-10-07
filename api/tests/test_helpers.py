@@ -134,3 +134,22 @@ def test_new_episodes_only_for_started_shows_and_without_spoilers(client, monkey
     assert started["summary"] is None and started["showSummary"] == "A show."  # not watched: no spoiler
     assert seen["summary"] == "Ce qui se passe (spoiler)"  # watched: its summary is fine
     assert "/t/10" in started["thumb"].replace("%2F", "/")  # the show's poster, not a still of the episode
+
+
+# ---- The last movie watched, with its anecdotes
+
+
+def test_last_watched_movie_comes_with_its_anecdotes(client, monkeypatch):
+    video = ET.fromstring(MOVIE_XML.replace('viewCount="1"', 'viewCount="1" lastViewedAt="1790000000"'))
+    monkeypatch.setattr(plex, "last_watched_movie", lambda: video)
+    monkeypatch.setattr(plex, "GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(trivia, "trivia_for", lambda movie: {"text": "A ★ B", "movie": movie["key"],
+                                                            "items": [{"text": "Anecdote A", "site": "allocine"}]})
+    movie = client.get("/api/plex/last-watched").get_json()["movie"]
+    assert movie["title"] == "Drive" and movie["lastViewedAt"] == 1790000000
+    assert movie["anecdotes"] == ["Anecdote A"]
+
+
+def test_no_movie_watched_yet(client, monkeypatch):
+    monkeypatch.setattr(plex, "last_watched_movie", lambda: None)
+    assert client.get("/api/plex/last-watched").get_json() == {"movie": None}

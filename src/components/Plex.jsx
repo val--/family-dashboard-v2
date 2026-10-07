@@ -384,9 +384,10 @@ function Plex({ plex, backToStart, openRequest }) {
     if (backToStart) setPage(0)
   }, [backToStart])
 
-  // A movie tapped on the screensaver: its details open over the tab
+  // A movie tapped on the screensaver: its details open over the tab (the last one watched: its anecdotes)
   useEffect(() => {
     if (openRequest?.movie) setSelectedMovie(openRequest.movie)
+    if (openRequest?.trivia) setShowTrivia(true)
   }, [openRequest])
 
   // Preload all movie thumbnails on mount

@@ -30,6 +30,7 @@ SCHEMA = {
     "postitSeconds": (30, [15, 30, 60, 300, 0]),  # time per post-it on the screensaver (latest: twice as long); 0 = stays
     "postitRange": ("today", ["today", "3days", "all"]),  # which post-its go round on the screensaver
     "movieDays": (3, [1, 3, 7, 14, 0]),  # movies added to Plex this recently go round on the screensaver too; 0 = none
+    "watchedDays": (3, [1, 3, 7, 14, 0]),  # the last movie watched shows on the screensaver this long; 0 = never
     "episodeDays": (3, [1, 3, 7, 14, 0]),  # new episodes of started shows go round on the screensaver too; 0 = none
     "lightShortcuts": ([], _light_shortcuts),  # Hue scenes offered on the screensaver
 }

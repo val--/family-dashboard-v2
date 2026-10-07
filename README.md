@@ -32,6 +32,7 @@ about today's or tomorrow's events on the left. On the right, a small notificati
   no spoiler: the show's poster, the episode's own summary only once it was watched; until then a short
   "Dans l'épisode précédent" / "Il y a N épisodes" reminder of where the story was left, written by Gemini
   from Plex's summaries of the last episodes watched (and checked like the trivia);
+- then the last movie watched (for a few days after), with two of its anecdotes (the Films tab's ones);
 - story-like segments under it show where you are; tap one to jump to it;
 - with nothing to show and no post-it for two days, a big QR code invites the family to post.
 
@@ -41,7 +42,7 @@ sit dimmed; a tap recalls the scene without waking the screen.
 A tap on a note or a movie wakes the dashboard on it; a tap anywhere else just wakes it.
 
 **Settings** (gear button): screensaver delay, time per item, which post-its go round, how recent a
-movie or an episode must be to be shown, and the screensaver's light shortcuts. They are stored by the API, so every screen shares them.
+movie or an episode must be to be shown, how long the last movie watched stays, and the screensaver's light shortcuts. They are stored by the API, so every screen shares them.
 
 **Kiosk care**: the page reloads itself every night at 04:00 (Chromium slowly piles up memory on a Pi) and
 after a new deployment once the screen is asleep; each widget fails on its own ("Indisponible pour le
@@ -62,7 +63,7 @@ api        → Flask (gunicorn, port 5100), one module per feature, data in ./da
 | API module | Routes | Talks to |
 |---|---|---|
 | `agenda.py` | `/api/calendar` | Google Calendar (service account), cached 5 min |
-| `plex.py` | `/api/plex/recent`, `/shows`, `/ondeck`, `/new-episodes`, `/trivia` | Plex (posters, cast photos and backdrops resized by Plex itself) |
+| `plex.py` | `/api/plex/recent`, `/shows`, `/ondeck`, `/new-episodes`, `/last-watched`, `/trivia` | Plex (posters, cast photos and backdrops resized by Plex itself) |
 | `trivia.py` | (used by `/api/plex/trivia`) | Gemini, with sources fetched from Allociné and Wikipedia |
 | `recaps.py` | (used by `/api/plex/new-episodes`) | Gemini, from Plex's own episode summaries |
 | `hue.py` | `/api/hue`, `/api/hue/lights/<id>`, `/groups/<id>`, `/scenes/<id>/recall` | the Philips Hue bridge (local API v2): switch, dim, recall a scene, nothing else |

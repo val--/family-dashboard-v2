@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { API_URL } from '../api'
 
 const REFRESH_INTERVAL = 5 * 60 * 1000 // in case they were changed from another screen
-const DEFAULTS = { idleMinutes: 5, postitSeconds: 30, postitRange: 'today', movieDays: 3, episodeDays: 3, lightShortcuts: [] }
+const DEFAULTS = { idleMinutes: 5, postitSeconds: 30, postitRange: 'today', movieDays: 3, episodeDays: 3, watchedDays: 3, lightShortcuts: [] }
 
 // Dashboard settings, stored by the API (data/settings.json)
 export function useSettings() {

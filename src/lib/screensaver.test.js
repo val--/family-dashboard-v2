@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agendaPreview, notePool, recentEpisodes, recentMovies, screensaverItems, MAX_MOVIES } from './screensaver'
+import { agendaPreview, lastWatched, notePool, recentEpisodes, recentMovies, screensaverItems, MAX_MOVIES } from './screensaver'
 
 // Tuesday 6 October 2026, 14:30 local time
 const NOW = new Date(2026, 9, 6, 14, 30)
@@ -144,5 +144,26 @@ describe('recentEpisodes', () => {
       now: NOW,
     })
     expect(rotation.map((item) => item.id)).toEqual(['note-1', 'movie-42', 'episode-a'])
+  })
+})
+
+describe('lastWatched', () => {
+  const nowSeconds = NOW / 1000
+  const movie = { key: '7', title: 'Le rêve américain', lastViewedAt: nowSeconds - 2 * 86400 }
+
+  it('shows the last movie watched during the time chosen', () => {
+    expect(lastWatched(movie, 3, nowSeconds)).toBe(movie)
+    expect(lastWatched(movie, 1, nowSeconds)).toBeNull()
+    expect(lastWatched(movie, 0, nowSeconds)).toBeNull()
+    expect(lastWatched(null, 3, nowSeconds)).toBeNull()
+  })
+
+  it('closes the rotation', () => {
+    const { rotation } = screensaverItems({
+      movies: [{ key: '42', title: 'Drive', addedAt: String(at(6, 10)) }],
+      watchedMovie: movie,
+      now: NOW,
+    })
+    expect(rotation.map((item) => item.id)).toEqual(['movie-42', 'watched-7'])
   })
 })
