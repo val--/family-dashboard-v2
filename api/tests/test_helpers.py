@@ -1,4 +1,5 @@
 import io
+import time
 import xml.etree.ElementTree as ET
 
 import arr
@@ -85,3 +86,47 @@ def test_library_sections_are_looked_up_once(monkeypatch):
     assert plex.find_plex_section("music") is None
     assert plex.find_plex_section("music") is None  # not found: asked again, never cached
     assert len(calls) == 4
+
+
+# ---- New episodes for the screensaver
+
+
+def episode_xml(show_key, show, season, number, days_ago, watched=False):
+    added = int(time.time() - days_ago * 86400)
+    return ET.fromstring(
+        f'<Video type="episode" ratingKey="{show_key}{season}{number}" grandparentRatingKey="{show_key}" '
+        f'grandparentTitle="{show}" parentIndex="{season}" index="{number}" title="Épisode {number}" addedAt="{added}" '
+        f'summary="Ce qui se passe (spoiler)" grandparentThumb="/t/{show_key}" grandparentArt="/a/{show_key}" '
+        f'{"viewCount=\"1\"" if watched else ""}/>'
+    )
+
+
+def test_new_episodes_only_for_started_shows_and_without_spoilers(client, monkeypatch):
+    recently_added = ET.Element("MediaContainer")
+    recently_added.extend([
+        episode_xml("10", "Started", 2, 3, 1),
+        episode_xml("10", "Started", 2, 2, 2),
+        episode_xml("10", "Started", 2, 1, 20),  # older than two weeks: not counted
+        episode_xml("20", "Never watched", 1, 2, 1),
+        episode_xml("30", "Seen already", 1, 5, 3, watched=True),
+    ])
+    shows = {
+        "10": ET.fromstring('<MediaContainer><Directory viewedLeafCount="10" summary="A show."/></MediaContainer>'),
+        "20": ET.fromstring('<MediaContainer><Directory viewedLeafCount="0" summary="Another."/></MediaContainer>'),
+        "30": ET.fromstring('<MediaContainer><Directory viewedLeafCount="5" summary="A third."/></MediaContainer>'),
+    }
+
+    def fake_xml(path):
+        return recently_added if "recentlyAdded" in path else shows[path.rsplit("/", 1)[-1]]
+
+    monkeypatch.setattr(plex, "_plex_xml", fake_xml)
+    monkeypatch.setattr(plex, "find_plex_section", lambda kind: "2")
+    monkeypatch.setattr(plex, "_show_cache", {})
+    episodes = client.get("/api/plex/new-episodes").get_json()["episodes"]
+
+    assert [(e["show"], e["season"], e["episode"]) for e in episodes] == [("Started", 2, 3), ("Seen already", 1, 5)]
+    started, seen = episodes
+    assert len(started["addedTimes"]) == 2  # the 20-day-old one is out of the window
+    assert started["summary"] is None and started["showSummary"] == "A show."  # not watched: no spoiler
+    assert seen["summary"] == "Ce qui se passe (spoiler)"  # watched: its summary is fine
+    assert "/t/10" in started["thumb"].replace("%2F", "/")  # the show's poster, not a still of the episode

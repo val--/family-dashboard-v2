@@ -42,6 +42,18 @@ export function recentMovies(movies, days, nowSeconds = Date.now() / 1000) {
     .slice(0, MAX_MOVIES)
 }
 
+// The new episodes of started shows (the API keeps those only), added in the last `days` days (0 = none),
+// newest first. `count`: how many of that show's episodes came in that time.
+export function recentEpisodes(episodes, days, nowSeconds = Date.now() / 1000) {
+  if (!days || !episodes?.length) return []
+  const since = nowSeconds - days * 86400
+  return episodes
+    .filter((e) => e.addedAt >= since)
+    .map((e) => ({ ...e, count: (e.addedTimes || [e.addedAt]).filter((t) => t >= since).length }))
+    .sort((a, b) => b.addedAt - a.addedAt)
+    .slice(0, MAX_MOVIES)
+}
+
 // Notes that go round (Settings): today's (else yesterday's), the last 3 days, or all of them.
 // Days are calendar days, not "minus 24 h": DST days are 23 or 25 h long.
 export function notePool(chronological, range, now = new Date()) {
@@ -57,10 +69,12 @@ export function notePool(chronological, range, now = new Date()) {
   return today.length > 0 ? today : chronological.filter((n) => n.createdAt >= dayStart(1) && n.createdAt < dayStart(0))
 }
 
-// The rotation: the notes of the pool, newest first, then the new movies. Fresh notes (arrived in the last
+// The rotation: the notes of the pool, newest first, then the new movies, then the new episodes. Fresh notes (arrived in the last
 // few minutes and not looked at yet: hasNew) go round alone while there are some.
-// Returns { chronological (all notes, newest first), fresh, rotation: [{ id, note } | { id, movie }] }.
-export function screensaverItems({ notes = [], movies = [], hasNew = false, postitRange = 'today', movieDays = 3, now = new Date() }) {
+// Returns { chronological (all notes, newest first), fresh, rotation: [{ id, note } | { id, movie } | { id, episode }] }.
+export function screensaverItems({
+  notes = [], movies = [], episodes = [], hasNew = false, postitRange = 'today', movieDays = 3, episodeDays = 3, now = new Date(),
+}) {
   // sorted here, so the screensaver never depends on the API order: "the latest posted" is the first one
   const chronological = [...notes].sort((a, b) => b.createdAt - a.createdAt || b.id - a.id)
   const nowSeconds = now / 1000
@@ -70,6 +84,10 @@ export function screensaverItems({ notes = [], movies = [], hasNew = false, post
   const rotation =
     fresh.length > 0
       ? fresh.map(asNote)
-      : [...pool.map(asNote), ...recentMovies(movies, movieDays, nowSeconds).map((movie) => ({ id: `movie-${movie.key ?? movie.title}`, movie }))]
+      : [
+          ...pool.map(asNote),
+          ...recentMovies(movies, movieDays, nowSeconds).map((movie) => ({ id: `movie-${movie.key ?? movie.title}`, movie })),
+          ...recentEpisodes(episodes, episodeDays, nowSeconds).map((episode) => ({ id: `episode-${episode.key}`, episode })),
+        ]
   return { chronological, fresh, rotation }
 }

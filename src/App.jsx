@@ -20,6 +20,7 @@ import { useAutoReload } from './hooks/useAutoReload'
 import { usePostits, useUnseenPostits } from './hooks/usePostits'
 import { useStickerViews } from './hooks/useStickerViews'
 import { usePlex } from './hooks/usePlex'
+import { usePlexNewEpisodes } from './hooks/usePlexNewEpisodes'
 import { useHue } from './hooks/useHue'
 import Screensaver from './components/Screensaver'
 
@@ -52,6 +53,7 @@ function App() {
   const postits = usePostits()
   const stickerViews = useStickerViews()
   const plex = usePlex() // the Films tab and the screensaver's latest movies
+  const newEpisodes = usePlexNewEpisodes() // the screensaver's new episodes of started shows
   const hue = useHue() // the Lumières tab, the screensaver's shortcuts and their settings
   const [activeTab, setActiveTab] = useState('')
   // From the screensaver: { title } = the tab to wake up on, plus what to open there (note, qr or movie)
@@ -151,15 +153,18 @@ function App() {
             events={calendar.events}
             notes={postits.notes}
             movies={plex.movies}
+            episodes={newEpisodes}
             hasNew={hasNewPostit}
             onWake={wake}
             onOpenNote={(note) => wakeOn({ title: 'Post-it', note })}
             onAddNote={() => wakeOn({ title: 'Post-it', qr: true })}
             onOpenMovie={(movie) => wakeOn({ title: 'Films', movie })}
+            onOpenEpisode={() => wakeOn({ title: 'Séries' })}
             stickerViews={stickerViews}
             postitSeconds={settings.postitSeconds}
             postitRange={settings.postitRange}
             movieDays={settings.movieDays}
+            episodeDays={settings.episodeDays}
             hue={hue}
             lightShortcuts={settings.lightShortcuts}
           />

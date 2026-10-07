@@ -145,6 +145,16 @@ export default function Settings({ settings, hue, onChange, error, overridden, o
             <Choice options={MOVIE_DAYS_CHOICES} value={settings.movieDays} onChange={(movieDays) => onChange({ movieDays })} />
           </Section>
           <Section
+            title="Nouveaux épisodes sur l'écran de veille"
+            hint={
+              settings.episodeDays === 0
+                ? "Les nouveaux épisodes ne sont pas montrés sur l'écran de veille."
+                : "Le dernier épisode ajouté depuis ce délai, pour les séries déjà commencées sur Plex. Sans spoiler : le résumé de l'épisode n'apparaît qu'une fois vu."
+            }
+          >
+            <Choice options={MOVIE_DAYS_CHOICES} value={settings.episodeDays} onChange={(episodeDays) => onChange({ episodeDays })} />
+          </Section>
+          <Section
             title="Raccourcis lumières sur l'écran de veille"
             hint={`Jusqu'à ${MAX_LIGHT_SHORTCUTS} scénarios, affichés discrètement avec « Éteindre » (toute la maison) ; un toucher les active sans réveiller l'écran.`}
           >

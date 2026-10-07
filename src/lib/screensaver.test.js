@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agendaPreview, notePool, recentMovies, screensaverItems, MAX_MOVIES } from './screensaver'
+import { agendaPreview, notePool, recentEpisodes, recentMovies, screensaverItems, MAX_MOVIES } from './screensaver'
 
 // Tuesday 6 October 2026, 14:30 local time
 const NOW = new Date(2026, 9, 6, 14, 30)
@@ -115,5 +115,34 @@ describe('screensaverItems', () => {
 
   it('is empty with nothing to show (the QR code invite then)', () => {
     expect(screensaverItems({ notes: [], movies: [], now: NOW }).rotation).toEqual([])
+  })
+})
+
+describe('recentEpisodes', () => {
+  const nowSeconds = NOW / 1000
+  const day = 86400
+  const episodes = [
+    { key: 'a', show: 'MobLand', addedAt: nowSeconds - 1 * day, addedTimes: [nowSeconds - 1 * day, nowSeconds - 2 * day, nowSeconds - 6 * day] },
+    { key: 'b', show: 'From', addedAt: nowSeconds - 5 * day, addedTimes: [nowSeconds - 5 * day] },
+  ]
+
+  it('keeps the shows with an episode added in the time chosen, counting only those episodes', () => {
+    const recent = recentEpisodes(episodes, 3, nowSeconds)
+    expect(recent.map((e) => [e.show, e.count])).toEqual([['MobLand', 2]])
+    expect(recentEpisodes(episodes, 7, nowSeconds).map((e) => [e.show, e.count])).toEqual([['MobLand', 3], ['From', 1]])
+  })
+
+  it('shows none when the setting is off', () => {
+    expect(recentEpisodes(episodes, 0, nowSeconds)).toEqual([])
+  })
+
+  it('goes round after the notes and the movies', () => {
+    const { rotation } = screensaverItems({
+      notes: [{ id: 1, createdAt: at(6, 8) }],
+      movies: [{ key: '42', title: 'Drive', addedAt: String(at(6, 10)) }],
+      episodes,
+      now: NOW,
+    })
+    expect(rotation.map((item) => item.id)).toEqual(['note-1', 'movie-42', 'episode-a'])
   })
 })

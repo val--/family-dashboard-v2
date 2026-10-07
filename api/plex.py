@@ -222,6 +222,76 @@ def plex_ondeck():
         return jsonify({"error": str(e)}), 500
 
 
+EPISODE_WINDOW_DAYS = 14  # the longest screensaver setting: it filters further by itself
+SHOW_CACHE_SECONDS = 10 * 60  # a show's watched count changes as the family watches it
+_show_cache = {}  # show ratingKey -> (time, Directory element)
+
+
+def _plex_xml(path):
+    """A Plex XML answer's root element (path with its query, without the token)."""
+    sep = "&" if "?" in path else "?"
+    req = urllib.request.Request(f"{PLEX_URL}{path}{sep}X-Plex-Token={PLEX_TOKEN}", headers={"Accept": "application/xml"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return ET.parse(resp).getroot()
+
+
+def plex_show(key):
+    """A show's own metadata (how many episodes were watched, its summary), kept 10 minutes."""
+    cached = _show_cache.get(key)
+    if cached and time.time() - cached[0] < SHOW_CACHE_SECONDS:
+        return cached[1]
+    show = _plex_xml(f"/library/metadata/{key}").find("Directory")
+    if show is not None:
+        _show_cache[key] = (time.time(), show)
+    return show
+
+
+@bp.route("/api/plex/new-episodes")
+def plex_new_episodes():
+    """The latest episode added per show in the last two weeks, for the shows the family has started
+    (at least one episode watched). No spoiler: an episode's own summary only comes when it was watched
+    (the show's summary otherwise), and the picture is the show's poster, never a still of the episode."""
+    if not PLEX_TOKEN:
+        return jsonify({"error": "PLEX_TOKEN not configured"}), 500
+    try:
+        section_key = find_plex_section("show")
+        if not section_key:
+            return jsonify({"episodes": []})
+        since = time.time() - EPISODE_WINDOW_DAYS * 86400
+        by_show = {}
+        for item in _plex_xml(f"/library/sections/{section_key}/recentlyAdded?X-Plex-Container-Size=100"):
+            if item.get("type") != "episode" or int(item.get("addedAt") or 0) < since:
+                continue
+            by_show.setdefault(item.get("grandparentRatingKey"), []).append(item)
+
+        episodes = []
+        for show_key, items in by_show.items():
+            show = plex_show(show_key)
+            if show is None or int(show.get("viewedLeafCount") or 0) == 0:
+                continue  # not started: nobody is waiting for it
+            items.sort(key=lambda e: int(e.get("addedAt") or 0), reverse=True)
+            latest = items[0]
+            watched = int(latest.get("viewCount") or 0) > 0
+            episodes.append({
+                "key": latest.get("ratingKey"),
+                "show": latest.get("grandparentTitle"),
+                "season": int(latest.get("parentIndex") or 0),
+                "episode": int(latest.get("index") or 0),
+                "title": latest.get("title"),
+                "addedAt": int(latest.get("addedAt") or 0),
+                "watched": watched,
+                "summary": latest.get("summary") if watched else None,
+                "showSummary": show.get("summary"),
+                "thumb": plex_thumb_url(latest.get("grandparentThumb")),
+                "art": plex_thumb_url(latest.get("grandparentArt"), 640, 360, blur=8),
+                "addedTimes": [int(e.get("addedAt") or 0) for e in items],  # every new episode of the show
+            })
+        episodes.sort(key=lambda e: e["addedAt"], reverse=True)
+        return jsonify({"episodes": episodes})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/api/plex/shows")
 def plex_shows():
     if not PLEX_TOKEN:
