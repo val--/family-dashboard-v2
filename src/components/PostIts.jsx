@@ -5,6 +5,7 @@ import { photoDownloadUrl, photoUrl, stickerDownloadUrl, stickerUrl, videoDownlo
 import QrCode from './QrCode'
 import { POSTIT_URL } from './postit/links'
 import ArrowButton, { BackArrows } from './ArrowButton'
+import { videosCanPlay } from '../lib/videos'
 import FullScreen from './FullScreen'
 
 const CELLS_PER_PAGE = 6 // 3 columns x 2 rows, the QR tile takes the first cell of the first page
@@ -107,6 +108,8 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
   const pages = Math.ceil(cells.length / CELLS_PER_PAGE)
   const current = Math.min(page, pages - 1)
   const visible = cells.slice(current * CELLS_PER_PAGE, (current + 1) * CELLS_PER_PAGE)
+  // Too many videos at once slow the Pi down: past 2 on the page, they show their poster (▶) and play in the detail view
+  const wallPlays = active && videosCanPlay(visible.map((cell) => cell.note))
   const empty = !loading && !error && notes.length === 0
 
   // The detail view walks through the notes in the wall's order. The note is looked up in the live list
@@ -138,7 +141,7 @@ export default function PostIts({ postits, openRequest, stickerViews, backToStar
                 rotate={tilt(cell.note.id)}
                 showDate
                 {...stickerProps(cell.note)}
-                playVideo={active}
+                playVideo={wallPlays}
                 className="min-h-0"
                 onClick={() => setSelected(cell.note)}
               />

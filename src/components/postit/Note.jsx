@@ -99,6 +99,17 @@ function Media({ src, video, play, className, style, onClick, lazy }) {
   return <img src={src} alt="" loading={lazy ? 'lazy' : undefined} decoding="async" onClick={onClick} style={style} className={className} />
 }
 
+// A video shown as its poster (off screen, or too many videos on the wall's page): a ▶ marks it
+function PlayBadge() {
+  return (
+    <span className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white" aria-label="Vidéo">
+      <svg className="ml-0.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 4.5v15l13-7.5z" />
+      </svg>
+    </span>
+  )
+}
+
 // `showDate` adds the age of the note to the signature (wall and screensaver).
 // `photoSrc` overrides the note's own photo (the phone previews a photo before it is uploaded).
 // `onPhotoClick` makes the photo tappable in the large version (full screen viewer).
@@ -113,6 +124,7 @@ export default function PostitNote({
   const stickerOn = hasSticker && showSticker
   const photo = photoSrc || (note.photo ? (stickerOn ? stickerUrl(note.photo) : photoUrl(note.photo)) : null)
   const video = !photoSrc && note.video && note.photo ? videoUrl(note.photo) : null
+  const badge = video && !playVideo && <PlayBadge />
   // A sticker must never be cropped: it sits whole on the note's color
   const fit = stickerOn ? 'object-contain' : 'object-cover'
   const foldPx = hasSticker && onToggleSticker && size !== 'sm' ? FOLD[size] : 0
@@ -131,6 +143,7 @@ export default function PostitNote({
     return (
       <div onClick={onClick} style={style} className={`${base} flex flex-col ${lg ? 'gap-2 p-4' : 'gap-1 p-2'}`}>
         {fold}
+        {badge}
         <div className={`flex min-h-0 flex-1 ${lg ? 'gap-3' : 'gap-2'}`}>
           <Media
             src={photo}
@@ -158,6 +171,7 @@ export default function PostitNote({
     return (
       <div onClick={onClick} style={style} className={`${base} flex flex-col gap-2 p-4`}>
         {fold}
+        {badge}
         <Media
           src={photo}
           video={video}
@@ -180,6 +194,7 @@ export default function PostitNote({
     return (
       <div onClick={onClick} style={style} className={`${base} flex flex-col gap-1 p-2`}>
         {fold}
+        {badge}
         <Media src={photo} video={video} play={playVideo} lazy className={`min-h-0 w-full flex-1 rounded-sm ${fit}`} />
         <div className="flex items-start gap-1">
           <div className={`${TEXT} flex-1 text-base leading-tight line-clamp-2`}>{note.text}</div>

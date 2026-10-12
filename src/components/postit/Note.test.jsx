@@ -42,3 +42,14 @@ describe('PostitNote', () => {
     expect(container.textContent).toMatch(/— Alice · /)
   })
 })
+
+describe('PostitNote video badge', () => {
+  it('marks a video shown as its poster, not a playing one nor a photo', () => {
+    const videoNote = { ...base, photo: 'd'.repeat(32), video: true }
+    expect(render(<PostitNote note={videoNote} size="md" playVideo={false} />).container.querySelector('[aria-label="Vidéo"]')).not.toBeNull()
+    cleanup()
+    expect(render(<PostitNote note={videoNote} size="md" />).container.querySelector('[aria-label="Vidéo"]')).toBeNull()
+    cleanup()
+    expect(render(<PostitNote note={{ ...base, photo: 'e'.repeat(32) }} size="md" playVideo={false} />).container.querySelector('[aria-label="Vidéo"]')).toBeNull()
+  })
+})
